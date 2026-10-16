@@ -48,3 +48,8 @@ CONFIG_BT_NIMBLE_NVS_PERSIST=n
 
 # Short notification tones continue across flash-cache stalls.
 CONFIG_I2S_ISR_IRAM_SAFE=y
+
+# Device CPU utilization from the actual idle task / microsecond runtime counters.
+CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+CONFIG_FREERTOS_RUN_TIME_STATS_USING_ESP_TIMER=y
+CONFIG_FREERTOS_RUN_TIME_COUNTER_TYPE_U64=y

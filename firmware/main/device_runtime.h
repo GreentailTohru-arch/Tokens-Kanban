@@ -13,3 +13,6 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity);
 /* Main-task only; hardware and Flash operations are dispatched to a worker. */
 bool device_runtime_key(uint64_t now_ms);
 void device_runtime_tick(uint64_t now_ms,const token_snapshot_t *new_snapshot);
+
+/* Explicit web tests share the same serialized audio worker. kind: 2 mic, 3 speaker. */
+bool device_runtime_test(unsigned id,unsigned kind);

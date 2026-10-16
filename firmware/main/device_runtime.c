@@ -1,5 +1,6 @@
 #include "device_runtime.h"
 #include "device_sounds.h"
+#include "device_diagnostics.h"
 #include "startup_assets.h"
 #include "bsp_audio.h"
 #include "bsp_display.h"
@@ -69,7 +70,23 @@ static void worker(void *arg) {
     (void)arg;request_t request;
     for(;;) {
         if(xQueueReceive(queue,&request,portMAX_DELAY)!=pdTRUE) continue;
-        if(request.command==7) {
+        if(request.command==9 || request.command==10) {
+            bool ok=false;int peak=-1,average=-1;unsigned samples=0;
+            if(request.command==10)ok=request.volume && play_tone(request.tone,request.volume);
+            else {
+                ok=bsp_audio_init()==ESP_OK && bsp_audio_wake()==ESP_OK && bsp_audio_set_format(CODEX_SOUND_HZ,16,1)==ESP_OK;
+                uint32_t sum=0;peak=0;
+                int16_t pcm[320];
+                for(unsigned block=0;ok&&block<20;++block) {
+                    ok=bsp_audio_read(pcm,sizeof(pcm))==ESP_OK;
+                    if(ok)for(unsigned j=0;j<320;++j){int n=pcm[j]<0?-(int)pcm[j]:(int)pcm[j];if(n>peak)peak=n;sum+=(unsigned)n;++samples;}
+                }
+                average=samples?(int)(sum/samples):-1;
+                if(bsp_audio_sleep()!=ESP_OK)ok=false;
+            }
+            if(!ok)(void)bsp_audio_sleep();
+            device_diagnostics_test_complete(request.id,ok,peak,average,samples);
+        } else if(request.command==7) {
             nvs_handle_t handle;esp_err_t error=nvs_open("tokens_ui",NVS_READWRITE,&handle);
             if(error==ESP_OK){error=nvs_set_blob(handle,"mon1",&request.monitor,sizeof(request.monitor));if(error==ESP_OK)error=nvs_commit(handle);nvs_close(handle);}
             portENTER_CRITICAL(&mutex);if(error==ESP_OK){monitor=request.monitor;save_state=2;atomic_store(&wake_requested,true);}else save_state=3;portEXIT_CRITICAL(&mutex);
@@ -337,4 +354,11 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         return snprintf(reply,capacity,"PC_EVT_ACK %u %u\n",host,sequence);
     }
     return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+}
+
+bool device_runtime_test(unsigned id,unsigned kind) {
+    if(!queue || kind<2 || kind>3)return false;
+    portENTER_CRITICAL(&mutex);device_config_t current=config;portEXIT_CRITICAL(&mutex);
+    request_t request={.id=id,.command=kind==2?9:10,.volume=current.volume,.tone=current.done_tone?current.done_tone:current.quota_tone?current.quota_tone:1};
+    return xQueueSend(queue,&request,0)==pdTRUE;
 }

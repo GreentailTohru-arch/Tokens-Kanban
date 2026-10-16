@@ -90,8 +90,8 @@ def main():
         expect(page.locator('#subtitle')).to_have_value('副标题')
         expect(page.locator('#name')).to_have_value('扫码QR Code')
         assert page.locator('.toolbar button').all_text_contents()==['搜索蓝牙设备','连接 USB','断开','保存到设备']
-        expect(page.locator('#pagesPage')).to_be_visible();assert page.locator('.page-card').count()==4
-        assert page.locator('.sidebar nav button').all_text_contents()==['页面管理','系统检测','明信片','设置']
+        expect(page.locator('#experiencePage')).to_be_visible();page.locator('#pagesNav').click();expect(page.locator('#pagesPage')).to_be_visible();assert page.locator('.page-card').count()==4
+        assert page.locator('.sidebar nav button').all_text_contents()==['体验模拟','页面管理','系统检测','明信片','设置']
         page.screenshot(path=str(out/'browser-pages-default.png'),full_page=True)
         page.locator('#postcardNav').click()
         assert page.locator('h1:visible').count()==0
@@ -216,7 +216,7 @@ def main():
         expect(page.locator('#monBits')).to_have_value('1');expect(page.locator('#monUpLabel')).to_have_value('上传')
         assert page.get_by_role('textbox',name='第1张卡片标题',exact=True).input_value()=='中央处理频率'
         assert page.locator('#monitorPage .download-links a').count()==3
-        assert all('/download/v16/' in h for h in page.locator('#monitorPage .download-links a').evaluate_all('(a)=>a.map(e=>e.href)'))
+        assert all('/download/v17/' in h for h in page.locator('#monitorPage .download-links a').evaluate_all('(a)=>a.map(e=>e.href)'))
         assert page.locator('#settingsPage .download-links').count()==0
         page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_enabled()
         expect(page.locator('#settingsState')).to_have_text('已读取设备设置')

@@ -109,3 +109,6 @@ Codex 既有滤波后 PCM 保持不变。不手工裁剪、不归一化、不改
 `companion/postcard/page-0.png` 至 `page-3.png` 为原生 LVGL 测试导出的原创布局预览，
 依次为首页、统计、系统监测、明信片。数据是示例，不冒充实机照片或实时电脑读数，
 中文沿用已获许可的 Noto Sans CJK 字体子集。
+
+网页模拟器在companion/postcard/sim-audio/提供已有用户录音的WAV副本，并使用已检查的
+开机预览sim-startup.png；原始来源与转换记录保留在本目录，没有新增合成音效。

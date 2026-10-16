@@ -42,6 +42,10 @@ run_static_checks() {
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
         tests/test_monitor_model.c main/monitor_model.c assets/fonts/token_text_coverage.c -o "${TMPDIR:-/tmp}/passport-monitor-model-test"
     "${TMPDIR:-/tmp}/passport-monitor-model-test"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain tests/test_diagnostic_model.c main/diagnostic_model.c -o "${TMPDIR:-/tmp}/passport-diagnostic-model-test"
+    "${TMPDIR:-/tmp}/passport-diagnostic-model-test"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/diagnostic_stubs -Itests/postcard_stubs -Icomponents/bsp/include -Imain tests/test_device_diagnostics.c main/diagnostic_model.c -o "${TMPDIR:-/tmp}/passport-device-diagnostics-test"
+    "${TMPDIR:-/tmp}/passport-device-diagnostics-test"
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_system_monitor.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_events.py
     PYTHONDONTWRITEBYTECODE=1 python3 tools/convert_codex_sounds.py --check

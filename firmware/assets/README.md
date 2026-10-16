@@ -120,3 +120,7 @@ Asset conversion requires `python3 -m pip install -r tools/requirements-assets.t
 exported from the native LVGL fixture (Home, Analytics, System Monitor, Postcard).
 They use illustrative data, not a photographed device or live PC reading. Their
 Chinese labels use the existing licensed Noto Sans CJK subset.
+
+The web simulator serves copies of the existing supplied WAV recordings under
+companion/postcard/sim-audio/ and the checked startup preview as sim-startup.png.
+Original sources and conversion manifests stay here; no new synthesized audio.

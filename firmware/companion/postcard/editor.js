@@ -1,3 +1,5 @@
+import {DeviceInfoPanel} from './device-info.js?v=experience-1';
+import {ExperienceSimulator} from './simulator.js?v=experience-1';
 import {MonitorEditor} from './monitor.js';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js';
@@ -5,15 +7,15 @@ const $=id=>document.getElementById(id);
 const service='9e7a0001-4b51-4a4c-9b50-2f53f077c301';
 const rxId='9e7a0002-4b51-4a4c-9b50-2f53f077c301',txId='9e7a0003-4b51-4a4c-9b50-2f53f077c301';
 const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,zoom:1},qrCrop:{x:.5,y:.5,zoom:1}};
-let back=false,link=null,busy=false,imageLoading=true,activePage='pages',settingsSupported=false,startupSupported=false;
+let back=false,link=null,busy=false,imageLoading=true,activePage='experience',settingsSupported=false,startupSupported=false;
 let pagesSupported=false,pageEnabled=15,pageOrder=[0,1,2,3];
 const pageNames=['用量首页','统计分析','系统检测','明信片'];
 const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按检测卡片配置显示','头像、文字与联系方式'];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-let toastTimer;
+let toastTimer,simulator=null,devicePanel=null;
 function status(text){clearTimeout(toastTimer);$('status').textContent=text;$('status').hidden=!text;if(text)toastTimer=setTimeout(()=>{$('status').hidden=true;},10000);}
 function repaint(){renderFace($('preview'),content,back);$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=locked||!link||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);}
+function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=activePage==='experience'||locked||!link||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
 function updateClock(){const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
@@ -68,9 +70,10 @@ $('applyCrop').onclick=()=>closeCrop(true);$('cancelCrop').onclick=()=>closeCrop
 $('cropDialog').addEventListener('cancel',e=>{e.preventDefault();closeCrop(false);});
 for(const field of ['photo','qr'])$(field+'Edit').onclick=()=>openCrop(field);
 class Connection{
-  constructor(kind){this.kind=kind;this.text='';this.pending=null;this.closed=false;}
+  constructor(kind){this.commands=Promise.resolve();this.kind=kind;this.text='';this.pending=null;this.closed=false;}
   feed(bytes){this.text+=new TextDecoder().decode(bytes);let pos;while((pos=this.text.indexOf('\n'))>=0){const line=this.text.slice(0,pos).trim();this.text=this.text.slice(pos+1);if(line.startsWith('PC_')&&this.pending){this.pending.resolve(line);this.pending=null;}}if(this.text.length>2048)this.text='';}
-  async rpc(line){
+  rpc(line){const command=this.commands.then(()=>this.exchange(line));this.commands=command.catch(()=>{});return command;}
+  async exchange(line){
     if(this.closed)throw new Error('连接已断开');
     if(this.pending)throw new Error('上一个命令尚未完成');
     let timer;const response=new Promise((resolve,reject)=>{this.pending={resolve,reject};timer=setTimeout(()=>{this.pending=null;reject(new Error('设备响应超时，请断开重连'));},12000);});
@@ -79,7 +82,7 @@ class Connection{
     try{await this.send(new TextEncoder().encode(line+'\n'));return await response;}
     finally{clearTimeout(timer);if(this.pending){this.pending.reject(new Error('发送未完成'));this.pending=null;}}
   }
-  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;settingsSupported=false;pagesSupported=false;monitorEditor.supported=false;$('monitorState').textContent='连接设备后读取检测配置';$('pagesState').textContent='连接设备后读取页面设置';$('settingsState').textContent='连接设备后读取设置';controls();status('连接已断开');}}
+  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;devicePanel?.lost();settingsSupported=false;pagesSupported=false;monitorEditor.supported=false;$('monitorState').textContent='连接设备后读取检测配置';$('pagesState').textContent='连接设备后读取页面设置';$('settingsState').textContent='连接设备后读取设置';controls();status('连接已断开');}}
   async close(){this.lost();}
 }
 class BluetoothConnection extends Connection{
@@ -112,7 +115,7 @@ class SerialConnection extends Connection{
 async function connect(kind){
   busy=true;controls();let candidate=kind==='ble'?new BluetoothConnection():new SerialConnection();
   try{await candidate.open();if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);await readSettings(candidate);await readPages(candidate);await monitorEditor.read(candidate);link=candidate;status(dated?'已连接':'已连接，日期显示需要更新设备固件');
+    const dated=await syncClock(candidate);await readSettings(candidate);await readPages(candidate);await monitorEditor.read(candidate);await devicePanel.read(candidate);link=candidate;status(dated?'已连接':'已连接，日期显示需要更新设备固件');
   }catch(error){await candidate.close();status(error.message);}finally{busy=false;controls();}
 }
 async function stateFor(id,reply){
@@ -148,8 +151,8 @@ async function upload(event){
   }catch(error){status(error.message);}finally{busy=false;controls();}
 }
 function setPage(page){
-  activePage=page;$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';
-  for(const name of ['pages','monitor','postcard','settings']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));}
+  activePage=page;$('experiencePage').hidden=page!=='experience';simulator?.setActive(page==='experience');devicePanel?.setActive(page==='experience');$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';
+  for(const name of ['experience','pages','monitor','postcard','settings']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));}
   $('upload').setAttribute('form',page==='settings'?'settingsForm':page==='pages'?'pagesForm':page==='monitor'?'monitorForm':'form');controls();
 }
 function settingsValues(){const values=['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));if(startupSupported)values.push(Number($('startupSound').checked));return values;}
@@ -209,6 +212,9 @@ async function previewTone(field){
   catch(error){status(error.message);}finally{busy=false;controls();}
 }
 const monitorEditor=new MonitorEditor({status,getLink:()=>link,setBusy:value=>{busy=value;controls();},controls,onRender:url=>{document.querySelector('.page-card[data-page="2"] img')?.setAttribute('src',url);}});
+devicePanel=new DeviceInfoPanel({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
+simulator=new ExperienceSimulator(()=>({mask:pageEnabled,order:[...pageOrder],content,volume:Number($('soundVolume').value),idle:Number($('idleTime').value),done:Number($('doneTone').value),quota:Number($('quotaTone').value),startup:$('startupSound').checked}));
+$('experienceNav').onclick=()=>setPage('experience');
 $('monitorNav').onclick=()=>setPage('monitor');
 $('pagesNav').onclick=()=>setPage('pages');$('pagesForm').addEventListener('submit',savePages);
 $('postcardNav').onclick=()=>setPage('postcard');$('settingsNav').onclick=()=>setPage('settings');
@@ -232,7 +238,7 @@ $('ble').onclick=()=>connect('ble');$('usb').onclick=()=>connect('usb');
 $('disconnect').onclick=async()=>{busy=true;controls();try{await link?.close();}finally{link=null;busy=false;controls();}};
 $('form').addEventListener('submit',upload);
 window.addEventListener('beforeunload',()=>{if(link instanceof BluetoothConnection)link.device?.gatt.disconnect();});
-renderPages();setPage('pages');repaint();controls();updateClock();setInterval(updateClock,1000);
+renderPages();setPage('experience');repaint();controls();updateClock();setInterval(updateClock,1000);
 try{
   Object.assign(content,await loadDefaults());
   for(const field of ['title','subtitle','name'])$(field).value=content[field];

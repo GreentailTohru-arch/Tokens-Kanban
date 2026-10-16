@@ -44,6 +44,9 @@ esp_err_t bsp_audio_write(const void *data,size_t n){
     audio_samples+=n/2;if(mute_at && audio_samples>=mute_at){mute_at=0;device_runtime_volume_set(0,(uint64_t)fake_time_us/1000);}return ESP_OK;
 }
 void bsp_display_backlight(uint8_t percent){backlight=percent;}
+static unsigned diagnostic_result_id,diagnostic_result_samples;static bool diagnostic_result_ok;
+void device_diagnostics_test_complete(unsigned id,bool ok,int peak,int average,unsigned samples){(void)peak;(void)average;diagnostic_result_id=id;diagnostic_result_samples=samples;diagnostic_result_ok=ok;}
+esp_err_t bsp_audio_read(void *buffer,size_t n){assert(n==640);int16_t *pcm=buffer;for(unsigned i=0;i<320;++i)pcm[i]=i%2?-100:100;return ESP_OK;}
 static void run(void){if(!setjmp(yielded))worker(NULL);}
 static char reply[384];
 static void line(const char *s,const char *expected){assert(device_runtime_line(s,reply,sizeof(reply))>0);assert(!strcmp(reply,expected));}
@@ -143,6 +146,8 @@ int main(void){
     line("PC_CFG_SET2 112 120 6 7 80 0","PC_CFG_STATE 112 1\n");run();device_runtime_volume_set(75,214000);fake_time_us=214000000;before_preview=audio_samples;device_runtime_tick(214000,NULL);run();assert(audio_samples-before_preview==41472+1920);
     line("PC_CFG_SET2 113 120 0 7 75 0","PC_CFG_STATE 113 1\n");run();device_runtime_volume_set(70,216000);fake_time_us=216000000;before_preview=audio_samples;device_runtime_tick(216000,NULL);run();assert(audio_samples-before_preview==17664+1920);
     line("PC_CFG_SET2 114 120 0 0 70 0","PC_CFG_STATE 114 1\n");run();device_runtime_volume_set(65,218000);fake_time_us=218000000;before_preview=audio_samples;device_runtime_tick(218000,NULL);run();assert(audio_samples-before_preview==9134+1920);
+    expected_pcm=NULL;assert(device_runtime_test(909,2));run();assert(diagnostic_result_id==909&&diagnostic_result_ok&&diagnostic_result_samples==6400);
+    assert(!device_runtime_test(910,0));
     puts("Volume preview coalescing/rate limit/mute, delayed persistence, failure retries and concurrent web saves: PASS");
     monitor_config_t custom=monitor_default();custom.cards[0].metric=M_TODAY;custom.cards[1].enabled=0;custom.bits=1;custom.decimals=2;
     strcpy(custom.cards[0].title,"今日流量");char hex[MONITOR_CONFIG_BYTES*2+1],command[400];monitor_encode(&custom,hex);

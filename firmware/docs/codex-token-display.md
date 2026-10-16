@@ -801,3 +801,43 @@ System Monitor uses the shared computer-synchronized local HH:MM clock at the to
 left, replacing the Codex signal light/text on that page only. Before time sync it
 shows 00:00; top-right battery and the other pages are unchanged. The v15 bridge
 component is byte-identical and requires no host restart for this UI update.
+
+## v17 browser experience and device diagnostics
+
+The first sidebar page is Experience Simulator. Its left power button uses the
+specified 0.5-second start / two-second shutdown hold; right Up/Down/OK buttons
+support pointer/touch/keyboard input. Single and double OK are disambiguated;
+long Up/Down, volume bounds/repeat/dismissal, page visibility/order, postcard
+faces, idle wake consumption and startup sound use the current browser draft.
+Illustrative usage/analytics/system readings are explicitly labeled. Simulator
+controls never send device writes or sensor/sound commands. Browser sounds are
+copies of the supplied recordings; no synthesized tones are introduced.
+
+The same page has a separate real-device dashboard. `PC_INFO` negotiates protocol
+1; unsupported firmware shows unavailable fields and disables real tests. Queries
+return cached CPU utilization, MHz, internal allocatable heap statistics, physical
+Flash size, allocated partition sizes, NVS entry counts, CW2017 SOC/voltage, chip
+identity, uptime and ADC key events. CPU load uses interval deltas of the real
+FreeRTOS idle runtime with a 64-bit ESP-timer counter; the first/invalid sample is
+unknown. RAM means heap, not all silicon SRAM. Partition size is allocated space,
+not used file storage. 500 mAh is a product rating, not measured remaining capacity.
+
+The default management name is `You's AI Passport`. Up to 32 UTF-8 bytes are checked
+on both ends; `PC_NAME_SET` commits independent NVS `tokens_ui/name1` asynchronously,
+then reads back. This does not change Bluetooth advertising identity. Failures keep
+the previous name; transaction IDs deduplicate retries. Existing cfg2/pages1/mon1
+and postcard storage are independent.
+
+Real tests run only when explicitly clicked: battery reads; 400 ms microphone
+samples return peak/mean magnitude/count only, without retaining/transmitting
+recordings; speaker uses the selected supplied recording (Codex fallback). Audio
+shares the existing single worker. Screen tests display five colors on an overlay,
+restore after 15 seconds or a physical key, and consume the exit key so navigation
+and volume do not change. The key observer reports real ADC/event counters and
+keeps normal key behavior. No unsupported motion/environment sensor is invented.
+
+Firmware replies remain below 96 bytes; the browser serializes RPCs, polls only on
+the experience page, clears disconnected/stale information and preserves older
+Token, settings, postcard and SM1/SM2 functionality. v17 build and simulated host
+checks are separate from physical acceptance; v16 has no diagnostic interface and
+must not be presented as a live diagnostic source.

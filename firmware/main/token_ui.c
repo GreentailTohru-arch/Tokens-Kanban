@@ -347,3 +347,13 @@ void token_ui_volume(bool show,unsigned percent) {
         lv_anim_set_path_cb(&animation,lv_anim_path_ease_out);lv_anim_set_completed_cb(&animation,volume_slide_done);lv_anim_start(&animation);
     }
 }
+
+void token_ui_diagnostic(int color_index) {
+    static lv_obj_t *panel;static int previous=-1;
+    if(color_index<0){if(panel){lv_obj_delete(panel);panel=NULL;}previous=-1;return;}
+    if(color_index>4 || color_index==previous)return;
+    const uint32_t colors[]={0x000000,0xFF0000,0x00FF00,0x0000FF,0xFFFFFF};
+    if(!panel){panel=box(lv_layer_top(),0,0,240,320,colors[color_index],0);label(panel,16,132,208,"屏幕测试",INK);label(panel,16,158,208,"按任意键退出",INK);}
+    lv_obj_set_style_bg_color(panel,lv_color_hex(colors[color_index]),0);
+    for(unsigned i=0;i<2;++i){lv_obj_t *text=lv_obj_get_child(panel,i);lv_obj_set_style_text_color(text,lv_color_hex(color_index==2||color_index==4?0x17212A:INK),0);lv_obj_set_style_text_align(text,LV_TEXT_ALIGN_CENTER,0);}previous=color_index;
+}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AI Passport 明信片与设备管理">
   <title>Tokens Kanban · 设备管理</title>
-  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=16">
+  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=experience-1">
 </head>
 <body>
 <header class="topbar">
@@ -18,8 +18,49 @@
   <progress id="progress" max="100" value="0" hidden aria-label="保存进度"></progress>
 </header>
 <div class="app-shell">
-<aside class="sidebar"><nav aria-label="管理页面"><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="monitorNav" class="nav-item" type="button" aria-controls="monitorPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 11h3l2-4 3 7 2-3h2"/></svg>系统检测</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button></nav></aside>
-<section id="pagesPage" class="pages-page" aria-label="页面管理">
+<aside class="sidebar"><nav aria-label="管理页面"><button id="experienceNav" class="nav-item" type="button" aria-controls="experiencePage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="4"/><path d="m10 8 5 4-5 4Z"/></svg>体验模拟</button><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="monitorNav" class="nav-item" type="button" aria-controls="monitorPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 11h3l2-4 3 7 2-3h2"/></svg>系统检测</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button></nav></aside>
+<section id="experiencePage" class="experience-page" aria-label="体验模拟">
+ <div class="experience-heading settings-heading"><div><h1>体验模拟</h1><p>先按一按，再带在身边。</p></div><button id="simReset" type="button" class="secondary">重新体验</button></div>
+ <div class="experience-layout">
+  <div class="sim-stage">
+   <div id="simDevice" class="sim-device" tabindex="0" role="group" aria-label="AI Passport 模拟设备，支持方向键与回车">
+    <div class="sim-lanyard" aria-hidden="true"></div>
+    <button id="simPower" class="sim-key sim-power" type="button" aria-label="模拟电源键" title="电源 · 按住约2秒关机，0.5秒开机"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M7 5.5a8 8 0 1 0 10 0"/></svg></button>
+    <div class="sim-display"><canvas id="simScreen" width="240" height="320" aria-label="当前网页设置的模拟屏幕"></canvas><div id="simVolumeBar" class="sim-volume" role="progressbar" aria-label="模拟音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" hidden><i></i></div></div>
+    <div class="sim-side-keys"><button id="simUp" class="sim-key" type="button" aria-label="模拟上键" title="上键 · 按住调高音量">↑</button><button id="simDown" class="sim-key" type="button" aria-label="模拟下键" title="下键 · 按住调低音量">↓</button><button id="simOk" class="sim-key" type="button" aria-label="模拟确定键" title="确定 · 单击或双击"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg></button></div>
+    <div class="sim-grille" aria-hidden="true"></div><span class="sim-brand" aria-hidden="true">AI PASSPORT</span>
+   </div>
+   <p id="simState" class="sim-state" role="status">用量首页 · 今日 · 音量 35%</p>
+   <p class="sim-disclaimer">示例数据 · 使用当前网页草稿 · 操作不写入设备</p>
+  </div>
+  <div class="sim-guide">
+   <section class="edit-panel"><h2>像实机一样操作</h2><dl class="sim-instructions"><div><dt><kbd>↑</kbd><kbd>↓</kbd></dt><dd>首页和统计页切换周期<br><span>按住调音量，松手后约 3 秒收起</span></dd></div><div><dt><kbd>✓</kbd></dt><dd>单击看明细或联系方式<br><span>双击按已开启页面的顺序翻页</span></dd></div><div><dt><kbd>电源</kbd></dt><dd>按住 2 秒关机，0.5 秒开机<br><span>自动熄屏后，首次操作只唤醒</span></dd></div></dl><p class="setting-help">屏幕显示当前卡片、页面顺序与明信片草稿。修改其他页面的设置后，回来即可体验；重新体验会恢复网页设置。</p></section>
+   <section class="edit-panel sim-events"><h2>状态与声音</h2><div class="sim-event-actions"><button id="simTask" type="button" class="secondary">开始思考</button><button id="simQuota" type="button" class="secondary">额度耗尽</button></div><label class="check-row"><input id="simAudio" type="checkbox" checked>播放当前提示音</label><p id="simAudioHint" class="setting-help">声音在浏览器播放，使用当前选中的录音和音量。</p></section>
+  </div>
+ </div>
+ <section class="device-overview" aria-label="AI Passport 本机信息">
+  <div class="section-row"><h2>设备信息</h2><span id="deviceConnectionState" class="device-live-state" role="status">未连接设备</span></div>
+  <form id="deviceNameForm" class="device-name-form"><div><label for="deviceName">设备名称</label><input id="deviceName" maxlength="32" value="You's AI Passport" autocomplete="off"><p id="deviceNameHint" class="setting-help">默认名称 · 连接后可保存到设备</p><p id="deviceNameError" class="text-error" hidden></p></div><button id="deviceNameSave" type="submit" class="secondary" disabled>保存名称</button></form>
+  <div class="device-metrics-grid">
+   <article class="device-metric"><span>处理器占用率</span><strong id="deviceCpu">--</strong><small>基于实际空闲任务运行时间</small></article>
+   <article class="device-metric"><span>处理器频率</span><strong id="deviceFrequency">--</strong><small id="deviceChip">--</small></article>
+   <article class="device-metric"><span>堆内存占用</span><strong id="deviceHeap">--</strong><small id="deviceHeapDetail">--</small></article>
+   <article class="device-metric"><span>Flash 总容量</span><strong id="deviceFlash">--</strong><small id="deviceStorageDetail">--</small></article>
+   <article class="device-metric"><span>电池电量</span><strong id="deviceBattery">--</strong><small id="deviceCapacity">--</small></article>
+   <article class="device-metric"><span>电池电压</span><strong id="deviceVoltage">--</strong><small>CW2017 电量计</small></article>
+   <article class="device-metric"><span>运行时间</span><strong id="deviceUptime">--</strong><small id="deviceFirmware">--</small></article>
+   <article class="device-metric"><span>按键 ADC 电压</span><strong id="deviceKeys">--</strong><small>来自设备的共享按键 ADC</small></article>
+  </div><p class="setting-help">这里读取 AI Passport 本机数据，与电脑系统检测卡片不同。分区显示分配容量；电池 mAh 为产品额定值，不是剩余容量。未连接、过期或不支持的项目显示 --。</p>
+ </section>
+ <section class="device-tests" aria-label="实机传感器与外设测试"><div class="section-row"><h2>传感器与外设测试</h2><span>点击后在实机执行</span></div><fieldset id="diagFields" disabled><div class="device-tests-grid">
+  <article class="edit-panel"><h3>电量计</h3><p class="setting-help">读取电池电量和电压，不改变电量计配置。</p><button id="diagBattery" type="button" class="secondary">检测电量计</button><p id="diagBatteryState" class="diag-result" role="status">等待检测</p></article>
+  <article class="edit-panel"><h3>麦克风</h3><p class="setting-help">短暂采样并返回电平，不保存或上传录音。</p><button id="diagMic" type="button" class="secondary">检测麦克风</button><p id="diagMicState" class="diag-result" role="status">等待检测</p></article>
+  <article class="edit-panel"><h3>实体按键</h3><p class="setting-help">按下实物按键，指示灯会亮起，原有操作仍会生效。</p><button id="diagKeys" type="button" class="secondary">开始观察按键</button><div class="diag-key-row"><span id="diagKey0" class="diag-key-indicator">↑ 上键 · --</span><span id="diagKey1" class="diag-key-indicator">↓ 下键 · --</span><span id="diagKey2" class="diag-key-indicator">✓ 确定 · --</span></div><p id="diagKeysState" class="diag-result" role="status">等待按键事件</p></article>
+  <article class="edit-panel"><h3>扬声器</h3><p class="setting-help">播放当前录音；提示音关闭时使用提供的 Codex 录音。</p><button id="diagSpeaker" type="button" class="secondary">实机试听</button><p id="diagSpeakerState" class="diag-result" role="status">等待试听</p></article>
+  <article class="edit-panel screen-test-card"><h3>屏幕</h3><p class="setting-help">在实机显示纯色检查。按任意键退出，约 15 秒自动恢复。</p><div class="diag-color-row"><button type="button" data-screen-color="0" aria-label="实机黑色测试">黑</button><button type="button" data-screen-color="1" aria-label="实机红色测试">红</button><button type="button" data-screen-color="2" aria-label="实机绿色测试">绿</button><button type="button" data-screen-color="3" aria-label="实机蓝色测试">蓝</button><button type="button" data-screen-color="4" aria-label="实机白色测试">白</button><button type="button" data-screen-color="-1" class="secondary">结束测试</button></div><p id="diagScreenState" class="diag-result" role="status">等待测试</p></article>
+ </div></fieldset></section>
+</section>
+<section id="pagesPage" class="pages-page" hidden aria-label="页面管理">
   <div class="settings-heading"><h1>页面管理</h1><p>开启常用页面，按你的习惯排列。</p></div>
   <form id="pagesForm"><fieldset id="pagesFields" disabled><div id="pageList" class="page-list"></div></fieldset></form>
   <div class="pages-note"><span id="pagesState" role="status">连接设备后读取页面设置</span><span>布局预览 · 示例数据</span></div>
@@ -35,7 +76,7 @@
   </section>
   <section class="edit-panel"><div class="section-row"><h2>自定义文本</h2><button id="monResetText" type="button" class="secondary">恢复默认文本</button></div><div class="monitor-display-grid"><div class="field"><label for="monUpLabel">上传标签 · 最多 2 字</label><input id="monUpLabel" maxlength="2" value="↑"></div><div class="field"><label for="monDownLabel">下载标签 · 最多 2 字</label><input id="monDownLabel" maxlength="2" value="↓"></div></div><p class="setting-help">标题最多 6 字；支持常用中文、英文和箭头。无法显示的文字会明确提示并阻止保存。</p><p id="monTextError" class="text-error" role="alert" hidden></p></section>
  </fieldset></form>
- <section class="edit-panel monitor-downloads"><h2>TrafficMonitor 桥接插件</h2><p>适配 TrafficMonitor 1.86 x64 · Tokens Kanban v16</p><div class="download-links"><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v16/TokensKanbanBridge.dll" download>下载桥接插件</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v16/Tokens-Kanban-v16-Windows.zip" download>下载电脑同步程序</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v16/Tokens-Kanban-v16-installation.txt" download>安装说明</a></div><ol><li>下载插件，放入 TrafficMonitor 安装目录的 plugins 文件夹。</li><li>退出并重启 TrafficMonitor，运行同版本电脑同步程序。</li><li>通过 USB 或蓝牙连接 AI Passport。</li></ol><p class="setting-help">插件安装在电脑端，网页不能直接安装。只读取已有数据，不修改 TrafficMonitor 的设置或网卡选择。今日总流量是主程序的今日记录，不是累计流量。</p></section>
+ <section class="edit-panel monitor-downloads"><h2>TrafficMonitor 桥接插件</h2><p>适配 TrafficMonitor 1.86 x64 · Tokens Kanban v17</p><div class="download-links"><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v17/TokensKanbanBridge.dll" download>下载桥接插件</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v17/Tokens-Kanban-v17-Windows.zip" download>下载电脑同步程序</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v17/Tokens-Kanban-v17-installation.txt" download>安装说明</a></div><ol><li>下载插件，放入 TrafficMonitor 安装目录的 plugins 文件夹。</li><li>退出并重启 TrafficMonitor，运行同版本电脑同步程序。</li><li>通过 USB 或蓝牙连接 AI Passport。</li></ol><p class="setting-help">插件安装在电脑端，网页不能直接安装。只读取已有数据，不修改 TrafficMonitor 的设置或网卡选择。今日总流量是主程序的今日记录，不是累计流量。</p></section>
  </div>
 </section>
 <main id="postcardPage" class="workspace" hidden>
@@ -77,5 +118,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=16"></script>
+<script type="module" src="editor.js?v=experience-1"></script>
 </body></html>

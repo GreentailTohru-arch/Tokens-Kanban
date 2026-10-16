@@ -13,6 +13,7 @@
 #include "token_ble.h"
 #include "postcard.h"
 #include "device_runtime.h"
+#include "device_diagnostics.h"
 #include "driver/usb_serial_jtag.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -26,6 +27,7 @@ static key_guard_t s_key_guard;
 static volatile bool s_input_ready;
 static atomic_bool input_overflow;
 static size_t accept_line(const char *line,char *reply,size_t capacity,unsigned transport) {
+    size_t diagnostic=device_diagnostics_line(line,reply,capacity);if(diagnostic)return diagnostic;
     if(!strcmp(line,"PC_SYS_HELLO2"))return snprintf(reply,capacity,"PC_SYS_READY 2\n");
     if(!strcmp(line,"PC_SYS_HELLO"))return snprintf(reply,capacity,"PC_SYS_READY 1\n");
     system_snapshot_t metrics;
@@ -50,7 +52,7 @@ static size_t accept_ble(const char *line,char *reply,size_t capacity) {
 }
 typedef struct { bsp_btn_t key; bsp_btn_ev_t event; } key_event_t;
 static void on_key(bsp_btn_t key,bsp_btn_ev_t event,void *user) {
-    (void)user;
+    (void)user;device_diagnostics_key((unsigned)key,(unsigned)event);
     if(key_guard_consume(&s_key_guard,event==BSP_BTN_RELEASE,esp_timer_get_time())) return;
     if(!s_input_ready) return;
     key_event_t input={key,event};if(xQueueSend(keys,&input,0)!=pdTRUE)atomic_store(&input_overflow,true);
@@ -86,6 +88,7 @@ void app_main(void) {
     s_input_ready=buttons==ESP_OK;
     if(buttons!=ESP_OK) ESP_LOGW("tokens","Buttons unavailable: %s",esp_err_to_name(buttons));
     bool has_battery=bsp_battery_init()==ESP_OK;
+    if(!device_diagnostics_start(has_battery,buttons==ESP_OK))ESP_LOGW("tokens","Diagnostics unavailable");
     if(xTaskCreate(usb_worker,"token_usb",4096,NULL,4,NULL)!=pdPASS) { ESP_LOGE("tokens","USB task unavailable"); return; }
     esp_err_t ble=token_ble_start(accept_ble);
     if(ble!=ESP_OK) ESP_LOGW("tokens","Bluetooth unavailable: %s",esp_err_to_name(ble));
@@ -111,6 +114,7 @@ void app_main(void) {
         while(xQueueReceive(keys,&input,0)==pdTRUE) {
             unsigned key=input.key==BSP_BTN_UP?TOKEN_KEY_UP:input.key==BSP_BTN_DOWN?TOKEN_KEY_DOWN:TOKEN_KEY_OK;
             if(boot_visible || boot_ended)continue;
+            if(input.event==BSP_BTN_PRESS && device_diagnostics_screen_stop())volume_controls_wake(&volume,key);
             if(input.event==BSP_BTN_PRESS && device_runtime_key(now))volume_controls_wake(&volume,key);
             unsigned event=input.event==BSP_BTN_PRESS?VOLUME_PRESS:input.event==BSP_BTN_CLICK?VOLUME_CLICK:
                 input.event==BSP_BTN_DOUBLE?VOLUME_DOUBLE:input.event==BSP_BTN_LONG?VOLUME_LONG:VOLUME_RELEASE;
@@ -131,7 +135,7 @@ void app_main(void) {
             token_ui_system(&metrics,metrics_received && now-metrics_last<15000,&monitor);
             token_ui_update(&current,nav.period,nav.show_cost,received,now-last,battery,nav.page);
             token_ui_volume(volume.visible,volume.value);
-            postcard_update_ui(nav.contact);bsp_lvgl_unlock();
+            postcard_update_ui(nav.contact);int test_screen=device_diagnostics_screen(now);if(test_screen>=0)(void)device_runtime_key(now);token_ui_diagnostic(test_screen);bsp_lvgl_unlock();
         }
         vTaskDelay(pdMS_TO_TICKS(100));
     }

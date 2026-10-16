@@ -4,7 +4,7 @@ from pathlib import Path
 import webbrowser
 from urllib.parse import urlsplit
 
-ASSETS = {'/monitor.js':('monitor.js','text/javascript; charset=utf-8'),'/font-coverage.json':('font-coverage.json','application/json; charset=utf-8'),**{f'/page-{i}.png':(f'page-{i}.png','image/png') for i in range(4)},'/': ('index.html', 'text/html; charset=utf-8'),
+ASSETS = {'/device-info.js':('device-info.js','text/javascript; charset=utf-8'),'/simulator.js':('simulator.js','text/javascript; charset=utf-8'),'/sim-startup.png':('sim-startup.png','image/png'),**{f'/sim-audio/{n}':(f'sim-audio/{n}','audio/wav') for n in ['codex-notification.wav','codex-error.wav','opencode-complete.wav','opencode-error.wav','antigravity-complete.wav','antigravity-error.wav','startup.wav']},'/monitor.js':('monitor.js','text/javascript; charset=utf-8'),'/font-coverage.json':('font-coverage.json','application/json; charset=utf-8'),**{f'/page-{i}.png':(f'page-{i}.png','image/png') for i in range(4)},'/': ('index.html', 'text/html; charset=utf-8'),
           '/editor.js': ('editor.js', 'text/javascript; charset=utf-8'),
           '/codec.js': ('codec.js', 'text/javascript; charset=utf-8'),
           '/style.css': ('style.css', 'text/css; charset=utf-8'),
