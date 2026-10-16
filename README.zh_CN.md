@@ -2,7 +2,7 @@
 
 # Tokens Kanban
 
-[打开明信片编辑器](https://greentailtohru-arch.github.io/Tokens-Kanban/)
+[打开设备管理网页](https://greentailtohru-arch.github.io/Tokens-Kanban/)
 
 在 Chrome／Edge 中通过网页蓝牙或 USB 连接 AI Passport，在小窗中调整头像和二维码构图，
 编辑标题、副标题与联系方式，再保存到设备。需配合兼容的 Passport 固件。
@@ -17,7 +17,21 @@
 
 ## 固件与电脑同步程序
 
-当前 v6 的完整源码位于 [firmware/](firmware/)，包含 BSP、应用、测试与电脑同步程序。
-[下载 Windows 配套程序](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v6)。
+当前 v7 的完整源码位于 [firmware/](firmware/)，包含 BSP、应用、测试与电脑同步程序。
+[下载 Windows 配套程序](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v7)。
 设备可查看 Codex 用量与金额估算、趋势，并展示个人明信片。上下键切换周期，单击确定查看明细或联系方式，双击确定循环三页。
 设备无需配网；获取当前账户额度需要电脑已登录 Codex 并可联网。
+
+## 设备设置（v7）
+
+左侧栏切换“明信片／设置”。先退出电脑同步程序，网页通过 USB 或蓝牙连接后进入设置，
+选择自动熄屏时间、思考结束音效、额度耗尽音效和音量。试听在设备播放，顶部“保存到设备”
+将设置持久保存。网页断开后再启动 v7 电脑同步程序。
+
+熄屏只关闭背光，按任意键唤醒且首次按键不翻页。默认不自动熄屏、轻提示结束音、
+低音额度提醒和 35% 音量，音效可分别关闭。只有新鲜的实际完成事件触发结束提示，
+启动历史、取消和断线不会触发；额度耗尽期只提醒一次。结束提示需要固件与电脑程序均为
+v7。旧固件仍可编辑明信片，设置控件会禁用。设备无需配网。
+
+v7 构建、主机及浏览器模拟测试已通过；新音效、熄屏时间、重启保持及并发运行
+仍需实机验收，v7 尚未烧录。[实现与验证说明](firmware/docs/codex-token-display.zh_CN.md)。

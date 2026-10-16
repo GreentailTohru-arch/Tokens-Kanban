@@ -8,6 +8,7 @@
 #include "token_ui.h"
 #include "token_ble.h"
 #include "postcard.h"
+#include "device_runtime.h"
 #include "driver/usb_serial_jtag.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -20,6 +21,7 @@ static QueueHandle_t snapshots, keys;
 static key_guard_t s_key_guard;
 static volatile bool s_input_ready;
 static size_t accept_line(const char *line,char *reply,size_t capacity,unsigned transport) {
+    size_t managed=device_runtime_line(line,reply,capacity);if(managed)return managed;
     if(!strncmp(line,"PC_",3)) return postcard_line(line,reply,capacity);
     if(!strcmp(line,"CT_HELLO 4")) return snprintf(reply,capacity,"CT_READY 4\n");
     if(!strcmp(line,"CT_HELLO 3")) return snprintf(reply,capacity,"CT_READY 3\n");
@@ -65,6 +67,7 @@ void app_main(void) {
     if(!bsp_lvgl_lock(1000)) return;
     token_ui_create(); bsp_lvgl_unlock(); bsp_display_backlight(75);
     if(!postcard_start()) ESP_LOGW("tokens","Postcard storage unavailable");
+    if(!device_runtime_start()) ESP_LOGW("tokens","Settings/audio worker unavailable");
     key_guard_arm(&s_key_guard,esp_timer_get_time(),10000000);
     esp_err_t buttons=bsp_button_init(on_key,NULL);
     if(buttons==ESP_OK) key_guard_sync_released(&s_key_guard,bsp_button_read_mv()>=BSP_BTN_MV_RELEASED_MIN);
@@ -81,12 +84,14 @@ void app_main(void) {
     uint64_t last=0,next_battery=0; int battery=-1;
     for(;;) {
         uint64_t now=(uint64_t)esp_timer_get_time()/1000;
-        if(xQueueReceive(snapshots,&current,0)==pdTRUE) { received=true; last=now; }
+        bool changed=xQueueReceive(snapshots,&current,0)==pdTRUE;
+        if(changed) { received=true; last=now; }
         key_event_t input;
         while(xQueueReceive(keys,&input,0)==pdTRUE) {
             unsigned key=input.key==BSP_BTN_UP?TOKEN_KEY_UP:input.key==BSP_BTN_DOWN?TOKEN_KEY_DOWN:TOKEN_KEY_OK;
-            token_nav_key(&nav,key,input.event==BSP_BTN_DOUBLE);
+            if(!device_runtime_key(now)) token_nav_key(&nav,key,input.event==BSP_BTN_DOUBLE);
         }
+        device_runtime_tick(now,changed?&current:NULL);
         if(now>=next_battery) { if(has_battery) battery=bsp_battery_soc(); next_battery=now+30000; }
         if(bsp_lvgl_lock(100)) {
             token_ui_update(&current,nav.period,nav.show_cost,received,now-last,battery,nav.page);

@@ -4,12 +4,12 @@ const $=id=>document.getElementById(id);
 const service='9e7a0001-4b51-4a4c-9b50-2f53f077c301';
 const rxId='9e7a0002-4b51-4a4c-9b50-2f53f077c301',txId='9e7a0003-4b51-4a4c-9b50-2f53f077c301';
 const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,zoom:1},qrCrop:{x:.5,y:.5,zoom:1}};
-let back=false,link=null,busy=false,imageLoading=true;
+let back=false,link=null,busy=false,imageLoading=true,activePage='postcard',settingsSupported=false;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let toastTimer;
 function status(text){clearTimeout(toastTimer);$('status').textContent=text;$('status').hidden=!text;if(text)toastTimer=setTimeout(()=>{$('status').hidden=true;},10000);}
 function repaint(){renderFace($('preview'),content,back);$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=locked||!link;$('fields').disabled=locked;$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);}
+function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=locked||!link||(activePage==='settings'&&!settingsSupported);$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
 function updateClock(){const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
@@ -75,7 +75,7 @@ class Connection{
     try{await this.send(new TextEncoder().encode(line+'\n'));return await response;}
     finally{clearTimeout(timer);if(this.pending){this.pending.reject(new Error('发送未完成'));this.pending=null;}}
   }
-  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;controls();status('连接已断开');}}
+  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;settingsSupported=false;$('settingsState').textContent='连接设备后读取设置';controls();status('连接已断开');}}
   async close(){this.lost();}
 }
 class BluetoothConnection extends Connection{
@@ -108,7 +108,7 @@ class SerialConnection extends Connection{
 async function connect(kind){
   busy=true;controls();let candidate=kind==='ble'?new BluetoothConnection():new SerialConnection();
   try{await candidate.open();if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);link=candidate;status(dated?'已连接':'已连接，日期显示需要更新设备固件');
+    const dated=await syncClock(candidate);await readSettings(candidate);link=candidate;status(dated?'已连接':'已连接，日期显示需要更新设备固件');
   }catch(error){await candidate.close();status(error.message);}finally{busy=false;controls();}
 }
 async function stateFor(id,reply){
@@ -143,6 +143,54 @@ async function upload(event){
     const dated=await syncClock(link);status('已保存到设备'+(dated?'':'，日期显示需要更新设备固件'));
   }catch(error){status(error.message);}finally{busy=false;controls();}
 }
+function setPage(page){
+  activePage=page;$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';
+  for(const name of ['postcard','settings']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));}
+  $('upload').setAttribute('form',page==='settings'?'settingsForm':'form');controls();
+}
+function settingsValues(){return ['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));}
+function putSettings(values){
+  const [idle,done,quota,volume]=values;
+  if(!$('idleTime').querySelector(`option[value="${idle}"]`)){const option=new Option(idle+' 秒',String(idle));$('idleTime').add(option);}
+  for(const [i,id] of ['idleTime','doneTone','quotaTone','soundVolume'].entries())$(id).value=values[i];
+  $('soundVolumeValue').textContent=volume+'%';
+}
+async function readSettings(connection){
+  const reply=await connection.rpc('PC_CFG_GET'),parts=reply.split(' ');
+  settingsSupported=parts.length===6&&parts[0]==='PC_CFG'&&parts[1]==='1';
+  if(settingsSupported){const values=parts.slice(2).map(Number);if(values.some(v=>!Number.isInteger(v)))throw new Error('设备设置格式错误');putSettings(values);}
+  $('settingsState').textContent=settingsSupported?'已读取设备设置':'设备固件需更新至 v7 才能使用设置';
+}
+async function saveSettings(event){
+  event.preventDefault();if(!link||busy||!settingsSupported)return;
+  busy=true;controls();
+  try{
+    const values=settingsValues(),id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;
+    let reply=await link.rpc(`PC_CFG_SET ${id} ${values.join(' ')}`),saved=false;
+    for(let i=0;i<100;i++){
+      const parts=reply.split(' ');
+      if(parts[0]!=='PC_CFG_STATE'||Number(parts[1])!==id)throw new Error('设备暂忙，请稍后保存');
+      if(parts[2]==='3')throw new Error('设备保存失败，原设置仍保留');
+      if(parts[2]==='2'){saved=true;break;}
+      await delay(50);reply=await link.rpc('PC_CFG_STATUS');
+    }
+    if(!saved)throw new Error('保存超时，请重新连接');
+    await readSettings(link);
+    if(!settingsSupported||settingsValues().some((v,i)=>v!==values[i]))throw new Error('设置校验不一致，请重新读取');
+    $('settingsState').textContent='设置已保存到设备';status('设置已保存到设备');
+  }catch(error){status(error.message);}finally{busy=false;controls();}
+}
+async function previewTone(field){
+  if(!link||busy||!settingsSupported)return;
+  const tone=Number($(field).value),volume=Number($('soundVolume').value);if(!tone||!volume)return;
+  busy=true;controls();
+  try{const reply=await link.rpc(`PC_SOUND ${tone} ${volume}`);if(reply!=='PC_SOUND_QUEUED')throw new Error('设备暂忙，请稍后试听');status('试听已发送到设备');}
+  catch(error){status(error.message);}finally{busy=false;controls();}
+}
+$('postcardNav').onclick=()=>setPage('postcard');$('settingsNav').onclick=()=>setPage('settings');
+$('settingsForm').addEventListener('submit',saveSettings);
+for(const id of ['idleTime','doneTone','quotaTone','soundVolume'])$(id).addEventListener('input',()=>{$('soundVolumeValue').textContent=$('soundVolume').value+'%';$('settingsState').textContent='有未保存的设置';controls();});
+$('previewDone').onclick=()=>previewTone('doneTone');$('previewQuota').onclick=()=>previewTone('quotaTone');
 for(const field of ['title','subtitle','name'])$(field).addEventListener('input',e=>{content[field]=e.target.value;repaint();});
 for(const field of ['photo','qr'])$(field).addEventListener('change',async e=>{
   const file=e.target.files[0];e.target.value='';if(!file||busy||imageLoading){restoreFile(field);return;}

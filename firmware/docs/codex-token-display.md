@@ -5,7 +5,7 @@
 An independent 240 × 320 dashboard for AI Passport. The dark slate background,
 mint tabs and cyan quota bars follow the supplied visual reference. The firmware
 uses the existing display, button and battery BSP; it has no demo-menu route,
-Wi-Fi credentials, cloud key, audio playback, or automatic flashing operation.
+Wi-Fi credentials, cloud key, or automatic flashing operation. Optional notification tones use the audio BSP.
 
 ## Controls and data
 
@@ -344,7 +344,7 @@ through `tests/postcard_codec_probe.c`. These are not physical radio/QR tests.
 ## v4 device acceptance (2026-10-16)
 
 With the user's explicit upload approval, merged image `29cb512c9b7aa68e20c9d623e581e517ddec323c07bde2ba8f1bf688c3011537` was written
-at 0x0 to COM9 (ESP32-C3, MAC [test-device]); flash hash verification passed.
+at 0x0 to COM9 (ESP32-C3, MAC [device address omitted]); flash hash verification passed.
 No full-chip erase or firmware rebuild was performed. Targeted application-header
 readback matched embedded ELF `8782c66ff3...`; early boot ELF logs were not captured.
 Captured application startup had no panic or storage-start failure. USB and BLE CT4
@@ -428,7 +428,7 @@ Build/host/deployment results and exact firmware identities accompany v6. No una
 ## v6 device acceptance (2026-10-16)
 
 After the user's explicit flash approval, verified merged image `75c08d1a7d2332eeec46ba86d4857445d055ba0bf722d5aecf8aa31ed21731e2` was written
-at 0x0 to COM9, ESP32-C3, MAC [test-device]. Write hash verification passed, with
+at 0x0 to COM9, ESP32-C3, MAC [device address omitted]. Write hash verification passed, with
 no rebuild or full-chip erase. Targeted application-header readback matched ELF
 `05e9c232e98b98978a0d1fa8663af09416e1410f11b2fd38f63334054f0ec385`; early startup ELF log lines were not captured.
 USB CT4 handshake, real usage ACK, PC_CLOCK date/time ACK and postcard worker response passed.
@@ -454,3 +454,39 @@ Unverified: real browser USB/BLE permission and full upload, physical power loss
 of the new card after reboot, long-run stability/clock drift, radio range, runtime heap/stack,
 battery accuracy and uninterrupted serial observation. This card upload used desktop USB,
 not the browser workflow.
+
+## v7 device manager (2026-10-16)
+
+The same hosted website now has a left sidebar with Postcard and Settings. Connect over
+USB or BLE after stopping the desktop sync program. Select Settings to read the device's
+current values, choose an idle timeout and separate completion/quota tones, adjust volume,
+and click Save to device. Preview sends a short tone to the device without changing saved
+settings. Disconnect the web manager before resuming the v7 desktop companion.
+
+The default timeout is Never; choices run from 30 seconds to one hour. Only backlight turns
+off: statistics, BLE/USB and audio continue. Any key wakes the display and consumes that
+first key action. Saving settings or previewing a tone also wakes it. Incoming statistics do
+not keep the screen awake. Settings live in NVS; commit failure retains the old values.
+The default completion tone is Light, quota tone is Low, and volume is 35%. Each tone can
+be disabled and volume zero mutes both. Saved settings survive normal reboot.
+
+The v7 companion emits an anonymous completion sequence only for a fresh explicit
+`task_complete` log event. Startup history, cancelled turns, expired events and duplicate
+fork history do not sound; reconnect retries keep the same ID for firmware deduplication.
+Completions in the same five-second poll are coalesced. Quota audio fires once on a fresh
+transition to exhausted (or first observed exhaustion), and re-arms after known recovery.
+Unknown or stale quota does not clear the latch or create a new alarm. Quota reset times
+already at zero are not treated as exhaustion. No message text or credentials cross the link.
+
+Firmware commands: PC_CFG_GET, PC_CFG_SET id idle done quota volume, PC_CFG_STATUS,
+PC_SOUND tone volume, PC_EVT host sequence 1. Tone IDs: 0 Off, 1 Light, 2 Soft double,
+3 Low alert; timeout 0 or 15..3600 seconds; volume 0..100. Saves and audio execute on a
+bounded worker queue outside LVGL/button callbacks. A queued preview is not proof of
+physical playback. Older firmware retains postcard support and shows Settings unavailable;
+completion audio requires both v7 firmware and companion. The three device pages stay intact.
+
+Host tests cover timers, wake consumption, stale quota, retry deduplication, numeric overflow,
+queue pressure, NVS failure preservation, audio sample bounds, and simulated USB/BLE browser
+save/readback. Build and hardware results are reported with the v7 delivery. No v7 firmware
+is flashed without new user approval; physical sound quality, idle timing and concurrent
+audio/radio/flash behavior remain hardware checks.

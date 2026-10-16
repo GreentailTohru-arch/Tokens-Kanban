@@ -14,6 +14,7 @@ import zxingcpp
 
 MOCK=r'''
 window.testCard={offset:0,data:[],saved:false};
+window.testConfig={values:[0,1,3,35],state:0,id:0,sounds:[]};
 Object.defineProperty(navigator,'serial',{value:{requestPort:async()=>{
  let feed,buffer='',id=0,checksum=0;
  const card=window.testCard;
@@ -23,6 +24,10 @@ Object.defineProperty(navigator,'serial',{value:{requestPort:async()=>{
    if(v[0]==='PC_HELLO')reply='PC_READY 1';
    if(v[0]==='PC_TIME')reply='PC_TIME_OK';
    if(v[0]==='PC_CLOCK'){card.clock=+v[1];reply=window.legacyClock?'PC_INVALID':'PC_CLOCK_OK';}
+   if(v[0]==='PC_CFG_GET'&&!window.legacySettings)reply='PC_CFG 1 '+window.testConfig.values.join(' ');
+   if(v[0]==='PC_CFG_SET'){const c=window.testConfig;c.id=+v[1];c.state=window.failConfig?3:2;if(!window.failConfig)c.values=v.slice(2).map(Number);reply=`PC_CFG_STATE ${c.id} 1`;}
+   if(v[0]==='PC_CFG_STATUS'){const c=window.testConfig;reply=`PC_CFG_STATE ${c.id} ${c.state}`;}
+   if(v[0]==='PC_SOUND'){window.testConfig.sounds.push(v.slice(1).map(Number));reply='PC_SOUND_QUEUED';}
    if(v[0]==='PC_BEGIN'){id=+v[1];checksum=+v[2];card.offset=0;card.data=[];reply=`PC_STATE ${id} 2 0`;}
    if(v[0]==='PC_DATA'){
     if(+v[1]!==id||+v[2]!==card.offset)throw Error('Bad sequence');
@@ -74,7 +79,7 @@ def main():
         expect(page.locator('#subtitle')).to_have_value('副标题')
         expect(page.locator('#name')).to_have_value('扫码QR Code')
         assert page.locator('.toolbar button').all_text_contents()==['搜索蓝牙设备','连接 USB','断开','保存到设备']
-        assert page.locator('h1').count()==0
+        assert page.locator('h1:visible').count()==0
         assert page.locator('#status').is_hidden()
         page.screenshot(path=str(out/'browser-default.png'),full_page=True)
         page.locator('#frontTab').click()
@@ -144,6 +149,21 @@ def main():
         page.clock.run_for(1000)
         page.screenshot(path=str(out/'browser-editor.png'),full_page=True)
         page.locator('#usb').click();page.wait_for_function("document.getElementById('connection').textContent.includes('已连接')")
+        page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_enabled()
+        expect(page.locator('#settingsState')).to_have_text('已读取设备设置')
+        page.locator('#idleTime').select_option('60');page.locator('#doneTone').select_option('2');page.locator('#quotaTone').select_option('3');page.locator('#soundVolume').fill('45')
+        page.locator('#previewDone').click();expect(page.locator('#status')).to_contain_text('试听已发送')
+        assert page.evaluate('window.testConfig.sounds')==[[2,45]]
+        page.locator('#previewQuota').click();page.wait_for_function('window.testConfig.sounds.length===2')
+        page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
+        assert page.evaluate('window.testConfig.values')==[60,2,3,45]
+        page.screenshot(path=str(out/'browser-settings.png'),full_page=True)
+        page.evaluate('window.failConfig=true');page.locator('#idleTime').select_option('120')
+        page.locator('#upload').click();expect(page.locator('#status')).to_contain_text('原设置仍保留')
+        assert page.evaluate('window.testConfig.values')==[60,2,3,45]
+        page.locator('#disconnect').click();expect(page.locator('#idleTime')).to_be_disabled()
+        page.evaluate('window.failConfig=false');page.locator('#usb').click();expect(page.locator('#idleTime')).to_have_value('60')
+        page.locator('#postcardNav').click()
         page.locator('#upload').click();page.wait_for_function('window.testCard.saved',timeout=60000)
         page.wait_for_function("document.getElementById('status').textContent.startsWith('已保存到设备')")
         raw=bytes(page.evaluate('window.testCard.data'));assert len(raw)==253440
@@ -164,16 +184,26 @@ def main():
         page.locator('#backTab').click();page.screenshot(path=str(out/'browser-contact.png'),full_page=True)
         page.locator('#disconnect').click();page.wait_for_function("document.getElementById('connection').textContent==='未连接'")
         page.locator('#ble').click();page.wait_for_function("document.getElementById('connection').textContent.includes('蓝牙')")
+        page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_have_value('60')
+        page.locator('#idleTime').select_option('300');page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
+        assert page.evaluate('window.testConfig.values')[0]==300
+        page.locator('#postcardNav').click()
         page.evaluate('window.testCard.saved=false')
         page.locator('#upload').click();page.wait_for_function('window.testCard.saved',timeout=60000)
         page.wait_for_function("document.getElementById('status').textContent.startsWith('已保存到设备')")
         assert bytes(page.evaluate('window.testCard.data'))==raw
         page.locator('#disconnect').click();page.wait_for_function("document.getElementById('connection').textContent==='未连接'")
-        page.evaluate('window.legacyClock=true')
+        page.evaluate('window.legacyClock=true;window.legacySettings=true')
         page.locator('#usb').click();expect(page.locator('#status')).to_contain_text('需要更新设备固件')
+        page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_disabled();expect(page.locator('#upload')).to_be_disabled()
+        expect(page.locator('#settingsState')).to_contain_text('更新至 v7')
+        page.locator('#postcardNav').click();expect(page.locator('#upload')).to_be_enabled()
         page.locator('#disconnect').click()
         page.set_viewport_size({'width':390,'height':844});page.screenshot(path=str(out/'browser-mobile.png'),full_page=True)
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+        page.locator('#settingsNav').click();page.screenshot(path=str(out/'browser-mobile-settings.png'),full_page=True)
+        assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+        page.locator('#postcardNav').click()
         page.locator('#qrEdit').click();expect(page.locator('#cropDialog')).to_be_visible()
         box=page.locator('#cropDialog').bounding_box();assert 0<=box['x'] and box['x']+box['width']<=390
         page.screenshot(path=str(out/'browser-mobile-crop.png'))

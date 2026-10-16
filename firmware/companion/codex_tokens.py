@@ -14,6 +14,7 @@ import threading
 import time
 from token_pricing import PRICE_DATE, request_nano_usd
 from token_analytics import summarize
+from token_events import CompletionTracker,supports_events
 
 MAX_VALUE = 10**15
 CREATE_FLAGS = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
@@ -38,7 +39,7 @@ class UsageIndex:
                 state = self.files.get(path)
                 if state is None or stat.st_size < state['offset'] or (stat.st_size == state['size'] and stat.st_mtime_ns != state['mtime']):
                     state = dict(offset=0, previous=None, records=[], size=-1, mtime=-1,
-                                 active=None, turns={}, readable=True, model=None)
+                                 active=None, turns={}, completions={}, readable=True, model=None)
                     self.files[path] = state
                 state['readable'] = True
                 if stat.st_size == state['size'] and stat.st_mtime_ns == state['mtime']:
@@ -111,10 +112,19 @@ class UsageIndex:
             state['active']=turn; state['turns'][turn]=(2,stamp)
         elif kind in ('task_complete','turn_aborted'):
             turn=turn or state['active']
-            if isinstance(turn,str): state['turns'][turn]=(1,stamp)
+            if isinstance(turn,str):
+                state['turns'][turn]=(1,stamp)
+                if kind=='task_complete':state['completions'][turn]=stamp
             if turn==state['active']: state['active']=None
         elif state['active']:
             state['turns'][state['active']]=(2,stamp)
+
+    def completions(self):
+        result=set()
+        for path,state in self.files.items():
+            if state['readable'] and 'archived_sessions' not in path.relative_to(self.home).parts:
+                result.update(state['completions'].items())
+        return result
 
     def activity(self, now=None):
         """0 unknown; 1 idle; 2 active. Stale unfinished turns are not idle."""
@@ -373,8 +383,8 @@ def main():
         for device in asyncio.run(discover()): print(device.address,device.name or 'Codex Passport')
         return
     if args.port and args.transport=='ble': parser.error('--port cannot be used with --transport ble')
-    index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0
-    print('Codex Token Display v5 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends. Ctrl+C to exit.',flush=True)
+    index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False
+    print('Codex Token Display v7 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)
@@ -385,7 +395,7 @@ def main():
                 'frame':encode_frame(1,totals,values,index.activity(),index.costs(),index.analytics()).decode().strip()},ensure_ascii=False)); return
         last_status=''
         while True:
-            index.refresh(); sequence+=1
+            index.refresh(); events.observe(index.completions()); sequence+=1
             now=dt.datetime.now().astimezone()
             frame=encode_frame(sequence,index.totals(now),quota.values(),index.activity(),index.costs(now),index.analytics(now))
             try:
@@ -399,9 +409,13 @@ def main():
                     else:
                         from token_ble import BLEConnection
                         connection=BLEConnection.open(args.ble_address)
+                    can_notify=supports_events(connection)
                 send_snapshot(connection,frame,sequence)
                 # Same local wall clock as the history calendar; not persisted across power loss.
-                connection.write(f'PC_CLOCK {int(now.replace(tzinfo=dt.timezone.utc).timestamp())}\n'.encode())
+                from token_events import rpc as device_rpc
+                device_rpc(connection,f'PC_CLOCK {int(now.replace(tzinfo=dt.timezone.utc).timestamp())}')
+                if can_notify:events.send(connection)
+                else:events.pending=None
                 status='Connected: '+connection.port+' | syncing every 5 seconds'
             except OSError as error:
                 if connection: connection.close(); connection=None
