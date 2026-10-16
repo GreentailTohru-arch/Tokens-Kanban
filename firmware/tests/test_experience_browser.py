@@ -1,4 +1,5 @@
 """Virtual device controls; local mock peripheral only, never opens a real device."""
+from browser_navigation import navigate
 from pathlib import Path
 import sys,runpy,threading,json,hashlib
 from http.server import ThreadingHTTPServer
@@ -44,23 +45,23 @@ def main():
         b=page.locator('#simPower').bounding_box();page.mouse.move(b['x']+b['width']/2,b['y']+b['height']/2);page.mouse.down();page.clock.run_for(2100);page.mouse.up();expect(screen).to_have_attribute('data-on','false');page.locator('#simDown').click();expect(screen).to_have_attribute('data-period','0')
         page.mouse.move(b['x']+b['width']/2,b['y']+b['height']/2);page.mouse.down();page.clock.run_for(600);page.mouse.up();page.clock.run_for(3100);expect(screen).to_have_attribute('data-on','true')
         # Mock real settings read changes simulator draft values, while simulated changes never write.
-        page.locator('#usb').click();page.locator('#settingsNav').click();expect(page.locator('#settingsFields')).to_be_enabled()
+        page.locator('#usb').click();navigate(page,'settingsNav');expect(page.locator('#settingsFields')).to_be_enabled()
         page.locator('#idleTime').select_option('30');page.locator('#soundVolume').fill('70');page.locator('#doneTone').select_option('4');page.locator('#quotaTone').select_option('7');page.locator('#startupSound').uncheck()
-        page.locator('#experienceNav').click();expect(screen).to_have_attribute('data-volume','70')
+        navigate(page,'experienceNav');expect(screen).to_have_attribute('data-volume','70')
         page.clock.run_for(30100);expect(screen).to_have_attribute('data-awake','false')
         page.locator('#simDown').click();expect(screen).to_have_attribute('data-awake','true');expect(screen).to_have_attribute('data-volume','70');expect(screen).to_have_attribute('data-period','0')
         page.clock.run_for(500);page.locator('#simDevice').focus();page.keyboard.press('ArrowDown');expect(screen).to_have_attribute('data-period','1')
         assert page.evaluate('window.testConfig.values')==[0,1,3,35] and page.evaluate('window.testConfig.sounds')==[]
         # Saved page order and unsaved module/postcard drafts are shared with the simulator.
         page.evaluate('window.testPages=[12,3,2,1,0]');page.locator('#disconnect').click();page.locator('#usb').click()
-        page.locator('#postcardNav').click();page.locator('#title').fill('春夏秋冬');page.locator('#subtitle').fill('把日常带在身边')
-        page.locator('#experienceNav').click();page.locator('#simReset').click();expect(screen).to_have_attribute('data-page','3')
+        navigate(page,'postcardNav');page.locator('#title').fill('春夏秋冬');page.locator('#subtitle').fill('把日常带在身边')
+        navigate(page,'experienceNav');page.locator('#simReset').click();expect(screen).to_have_attribute('data-page','3')
         page.locator('#simOk').click();page.clock.run_for(400);expect(screen).to_have_attribute('data-contact','true')
         page.screenshot(path=str(out/'experience-postcard-contact.png'),full_page=True)
         page.locator('#simOk').dblclick(delay=80);expect(screen).to_have_attribute('data-page','2')
-        before=screen.evaluate('(c)=>c.toDataURL()');page.locator('#monitorNav').click();page.locator('#monReset').click()
+        before=screen.evaluate('(c)=>c.toDataURL()');navigate(page,'monitorNav');page.locator('#monReset').click()
         for i in range(1,7):page.get_by_role('switch',name=f'第{i}张卡片开启',exact=True).uncheck()
-        page.locator('#experienceNav').click();after=screen.evaluate('(c)=>c.toDataURL()');assert after!=before
+        navigate(page,'experienceNav');after=screen.evaluate('(c)=>c.toDataURL()');assert after!=before
         page.locator('#simOk').dblclick(delay=80);expect(screen).to_have_attribute('data-page','3')
         assert page.evaluate('window.testCard.saved') is False and page.evaluate('window.testConfig.sounds')==[]
         # Supplied recordings really decode in the browser. No generated oscillator/tone.

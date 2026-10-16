@@ -903,3 +903,9 @@ on pagehide. Pure simulator actions and previews do not mark settings dirty.
 Keep screen on (not recommended) is always the last screen-off option, including
 when a nonstandard saved timeout is inserted. This is a website change; firmware
 and published v18 binaries are unchanged.
+
+The top toolbar always stays on one row. On narrow screens, connection/save actions
+show labeled icons, with the full action name available on hover or to assistive
+technology. The top-left menu button toggles the six-page side panel. On phones,
+the panel overlays content and closes after selection, Escape, or tapping outside;
+keyboard focus stays within navigation while open. Opening it does not edit settings.

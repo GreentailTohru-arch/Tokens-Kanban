@@ -116,3 +116,5 @@ downloads remain in Releases. Real brightness, GIF playback, physical USB migrat
 and power-loss preservation remain unverified because v18 has not been flashed.
 
 Desktop notifications share the connection toolbar row; mobile notices slide down from the screen top. Long desktop messages are ellipsized with full text on hover. Normal/success messages are green and errors red. A Save Changes summary tracks configuration drafts; closing/reloading warns only while unsaved. Canceling departure keeps Bluetooth connected. Native browser exit dialogs cannot save to the device: stay, then use Save Changes. Keep screen on (not recommended) is the last screen-off option. Firmware and the v18 release binaries are unchanged.
+
+The toolbar always stays on one row, switching action labels to accessible icons on narrow screens. Its top-left menu toggles a six-page side panel. Mobile navigation closes on selection, Escape or an outside tap, with keyboard focus kept in the open panel.

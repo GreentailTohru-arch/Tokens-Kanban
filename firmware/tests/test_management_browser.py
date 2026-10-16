@@ -1,4 +1,5 @@
 """v18 management, actual image decoding, mocked peripheral and USB flasher boundary tests."""
+from browser_navigation import navigate
 from pathlib import Path
 import sys,json,threading,runpy,hashlib,struct
 from http.server import ThreadingHTTPServer
@@ -30,16 +31,16 @@ def main():
  server=ThreadingHTTPServer(('127.0.0.1',0),Handler);threading.Thread(target=server.serve_forever,daemon=True).start()
  with sync_playwright() as p:
   browser=p.chromium.launch(executable_path=sys.argv[2],headless=True);page=browser.new_page(viewport={'width':1280,'height':1000});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock);page.goto(f'http://127.0.0.1:{server.server_port}/')
-  page.locator('#usb').click();page.wait_for_timeout(300);print({'startupErrors':errors,'status':page.locator('#status').inner_text()},flush=True);page.locator('#settingsNav').click();expect(page.locator('#brightness')).to_be_enabled();expect(page.locator('#brightness')).to_have_value('75');assert page.locator('#idleTime option[value="0"]').inner_text()=='保持常亮（不建议）'
+  page.locator('#usb').click();page.wait_for_timeout(300);print({'startupErrors':errors,'status':page.locator('#status').inner_text()},flush=True);navigate(page,'settingsNav');expect(page.locator('#brightness')).to_be_enabled();expect(page.locator('#brightness')).to_have_value('75');assert page.locator('#idleTime option[value="0"]').inner_text()=='保持常亮（不建议）'
   page.locator('#brightness').fill('40');page.locator('#idleTime').select_option('0');page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备');assert page.evaluate('window.deviceBrightness')==40
   page.locator('#disconnect').click();page.locator('#ble').click();expect(page.locator('#brightness')).to_have_value('40')
-  page.locator('#monitorNav').click();page.locator('#bridgeHelp').click();expect(page.locator('#bridgeDialog')).to_be_visible();assert page.locator('#bridgeDialog li').count()==3;page.locator('#bridgeClose').click();expect(page.locator('#bridgeDialog')).to_be_hidden();assert page.get_by_role('link',name='下载电脑同步程序',exact=True).count()==0
-  page.locator('#settingsNav').click();page.locator('#logoFile').set_input_files(out/'motion.gif');expect(page.locator('#logoDialog')).to_be_visible();page.locator('#logoZoom').fill('1.4');page.locator('#logoZoom').dispatch_event('input');page.locator('#logoApply').click();expect(page.locator('#logoDialog')).to_be_hidden(timeout=15000);expect(page.locator('#logoState')).to_contain_text('6帧');page.locator('#logoSave').click();expect(page.locator('#logoState')).to_contain_text('下次启动显示',timeout=20000)
+  navigate(page,'monitorNav');page.locator('#bridgeHelp').click();expect(page.locator('#bridgeDialog')).to_be_visible();assert page.locator('#bridgeDialog li').count()==3;page.locator('#bridgeClose').click();expect(page.locator('#bridgeDialog')).to_be_hidden();assert page.get_by_role('link',name='下载电脑同步程序',exact=True).count()==0
+  navigate(page,'settingsNav');page.locator('#logoFile').set_input_files(out/'motion.gif');expect(page.locator('#logoDialog')).to_be_visible();page.locator('#logoZoom').fill('1.4');page.locator('#logoZoom').dispatch_event('input');page.locator('#logoApply').click();expect(page.locator('#logoDialog')).to_be_hidden(timeout=15000);expect(page.locator('#logoState')).to_contain_text('6帧');page.locator('#logoSave').click();expect(page.locator('#logoState')).to_contain_text('下次启动显示',timeout=20000)
   data=bytes(page.evaluate('window.logoBytes'));assert data[:4]==b'TLG1' and len(data)%2==0;side,count=struct.unpack_from('<HH',data,4);assert side==96 and count==6;(out/'uploaded-logo.tlg').write_bytes(data)
   # Cancel framing leaves the successfully prepared/saved image intact.
   before=page.locator('#logoPreview').evaluate('(c)=>c.toDataURL()');page.locator('#logoFile').set_input_files(out/'still.png');page.locator('#logoCancel').click();expect(page.locator('#logoSave')).to_be_disabled()
   page.locator('#logoDefault').click();page.locator('#logoSave').click();expect(page.locator('#logoState')).to_contain_text('已恢复原默认');assert page.evaluate('window.logoBytes.length')==0
-  page.locator('#aboutNav').click();expect(page.locator('#aboutDeviceVersion')).to_have_text('设备固件 v18');expect(page.locator('#upload')).to_be_disabled()
+  navigate(page,'aboutNav');expect(page.locator('#aboutDeviceVersion')).to_have_text('设备固件 v18');expect(page.locator('#upload')).to_be_disabled()
   checks=page.evaluate('''async()=>{
    const {validateUpdate,digest,verifyApplication,flashUpdate}=await import('./about.js');
    const bytes=new Uint8Array(65536);bytes[0]=233;bytes[12]=5;const table=new Uint8Array(3072).fill(255),old=new Uint8Array(3072).fill(7),tableHash=await digest(table),oldHash=await digest(old);
@@ -61,11 +62,11 @@ def main():
    if enabled:expect(page.locator('#installUpdate')).to_be_enabled()
    else:expect(page.locator('#installUpdate')).to_be_disabled()
   page.evaluate('scrollTo(0,0)');page.wait_for_timeout(300);page.screenshot(path=str(out/'about-desktop.png'),full_page=True)
-  page.locator('#settingsNav').click();page.evaluate('scrollTo(0,0)');page.wait_for_timeout(200);page.screenshot(path=str(out/'settings-desktop.png'),full_page=True)
+  navigate(page,'settingsNav');page.evaluate('scrollTo(0,0)');page.wait_for_timeout(200);page.screenshot(path=str(out/'settings-desktop.png'),full_page=True)
   for width in [390,320]:
    page.set_viewport_size({'width':width,'height':844})
    for tab in ['experience','pages','monitor','postcard','settings','about']:
-    page.locator('#'+tab+'Nav').click();assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,tab)
+    navigate(page,tab+'Nav');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,tab)
    page.evaluate('scrollTo(0,0)');page.wait_for_timeout(200);page.screenshot(path=str(out/f'about-mobile-{width}.png'))
   assert not errors,errors;result={'brightnessSaveReconnect':'PASS','neverScreenOff':'PASS','bridgeDialogAndLinks':'PASS','actualGIFDecodeCropEncode':'PASS','logoUploadDefaultCancel':'PASS','aboutVersionAndGitHubCheck':'PASS','downloadCORSFallbackAndFileValidation':'PASS','mobileSixPages':'PASS','flasherSimulation':checks,'physicalUSBInstall':'NOT RUN'};(out/'management-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
  server.shutdown()

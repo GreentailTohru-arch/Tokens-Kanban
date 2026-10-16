@@ -2,6 +2,7 @@
 Run with output directory, C codec probe path, and installed Chromium executable.
 Uses a simulated serial peripheral; never searches for or opens real devices.
 """
+from browser_navigation import navigate
 from pathlib import Path
 import sys,threading,subprocess,json
 from http.server import ThreadingHTTPServer
@@ -90,10 +91,10 @@ def main():
         expect(page.locator('#subtitle')).to_have_value('副标题')
         expect(page.locator('#name')).to_have_value('扫码QR Code')
         assert page.locator('.toolbar button').all_text_contents()==['搜索蓝牙设备','连接 USB','断开','保存到设备']
-        expect(page.locator('#experiencePage')).to_be_visible();page.locator('#pagesNav').click();expect(page.locator('#pagesPage')).to_be_visible();assert page.locator('.page-card').count()==4
+        expect(page.locator('#experiencePage')).to_be_visible();navigate(page,'pagesNav');expect(page.locator('#pagesPage')).to_be_visible();assert page.locator('.page-card').count()==4
         assert page.locator('.sidebar nav button').all_text_contents()==['体验模拟','页面管理','系统检测','明信片','设置','关于']
         page.screenshot(path=str(out/'browser-pages-default.png'),full_page=True)
-        page.locator('#postcardNav').click()
+        navigate(page,'postcardNav')
         assert page.locator('h1:visible').count()==0
         assert page.locator('#status').is_hidden()
         page.screenshot(path=str(out/'browser-default.png'),full_page=True)
@@ -164,7 +165,7 @@ def main():
         page.clock.run_for(1000)
         page.screenshot(path=str(out/'browser-editor.png'),full_page=True)
         page.locator('#usb').click();page.wait_for_function("document.getElementById('connection').textContent.includes('已连接')")
-        page.locator('#pagesNav').click();expect(page.locator('#pagesFields')).to_be_enabled()
+        navigate(page,'pagesNav');expect(page.locator('#pagesFields')).to_be_enabled()
         expect(page.locator('#pagesState')).to_have_text('已读取设备页面设置')
         # Disable three pages, prevent disabling the final one, reorder, and save.
         for name in ['用量首页','统计分析','明信片']:page.get_by_role('switch',name=name,exact=True).uncheck()
@@ -178,7 +179,7 @@ def main():
         assert page.evaluate('window.testPages')==[4,2,0,1,3]
         page.evaluate('window.failPages=false')
         page.screenshot(path=str(out/'browser-pages-edited.png'),full_page=True)
-        page.locator('#monitorNav').click();expect(page.locator('#monitorState')).to_have_text('已读取设备检测配置')
+        navigate(page,'monitorNav');expect(page.locator('#monitorState')).to_have_text('已读取设备检测配置')
         expect(page.locator('#upload')).to_be_enabled()
         assert page.locator('.monitor-card').count()==6
         page.locator('#monAdd').click();expect(page.locator('#status')).to_contain_text('最多六张')
@@ -207,8 +208,8 @@ def main():
         page.locator('#upload').click();expect(page.locator('#monitorState')).to_have_text('检测设置已保存到设备')
         saved_monitor=page.evaluate('Array.from(window.testMonitor)');assert saved_monitor[:8]==[1,1,2,1,0,1,2,1]
         assert page.evaluate('window.testPages')==[4,2,0,1,3]
-        page.locator('#pagesNav').click();assert page.locator('.page-card[data-page="2"] img').get_attribute('src').startswith('data:image/png')
-        page.locator('#monitorNav').click();page.screenshot(path=str(out/'browser-monitor-edited.png'),full_page=True)
+        navigate(page,'pagesNav');assert page.locator('.page-card[data-page="2"] img').get_attribute('src').startswith('data:image/png')
+        navigate(page,'monitorNav');page.screenshot(path=str(out/'browser-monitor-edited.png'),full_page=True)
         page.evaluate('window.failMonitor=true');page.locator('#monReset').click();page.locator('#upload').click()
         expect(page.locator('#status')).to_contain_text('原检测设置仍保留');assert page.evaluate('Array.from(window.testMonitor)')==saved_monitor
         page.evaluate('window.failMonitor=false')
@@ -220,7 +221,7 @@ def main():
         assert page.get_by_role('link',name='下载 TrafficMonitor',exact=True).get_attribute('href')=='https://github.com/zhongyang219/TrafficMonitor/releases/tag/V1.86'
         assert page.get_by_role('link',name='下载电脑同步程序',exact=True).count()==0
         assert page.locator('#settingsPage .download-links').count()==0
-        page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_enabled()
+        navigate(page,'settingsNav');expect(page.locator('#idleTime')).to_be_enabled()
         expect(page.locator('#settingsState')).to_have_text('已读取设备设置')
         expect(page.locator('#startupSound')).to_be_enabled();expect(page.locator('#startupSound')).to_be_checked()
         page.locator('#startupSound').uncheck()
@@ -239,7 +240,7 @@ def main():
         assert page.evaluate('window.testConfig.values')==[60,4,7,45]
         page.locator('#disconnect').click();expect(page.locator('#idleTime')).to_be_disabled()
         page.evaluate('window.failConfig=false');page.locator('#usb').click();expect(page.locator('#idleTime')).to_have_value('60');expect(page.locator('#startupSound')).not_to_be_checked()
-        page.locator('#postcardNav').click()
+        navigate(page,'postcardNav')
         page.locator('#upload').click();page.wait_for_function('window.testCard.saved',timeout=60000)
         page.wait_for_function("document.getElementById('status').textContent.startsWith('已保存到设备')")
         raw=bytes(page.evaluate('window.testCard.data'));assert len(raw)==253440
@@ -260,29 +261,29 @@ def main():
         page.locator('#backTab').click();page.screenshot(path=str(out/'browser-contact.png'),full_page=True)
         page.locator('#disconnect').click();page.wait_for_function("document.getElementById('connection').textContent==='未连接'")
         page.locator('#ble').click();page.wait_for_function("document.getElementById('connection').textContent.includes('蓝牙')")
-        page.locator('#pagesNav').click();expect(page.get_by_role('switch',name='系统检测',exact=True)).to_be_disabled()
+        navigate(page,'pagesNav');expect(page.get_by_role('switch',name='系统检测',exact=True)).to_be_disabled()
         assert page.locator('.page-card').evaluate_all('(els)=>els.map(e=>+e.dataset.page)')==[2,0,1,3]
         page.get_by_role('switch',name='用量首页',exact=True).check();page.get_by_role('switch',name='统计分析',exact=True).check();page.get_by_role('switch',name='明信片',exact=True).check()
         page.locator('#upload').click();expect(page.locator('#pagesState')).to_have_text('页面设置已保存到设备')
         assert page.evaluate('window.testPages')==[15,2,0,1,3]
-        page.locator('#monitorNav').click();expect(page.locator('#monBits')).to_have_value('1')
+        navigate(page,'monitorNav');expect(page.locator('#monBits')).to_have_value('1')
         page.locator('#monShowUnit').uncheck();page.locator('#upload').click();expect(page.locator('#monitorState')).to_have_text('检测设置已保存到设备')
         assert page.evaluate('window.testMonitor[3]')==0
-        page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_have_value('60')
+        navigate(page,'settingsNav');expect(page.locator('#idleTime')).to_have_value('60')
         page.locator('#startupSound').check();page.locator('#idleTime').select_option('300');page.locator('#doneTone').select_option('6');page.locator('#quotaTone').select_option('5')
         page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
         assert page.evaluate('window.testConfig.values')[0]==300
         assert page.evaluate('window.testConfig.startup')==1
-        page.locator('#postcardNav').click()
+        navigate(page,'postcardNav')
         page.evaluate('window.testCard.saved=false')
         page.locator('#upload').click();page.wait_for_function('window.testCard.saved',timeout=60000)
         page.wait_for_function("document.getElementById('status').textContent.startsWith('已保存到设备')")
         assert bytes(page.evaluate('window.testCard.data'))==raw
         page.locator('#disconnect').click();page.wait_for_function("document.getElementById('connection').textContent==='未连接'")
         page.evaluate('window.legacyMonitor=true;window.legacyPages=true;window.legacyStartup=true;window.legacyBanks=true;window.testConfig.values=[300,2,2,45]')
-        page.locator('#usb').click();page.locator('#settingsNav').click()
-        page.locator('#pagesNav').click();expect(page.locator('#pagesFields')).to_have_attribute('disabled','');expect(page.get_by_role('switch',name='系统检测',exact=True)).to_be_disabled();expect(page.locator('#upload')).to_be_disabled();expect(page.locator('#pagesState')).to_contain_text('升级 v13');page.locator('#settingsNav').click()
-        page.locator('#monitorNav').click();expect(page.locator('#upload')).to_be_disabled();expect(page.locator('#monitorState')).to_contain_text('连接 v15');page.locator('#settingsNav').click()
+        page.locator('#usb').click();navigate(page,'settingsNav')
+        navigate(page,'pagesNav');expect(page.locator('#pagesFields')).to_have_attribute('disabled','');expect(page.get_by_role('switch',name='系统检测',exact=True)).to_be_disabled();expect(page.locator('#upload')).to_be_disabled();expect(page.locator('#pagesState')).to_contain_text('升级 v13');navigate(page,'settingsNav')
+        navigate(page,'monitorNav');expect(page.locator('#upload')).to_be_disabled();expect(page.locator('#monitorState')).to_contain_text('连接 v15');navigate(page,'settingsNav')
         expect(page.locator('#doneTone')).to_have_value('1');expect(page.locator('#quotaTone')).to_have_value('3')
         expect(page.locator('#startupSound')).to_be_disabled();expect(page.locator('#startupHint')).to_contain_text('升级 v10')
         expect(page.locator('#settingsState')).to_contain_text('旧版音效已改为 Codex')
@@ -290,20 +291,20 @@ def main():
         assert page.locator('#quotaTone option[value="7"]').evaluate('(o)=>o.disabled')
         page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
         assert page.evaluate('window.testConfig.values')==[300,1,3,45]
-        page.locator('#disconnect').click();page.locator('#postcardNav').click()
+        page.locator('#disconnect').click();navigate(page,'postcardNav')
         page.evaluate('window.legacyClock=true;window.legacySettings=true')
         page.locator('#usb').click();expect(page.locator('#status')).to_contain_text('需要更新设备固件')
-        page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_disabled();expect(page.locator('#upload')).to_be_disabled()
+        navigate(page,'settingsNav');expect(page.locator('#idleTime')).to_be_disabled();expect(page.locator('#upload')).to_be_disabled()
         expect(page.locator('#settingsState')).to_contain_text('更新至 v7')
-        page.locator('#postcardNav').click();expect(page.locator('#upload')).to_be_enabled()
+        navigate(page,'postcardNav');expect(page.locator('#upload')).to_be_enabled()
         page.locator('#disconnect').click()
         page.set_viewport_size({'width':390,'height':844});page.screenshot(path=str(out/'browser-mobile.png'),full_page=True)
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-        page.locator('#pagesNav').click();page.screenshot(path=str(out/'browser-mobile-pages.png'),full_page=True);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-        page.locator('#monitorNav').click();page.screenshot(path=str(out/'browser-mobile-monitor.png'),full_page=True);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-        page.locator('#settingsNav').click();page.screenshot(path=str(out/'browser-mobile-settings.png'),full_page=True)
+        navigate(page,'pagesNav');page.screenshot(path=str(out/'browser-mobile-pages.png'),full_page=True);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+        navigate(page,'monitorNav');page.screenshot(path=str(out/'browser-mobile-monitor.png'),full_page=True);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+        navigate(page,'settingsNav');page.screenshot(path=str(out/'browser-mobile-settings.png'),full_page=True)
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-        page.locator('#postcardNav').click()
+        navigate(page,'postcardNav')
         page.locator('#qrEdit').click();expect(page.locator('#cropDialog')).to_be_visible()
         box=page.locator('#cropDialog').bounding_box();assert 0<=box['x'] and box['x']+box['width']<=390
         page.screenshot(path=str(out/'browser-mobile-crop.png'))

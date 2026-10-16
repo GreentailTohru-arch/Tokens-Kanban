@@ -1,4 +1,5 @@
 """Draft tracking and close protection with simulated peripherals; no real device access."""
+from browser_navigation import navigate
 from pathlib import Path
 import sys,runpy,threading,json
 from http.server import ThreadingHTTPServer
@@ -29,7 +30,7 @@ def main():
   for width in [1564,1280,1024,800,761]:
    page.set_viewport_size({'width':width,'height':960});desktop_row();assert page.locator('.topbar').bounding_box()['height']==baseline_height
   page.set_viewport_size({'width':1280,'height':960})
-  page.locator('#settingsNav').click();assert page.locator('#idleTime option').last.inner_text()=='保持常亮（不建议）';assert page.locator('#idleTime option').last.get_attribute('value')=='0'
+  navigate(page,'settingsNav');assert page.locator('#idleTime option').last.inner_text()=='保持常亮（不建议）';assert page.locator('#idleTime option').last.get_attribute('value')=='0'
   original=page.locator('#soundVolume').input_value();page.locator('#soundVolume').fill('70');assert guarded();expect(page.locator('#draftNotice')).to_be_visible();page.locator('#soundVolume').fill(original);assert not guarded();expect(page.locator('#draftNotice')).to_be_hidden()
   page.locator('#soundVolume').fill('70');page.evaluate('window.failConfig=true');page.locator('#upload').click();expect(page.locator('#status')).to_have_attribute('data-kind','error');red=page.locator('#status').evaluate('(e)=>getComputedStyle(e).backgroundColor');assert red!=green and guarded();desktop_row();page.screenshot(path=str(out/'error-desktop.png'))
   # Stress long feedback and simultaneous unsaved controls without adding a desktop row.
@@ -46,8 +47,8 @@ def main():
    page.locator('#status').evaluate('(e,t)=>e.textContent=t',actual_text);page.wait_for_timeout(300);page.screenshot(path=str(out/f'notice-mobile-{width}.png'))
   page.emulate_media(reduced_motion='reduce');assert page.locator('#status').evaluate('(e)=>getComputedStyle(e).animationName')=='none';page.emulate_media(reduced_motion='no-preference');page.set_viewport_size({'width':1280,'height':960})
   page.evaluate('window.failConfig=false');page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备');assert not guarded();expect(page.locator('#status')).to_have_attribute('data-kind','success')
-  page.locator('#pagesNav').click();page.get_by_role('switch',name='统计分析',exact=True).uncheck();assert guarded();page.locator('#monitorNav').click();page.locator('#monUpLabel').fill('U');page.locator('#monUpLabel').dispatch_event('input');assert guarded()
-  page.locator('#experienceNav').click();page.locator('#deviceName').fill('我的设备');page.locator('#postcardNav').click();original_title=page.locator('#title').input_value();page.locator('#title').fill('新的标题');assert guarded()
+  navigate(page,'pagesNav');page.get_by_role('switch',name='统计分析',exact=True).uncheck();assert guarded();navigate(page,'monitorNav');page.locator('#monUpLabel').fill('U');page.locator('#monUpLabel').dispatch_event('input');assert guarded()
+  navigate(page,'experienceNav');page.locator('#deviceName').fill('我的设备');navigate(page,'postcardNav');original_title=page.locator('#title').input_value();page.locator('#title').fill('新的标题');assert guarded()
   # Canceling a real browser close/reload prompt must retain the Bluetooth connection.
   dialogs=[]
   def cancel(d):dialogs.append(d.type);d.dismiss()
@@ -57,13 +58,13 @@ def main():
   assert dialogs==['beforeunload'];expect(page.locator('#connection')).to_have_text('蓝牙已连接');expect(page.locator('#title')).to_have_value('新的标题')
   page.locator('#saveAll').click();expect(page.locator('#draftNotice')).to_be_hidden(timeout=30000);assert not guarded();expect(page.locator('#status')).to_contain_text('全部修改已保存')
   assert page.evaluate('window.deviceName')=='我的设备';assert page.evaluate('window.testCard.saved') is True
-  page.locator('#settingsNav').click();page.locator('#logoFile').set_input_files(repo/'assets/images/startup-preview.png');expect(page.locator('#logoDialog')).to_be_visible();assert guarded();page.locator('#logoCancel').click();assert not guarded()
+  navigate(page,'settingsNav');page.locator('#logoFile').set_input_files(repo/'assets/images/startup-preview.png');expect(page.locator('#logoDialog')).to_be_visible();assert guarded();page.locator('#logoCancel').click();assert not guarded()
   page.locator('#logoFile').set_input_files(repo/'assets/images/startup-preview.png');page.locator('#logoApply').click();expect(page.locator('#logoDialog')).to_be_hidden();assert guarded();page.locator('#saveAll').click();expect(page.locator('#draftNotice')).to_be_hidden();assert not guarded()
   page.locator('#logoDefault').click();assert guarded();page.locator('#logoSave').click();expect(page.locator('#logoState')).to_contain_text('已恢复原默认');assert not guarded();page.locator('#logoDefault').click();assert not guarded()
   # Simulation controls and previews never count as configuration edits.
-  page.locator('#experienceNav').click();page.locator('#simOk').click();page.wait_for_timeout(350);assert not guarded()
+  navigate(page,'experienceNav');page.locator('#simOk').click();page.wait_for_timeout(350);assert not guarded()
   for width in [390,320]:
-   page.set_viewport_size({'width':width,'height':844});page.locator('#postcardNav').click();page.locator('#title').fill('手机未保存');page.evaluate('scrollTo(0,900)');page.wait_for_timeout(250);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');box=page.locator('#draftNotice').bounding_box();assert box['y']>=0 and box['y']+box['height']<844;page.screenshot(path=str(out/f'unsaved-mobile-{width}.png'));page.locator('#title').fill('新的标题');assert not guarded()
+   page.set_viewport_size({'width':width,'height':844});navigate(page,'postcardNav');page.locator('#title').fill('手机未保存');page.evaluate('scrollTo(0,900)');page.wait_for_timeout(250);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');box=page.locator('#draftNotice').bounding_box();assert box['y']>=0 and box['y']+box['height']<844;page.screenshot(path=str(out/f'unsaved-mobile-{width}.png'));page.locator('#title').fill('新的标题');assert not guarded()
   # A completely saved page reloads without any close prompt.
   page.reload();expect(page.locator('#fields')).to_be_enabled();assert not guarded();assert not errors,errors
   result={'topGreenAndRedNotices':'PASS','desktopSingleRow761to1564':'PASS','mobileTopSlideAndStableToolbar':'PASS','longMessageAndReducedMotion':'PASS','savedAndUnchangedNoPrompt':'PASS','failedSaveKeepsGuard':'PASS','allSixDraftSections':'PASS','realBeforeUnloadCancelKeepsBLE':'PASS','saveAllAndConfirmedReadback':'PASS','logoCancelDefaultAndSave':'PASS','simulatorIgnored':'PASS','alwaysOnLast':'PASS','mobile320390':'PASS','deviceAccess':'mock only'};(out/'notice-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()

@@ -4,23 +4,24 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AI Passport 明信片与设备管理">
   <title>Tokens Kanban · 设备管理</title>
-  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=notices-2">
-<link rel="stylesheet" href="manage.css?v=notices-2">
+  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=navigation-1">
+<link rel="stylesheet" href="manage.css?v=navigation-1">
 </head>
 <body>
 <header class="topbar">
+  <button id="menuToggle" type="button" class="secondary menu-toggle" aria-label="打开页面导航" aria-controls="pageSidebar" aria-expanded="false" title="打开页面导航"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   <nav class="toolbar" aria-label="设备连接与保存">
-    <button id="ble" type="button" class="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg>搜索蓝牙设备</button>
-    <button id="usb" type="button" class="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V3m-3 3 3-3 3 3M12 15l-5-4V7m5 11 5-4v-4"/><circle cx="7" cy="6" r="1"/><path d="M16 7h2v2h-2z"/></svg>连接 USB</button>
-    <button id="disconnect" type="button" class="secondary" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12M4 8l12 12M3 3l18 18M6 11l-2 2a4 4 0 0 0 6 6l2-2M12 7l2-2a4 4 0 0 1 6 6l-2 2"/></svg>断开</button>
-    <button id="upload" form="form" type="submit" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg>保存到设备</button>
+    <button id="ble" type="button" class="secondary" aria-label="搜索蓝牙设备" title="搜索蓝牙设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg><span class="button-label">搜索蓝牙设备</span></button>
+    <button id="usb" type="button" class="secondary" aria-label="连接 USB" title="连接 USB"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V3m-3 3 3-3 3 3M12 15l-5-4V7m5 11 5-4v-4"/><circle cx="7" cy="6" r="1"/><path d="M16 7h2v2h-2z"/></svg><span class="button-label">连接 USB</span></button>
+    <button id="disconnect" type="button" class="secondary" disabled aria-label="断开" title="断开"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12M4 8l12 12M3 3l18 18M6 11l-2 2a4 4 0 0 0 6 6l2-2M12 7l2-2a4 4 0 0 1 6 6l-2 2"/></svg><span class="button-label">断开</span></button>
+    <button id="upload" form="form" type="submit" disabled aria-label="保存到设备" title="保存到设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg><span class="button-label">保存到设备</span></button>
   </nav>
   <span id="connection" class="connection" role="status">未连接</span>
   <progress id="progress" max="100" value="0" hidden aria-label="保存进度"></progress>
-<p id="status" class="toast" role="status" hidden></p><div id="draftNotice" class="draft-notice" hidden><span id="draftSummary"></span><button id="saveAll" type="button" class="secondary">保存修改</button></div>
+<p id="status" class="toast" role="status" hidden></p><div id="draftNotice" class="draft-notice" hidden><span id="draftSummary"></span><button id="saveAll" type="button" class="secondary" aria-label="保存全部修改" title="保存全部修改"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg><span class="button-label">保存修改</span></button></div>
 </header>
 <div class="app-shell">
-<aside class="sidebar"><nav aria-label="管理页面"><button id="experienceNav" class="nav-item" type="button" aria-controls="experiencePage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="4"/><path d="m10 8 5 4-5 4Z"/></svg>体验模拟</button><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="monitorNav" class="nav-item" type="button" aria-controls="monitorPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 11h3l2-4 3 7 2-3h2"/></svg>系统检测</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button><button id="aboutNav" class="nav-item" type="button" aria-controls="aboutPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v2"/></svg>关于</button></nav></aside>
+<button id="sidebarBackdrop" type="button" class="sidebar-backdrop" aria-label="关闭页面导航" tabindex="-1" hidden></button><aside id="pageSidebar" class="sidebar" inert><nav aria-label="管理页面"><button id="experienceNav" class="nav-item" type="button" aria-controls="experiencePage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="4"/><path d="m10 8 5 4-5 4Z"/></svg>体验模拟</button><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="monitorNav" class="nav-item" type="button" aria-controls="monitorPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 11h3l2-4 3 7 2-3h2"/></svg>系统检测</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button><button id="aboutNav" class="nav-item" type="button" aria-controls="aboutPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v2"/></svg>关于</button></nav></aside><div id="pageContent">
 <section id="experiencePage" class="experience-page" aria-label="体验模拟">
  <div class="experience-heading settings-heading"><div><h1>体验模拟</h1><p>先按一按，再带在身边。</p></div><button id="simReset" type="button" class="secondary">重新体验</button></div>
  <div class="experience-layout">
@@ -113,7 +114,7 @@
       <p class="setting-help">提示音在设备上播放；思考结束提示需要新版电脑同步程序。</p>
     </section>
   </fieldset></form>    <section class="edit-panel logo-settings"><h2>开机 Logo</h2><p id="logoState" class="setting-help">保留原默认图，可导入静态图或 GIF。</p><canvas id="logoPreview" width="240" height="320" aria-label="开机 Logo 预览"></canvas><div class="logo-actions"><label class="file-button" for="logoFile">导入图片 / GIF</label><input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button id="logoReframe" type="button" class="secondary" disabled>取景</button><button id="logoDefault" type="button" class="secondary">恢复默认</button><button id="logoSave" type="button" disabled>保存开机 Logo</button></div><progress id="logoProgress" max="100" value="0" hidden></progress></section><p class="settings-footnote">显示与声音使用顶部“保存到设备”；Logo 单独保存，下次开机显示。</p>
-</section><section id="aboutPage" class="about-page" hidden aria-label="关于 Tokens Kanban"></section></div>
+</section><section id="aboutPage" class="about-page" hidden aria-label="关于 Tokens Kanban"></section></div></div>
 <dialog id="bridgeDialog" aria-labelledby="bridgeTitle"><div class="crop-heading"><h2 id="bridgeTitle">安装桥接插件</h2><button id="bridgeClose" type="button" class="close-crop" aria-label="关闭安装说明">×</button></div><ol class="simple-steps"><li>将插件放入 TrafficMonitor 的 <code>plugins</code> 文件夹。</li><li>退出并重新启动 TrafficMonitor。</li><li>运行电脑同步程序，通过 USB 或蓝牙连接设备。</li></ol><p class="setting-help">插件安装在电脑端；网页不会安装插件或改动网卡设置。</p></dialog>
 
 <dialog id="cropDialog" aria-labelledby="cropTitle" aria-describedby="cropHint">
@@ -122,5 +123,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=notices-2"></script>
+<script type="module" src="editor.js?v=navigation-1"></script>
 </body></html>
