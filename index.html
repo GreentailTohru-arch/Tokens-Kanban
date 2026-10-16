@@ -18,8 +18,14 @@
   <progress id="progress" max="100" value="0" hidden aria-label="保存进度"></progress>
 </header>
 <div class="app-shell">
-<aside class="sidebar"><nav aria-label="管理页面"><button id="postcardNav" class="nav-item selected" type="button" aria-controls="postcardPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button></nav></aside>
-<main id="postcardPage" class="workspace">
+<aside class="sidebar"><nav aria-label="管理页面"><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button></nav></aside>
+<section id="pagesPage" class="pages-page" aria-label="页面管理">
+  <div class="settings-heading"><h1>页面管理</h1><p>开启常用页面，按你的习惯排列。</p></div>
+  <form id="pagesForm"><fieldset id="pagesFields" disabled><div id="pageList" class="page-list"></div></fieldset></form>
+  <div class="pages-note"><span id="pagesState" role="status">连接设备后读取页面设置</span><span>布局预览 · 示例数据</span></div>
+  <p class="settings-footnote">至少保留一个页面。保存后，双击设备确定键按此顺序切换。</p>
+</section>
+<main id="postcardPage" class="workspace" hidden>
   <section class="preview-panel" aria-label="设备预览">
     <div class="device"><div class="clock"><span id="time">00:00</span><span id="date"></span></div><canvas id="preview" width="240" height="264" aria-label="明信片屏幕预览"></canvas><div class="marks"><i></i><i></i><i class="active"></i></div></div>
     <div class="segmented"><button id="frontTab" class="selected" type="button">明信片</button><button id="backTab" type="button">联系方式</button></div>

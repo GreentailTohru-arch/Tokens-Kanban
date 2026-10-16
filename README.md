@@ -55,3 +55,15 @@ See the accompanying license and retained notices. The default avatar is origina
 MIT-licensed artwork.
 
 The startup-sound switch requires v10 firmware and is disabled on older firmware. It is enabled by default, follows device volume and does not replay on a normal screen wake. Save to device retains the choice.
+
+## Page management preview
+
+The web manager now opens with four device-page previews, switches and order
+controls. At least one page stays enabled. Saving these options requires the
+newer page-management firmware (v13 or later); older firmware retains its existing
+postcard and settings controls. Previews contain illustrative data.
+
+The matching development update includes a six-panel System Monitor page fed by
+TrafficMonitor 1.86 x64 through a read-only bridge, plus quick volume controls.
+Network directions use arrows; hold Up/Down to open the minimal progress bar.
+These additions are not part of the older v9 release linked above.
