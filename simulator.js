@@ -9,7 +9,7 @@ export class ExperienceModel {
   reset(config,now){this.config=config;this.on=true;this.awake=true;this.page=this.enabled()[0];this.period=0;this.details=false;this.contact=false;this.volume=config.volume;this.baseVolume=config.volume;this.overlay=false;this.held=null;this.pendingOK=null;this.quietUntil=0;this.okUntil=0;this.bootUntil=0;this.lastAction=now;this.lastVolume=now;this.preview=false;this.running=false;this.exhausted=false;}
   sync(config){if(config.volume!==this.baseVolume){this.baseVolume=config.volume;this.volume=config.volume;}this.config=config;if(!this.enabled().includes(this.page))this.page=this.enabled()[0];}
   cancel(){this.held=null;this.pendingOK=null;}
-  power(now){this.cancel();this.overlay=false;this.on=!this.on;this.awake=this.on;this.lastAction=now;if(this.on){this.page=this.enabled()[0];this.period=0;this.details=this.contact=false;this.bootUntil=now+(this.config.startup&&this.volume?3000:1200);}}
+  power(now){this.cancel();this.overlay=false;this.on=!this.on;this.awake=this.on;this.lastAction=now;if(this.on){this.page=this.enabled()[0];this.period=0;this.details=this.contact=false;this.bootUntil=now+Math.max(this.config.startup&&this.volume?3000:1200,Math.min(6000,this.config.bootDuration||0));}}
   adjust(key,now){const old=this.volume;this.volume=Math.max(0,Math.min(100,this.volume+(key==='up'?5:-5)));this.lastVolume=this.lastAction=now;this.preview ||=old!==this.volume;}
   press(key,now){
     if(!this.on||now<this.bootUntil||this.held)return;
@@ -103,7 +103,7 @@ export class ExperienceSimulator {
     $('simTask').disabled=$('simQuota').disabled=!m.on;$('simTask').textContent=m.running?'结束思考':'开始思考';$('simQuota').textContent=m.exhausted?'恢复额度':'额度耗尽';$('simPower').setAttribute('aria-pressed',String(m.on));
     const state=!m.on?'已关机':!m.awake?'已熄屏':`${names[m.page]}${m.page<2?' · '+periods[m.period]:''} · 音量 ${m.volume}%`;if($('simState').textContent!==state)$('simState').textContent=state;
     if(!m.on||!m.awake){c.fillStyle='#050b10';c.fillRect(0,0,240,320);return;}
-    if(performance.now()<m.bootUntil){c.fillStyle='#000';c.fillRect(0,0,240,320);if(this.images.startup.complete&&this.images.startup.naturalWidth)c.drawImage(this.images.startup,0,0,240,320);return;}
+    if(performance.now()<m.bootUntil){c.fillStyle='#000';c.fillRect(0,0,240,320);if(m.config.drawBoot)m.config.drawBoot(c);else if(this.images.startup.complete&&this.images.startup.naturalWidth)c.drawImage(this.images.startup,0,0,240,320);return;}
     if(m.page===0)this.home();if(m.page===1)this.analytics();if(m.page===2){c.drawImage($('monitorPreview'),0,0);c.fillStyle=bg;c.fillRect(0,0,240,38);this.header(true);}
     if(m.page===3){renderFace(this.face,m.config.content,m.contact);c.drawImage(this.face,0,38);this.header(true);c.fillStyle=bg;c.fillRect(70,0,170,38);const now=new Date();this.text(`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`,222,14,14,ink,'right');}
     this.marks();

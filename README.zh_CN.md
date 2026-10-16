@@ -3,14 +3,14 @@
 # Tokens Kanban
 
 [设备管理网页](https://greentailtohru-arch.github.io/Tokens-Kanban/) ·
-[Tokens Kanban v17 下载](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v17)
+[Tokens Kanban v18 下载](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v18)
 
 在 AI Passport 查看 Codex 用量、额度、模型活动与趋势，配置电脑系统检测卡片，或展示
 个人明信片。金额按 API 单价估算，不是订阅扣款；统计仅含可读取的本机 Codex 历史。
 
 ## 开始使用
 
-1. Windows 安装并登录 Codex，完整解压 v17 Windows 包。系统检测需将
+1. Windows 安装并登录 Codex，完整解压 v18 Windows 包。系统检测需将
    TokensKanbanBridge.dll 放入 TrafficMonitor 1.86 x64 的 plugins 文件夹，然后重启
    主程序一次。插件安装在电脑端，网页不能直接安装，不改主程序设置和网卡选择。
 2. USB 连接后运行 start-auto.cmd；蓝牙运行 start-bluetooth.cmd，等待 Connected。
@@ -37,11 +37,11 @@
 
 ## 验证与源码
 
-v17 完整构建及归档、主机模型、原生 LVGL 字体／排版／五色覆盖、网页 USB／BLE 模拟、
+v18 完整构建及归档、主机模型、原生 LVGL 字体／排版／五色覆盖、网页 USB／BLE 模拟、
 打包程序资源、用户录音解码和 320／390 像素手机布局检查通过。真实 TrafficMonitor
-验证沿用 v15/v16 的同一 DLL 结果，本次没有重启主程序。v17 尚未刷入，新设备遥测、
+验证沿用 v15/v16 的同一 DLL 结果，本次没有重启主程序。v18 尚未刷入，新设备遥测、
 麦克风／扬声器／屏幕测试、名称断电保留及长期无线待验证。用户已确认 v16 日期、卡片、
-音量操作及重启保留，但这些结果不代替 v17 新接口实机验收。
+音量操作及重启保留，但这些结果不代替 v18 新接口实机验收。
 
 [完整源码](firmware/)与[应用说明](firmware/docs/codex-token-display.zh_CN.md)保留
 原 BSP 和提供的录音。Release 含从 0x0 刷写的完整固件、插件、电脑程序、源码 ZIP、
@@ -60,7 +60,7 @@ BSP 来自 [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport)，保留
 关闭、约半秒启动，右侧上／下／确定支持鼠标、触屏及聚焦后的键盘。可体验当前网页草稿
 的页面顺序、卡片、明信片、声音、熄屏与音量；明确标注示例数据，模拟操作不写入设备。
 
-连接配套 v17 后，下方独立看板读取 AI Passport 自身信息。默认管理名称为
+连接配套 v18 后，下方独立看板读取 AI Passport 自身信息。默认管理名称为
 `You's AI Passport`，最多 32 个 UTF-8 字节，单独保存，不修改蓝牙广播名。CPU 占用／
 频率、可分配内部内存堆、Flash／分区、电量／电压及运行时间来自设备。500mAh 是产品
 额定容量，不是实测剩余容量；内存堆不代表全部 SRAM，分区分配量不代表已用文件容量。
@@ -69,3 +69,21 @@ BSP 来自 [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport)，保留
 功能测试仅点击后执行：电量计、约 0.4 秒麦克风幅度、所选用户提示音、物理按键观察及
 五色屏幕。麦克风不保留录音；屏幕约 15 秒或任意实物键退出，退出键不翻页。扬声器需
 听感确认，音量零保持静音。旧固件禁用名称保存和这些新测试，原有编辑功能继续可用。
+
+## 显示、开机图片与更新
+
+设置增加5～100%亮度与熄屏“永不”，亮度独立保留，唤醒恢复保存值。开机Logo支持静态图
+和GIF、小窗取景、动画草稿预览、独立保存及恢复默认；原默认图不变。GIF需ImageDecoder，
+输入有尺寸／帧数上限，最多取前6秒并适配设备存储。重连只读取已存元数据，不下载自定义
+图像，网页明确区分本地预览和设备图像。
+
+关于页将实际设备固件版本与网页版本分开显示。从项目GitHub检查正式版并验证清单，安装
+小窗只支持USB，核对型号、已知分区及SHA256并读回；浏览器CORS阻止自动下载时，按链接
+从GitHub下载应用BIN并在同一小窗选择。只有“选择USB并安装”才开始写入。完整BIN按钮
+下载独立的0x0合并镜像。
+
+v18从原来未使用的应用容量中划出独立Logo双槽，NVS／PHY／明信片位置和容量不变。升级
+需匹配应用以及必要的新分区表；v16/v17仅更新应用而未迁移时不能提供Logo存储。网页安装
+只写这两个校验后的区域，不全片擦除，未知分区写入前停止。插件区改为TrafficMonitor链接
+和简短说明小窗，电脑程序仍在Release下载。v18尚未刷入，实际亮度／GIF播放、物理USB迁移
+与断电保留仍待验证。
