@@ -60,7 +60,7 @@
  .topbar .toolbar button{width:36px;height:36px;padding:9px}
  .topbar .connection{margin-left:auto;font-size:11px;gap:6px}
  .draft-notice button{padding:9px;font-size:11px}
- .app-shell.sidebar-open{padding-left:0}
+ .app-shell,.app-shell.sidebar-open{padding-left:0;transition:none}
  .sidebar{width:min(280px,82vw);padding:20px 16px;box-shadow:16px 0 40px #0004}
  body.drawer-open{overflow:hidden}
 }
