@@ -43,8 +43,8 @@
   <form id="settingsForm"><fieldset id="settingsFields" disabled>
     <section class="edit-panel"><h2>显示</h2><div class="field"><label for="idleTime">自动熄屏</label><select id="idleTime"><option value="0">保持常亮</option><option value="30">30 秒</option><option value="60">1 分钟</option><option value="120">2 分钟</option><option value="300">5 分钟</option><option value="600">10 分钟</option><option value="1800">30 分钟</option><option value="3600">1 小时</option></select><p class="setting-help">熄屏后继续同步，按任意键唤醒。</p></div></section>
     <section class="edit-panel"><h2>提示音</h2>
-      <div class="field"><label for="doneTone">思考结束</label><div class="sound-row"><select id="doneTone"><option value="0">关闭</option><option value="1" selected>轻提示</option><option value="2">柔和双音</option><option value="3">低音提醒</option></select><button id="previewDone" type="button" class="secondary">试听</button></div></div>
-      <div class="field"><label for="quotaTone">额度耗尽</label><div class="sound-row"><select id="quotaTone"><option value="0">关闭</option><option value="1">轻提示</option><option value="2">柔和双音</option><option value="3" selected>低音提醒</option></select><button id="previewQuota" type="button" class="secondary">试听</button></div></div>
+      <div class="field"><label for="doneTone">思考结束</label><div class="sound-row"><select id="doneTone"><option value="0">关闭</option><option value="1" selected>完成提示音</option><option value="2">柔和双音</option><option value="3">额度提示音</option></select><button id="previewDone" type="button" class="secondary">试听</button></div></div>
+      <div class="field"><label for="quotaTone">额度耗尽</label><div class="sound-row"><select id="quotaTone"><option value="0">关闭</option><option value="1">完成提示音</option><option value="2">柔和双音</option><option value="3" selected>额度提示音</option></select><button id="previewQuota" type="button" class="secondary">试听</button></div></div>
       <div class="field"><label for="soundVolume">音量 <output id="soundVolumeValue" for="soundVolume">35%</output></label><input id="soundVolume" type="range" min="0" max="100" step="5" value="35"></div>
       <p class="setting-help">提示音在设备上播放；思考结束提示需要新版电脑同步程序。</p>
     </section>
