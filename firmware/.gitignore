@@ -1,0 +1,15 @@
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+
+# Generated repository-local links; canonical skill sources live in skills/.
+/.agents/skills/passport-develop
+/.agents/skills/passport-setup
+/.agents/skills/passport-build
+/.agents/skills/passport-device-test
+/.agents/skills/passport-debug

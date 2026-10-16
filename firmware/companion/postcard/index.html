@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AI Passport 明信片编辑器">
+  <title>Tokens Kanban · 明信片</title>
+  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <nav class="toolbar" aria-label="设备连接与保存">
+    <button id="ble" type="button" class="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg>搜索蓝牙设备</button>
+    <button id="usb" type="button" class="secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V3m-3 3 3-3 3 3M12 15l-5-4V7m5 11 5-4v-4"/><circle cx="7" cy="6" r="1"/><path d="M16 7h2v2h-2z"/></svg>连接 USB</button>
+    <button id="disconnect" type="button" class="secondary" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12M4 8l12 12M3 3l18 18M6 11l-2 2a4 4 0 0 0 6 6l2-2M12 7l2-2a4 4 0 0 1 6 6l-2 2"/></svg>断开</button>
+    <button id="upload" form="form" type="submit" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg>保存到设备</button>
+  </nav>
+  <span id="connection" class="connection" role="status">未连接</span>
+  <progress id="progress" max="100" value="0" hidden aria-label="保存进度"></progress>
+</header>
+<main class="workspace">
+  <section class="preview-panel" aria-label="设备预览">
+    <div class="device"><div class="clock"><span id="time">00:00</span><span id="date"></span></div><canvas id="preview" width="240" height="264" aria-label="明信片屏幕预览"></canvas><div class="marks"><i></i><i></i><i class="active"></i></div></div>
+    <div class="segmented"><button id="frontTab" class="selected" type="button">明信片</button><button id="backTab" type="button">联系方式</button></div>
+  </section>
+  <form id="form">
+    <fieldset id="fields">
+      <section class="edit-panel" aria-label="明信片内容">
+        <div class="field image-field"><label for="photo">头像</label><input id="photo" type="file" accept="image/png,image/jpeg,image/webp"><button id="photoEdit" type="button" class="secondary edit-crop">调整取景</button></div>
+        <div class="field"><label for="title">标题</label><input id="title" maxlength="32" value="标题" autocomplete="off"></div>
+        <div class="field"><label for="subtitle">副标题</label><textarea id="subtitle" maxlength="60" rows="2">副标题</textarea></div>
+      </section>
+      <section class="edit-panel" aria-label="联系方式内容">
+        <div class="field image-field"><label for="qr">联系二维码</label><input id="qr" type="file" accept="image/png,image/jpeg,image/webp"><button id="qrEdit" type="button" class="secondary edit-crop">调整取景</button></div>
+        <div class="field"><label for="name">联系方式</label><input id="name" maxlength="32" value="扫码QR Code" autocomplete="off"></div>
+      </section>
+    </fieldset>
+  </form>
+</main>
+<p id="status" class="toast" role="status" hidden></p>
+<dialog id="cropDialog" aria-labelledby="cropTitle" aria-describedby="cropHint">
+  <div class="crop-heading"><h2 id="cropTitle">头像取景</h2><button id="cancelCrop" type="button" class="close-crop" aria-label="取消取景">×</button></div>
+  <p id="cropHint" class="hint"></p><canvas id="crop" width="240" height="240" tabindex="0" aria-label="正方形取景区域：拖动或用方向键移动画面"></canvas>
+  <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
+  <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
+</dialog>
+<script type="module" src="editor.js"></script>
+</body></html>

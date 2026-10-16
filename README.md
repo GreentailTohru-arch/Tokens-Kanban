@@ -14,3 +14,11 @@ until a successful save. Uploaded images are never committed or sent to GitHub b
 
 The hardware application uses the BSP from [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport).
 Code is distributed under the accompanying MIT license. The default generic avatar is original MIT-licensed vector artwork; `default-avatar.svg` is its source.
+
+## Firmware and desktop companion
+
+The current v6 complete source is in [firmware/](firmware/), including the BSP, application, tests and
+computer sync program. [Download the Windows companion](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v6).
+This turns Passport into a live Codex usage dashboard with token/cost views, trends and a personal postcard.
+Use Up/Down to switch periods, single OK for details/contact, and double OK to cycle the three pages.
+The device needs no Wi-Fi setup; current account quotas require the signed-in computer to be online.
