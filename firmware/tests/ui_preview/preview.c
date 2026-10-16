@@ -39,6 +39,12 @@ static void check_labels(lv_obj_t *obj) {
     }
     for(uint32_t i=0;i<lv_obj_get_child_count(obj);++i) check_labels(lv_obj_get_child(obj,i));
 }
+static unsigned count_visible_text(lv_obj_t *obj,const char *text) {
+    if(lv_obj_has_flag(obj,LV_OBJ_FLAG_HIDDEN))return 0;
+    unsigned n=lv_obj_check_type(obj,&lv_label_class)&&!strcmp(lv_label_get_text(obj),text);
+    for(uint32_t i=0;i<lv_obj_get_child_count(obj);++i)n+=count_visible_text(lv_obj_get_child(obj,i),text);
+    return n;
+}
 int main(void) {
     lv_init();lv_display_t *display=lv_display_create(240,320);
     lv_display_set_color_format(display,LV_COLOR_FORMAT_RGB565);
@@ -124,7 +130,12 @@ int main(void) {
         token_ui_system(&metrics,true,&monitor);lv_refr_now(NULL);check_labels(lv_screen_active());
     }
     monitor=monitor_default();metrics=(system_snapshot_t){.v={1,8,8,64,570,510,9910,1000,3380,12,1073741824,2147483648}};
-    token_ui_system(&metrics,true,&monitor);save("system-configurable.ppm");
+    token_ui_system(&metrics,true,&monitor);
+    token_ui_postcard_clock(0,false,false);assert(count_visible_text(lv_screen_active(),"00:00")==1);
+    token_ui_postcard_clock(86399,false,false);assert(count_visible_text(lv_screen_active(),"23:59")==1);
+    token_ui_postcard_clock(86400,false,false);assert(count_visible_text(lv_screen_active(),"00:00")==1);
+    token_ui_postcard_clock(9*3600+41*60,false,false);assert(count_visible_text(lv_screen_active(),"09:41")==1);
+    save("system-configurable.ppm");
     for(unsigned page=0;page<PAGE_COUNT;++page) {
         token_ui_pages(&pages,page);token_ui_update(&s,0,false,true,0,86,page);
         lv_refr_now(NULL);unsigned char underlay[sizeof(framebuffer)];memcpy(underlay,framebuffer,sizeof(underlay));

@@ -2,6 +2,7 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import webbrowser
+from urllib.parse import urlsplit
 
 ASSETS = {'/monitor.js':('monitor.js','text/javascript; charset=utf-8'),'/font-coverage.json':('font-coverage.json','application/json; charset=utf-8'),**{f'/page-{i}.png':(f'page-{i}.png','image/png') for i in range(4)},'/': ('index.html', 'text/html; charset=utf-8'),
           '/editor.js': ('editor.js', 'text/javascript; charset=utf-8'),
@@ -13,7 +14,7 @@ ASSETS = {'/monitor.js':('monitor.js','text/javascript; charset=utf-8'),'/font-c
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        entry = ASSETS.get(self.path)
+        entry = ASSETS.get(urlsplit(self.path).path)
         if not entry:
             self.send_error(404)
             return

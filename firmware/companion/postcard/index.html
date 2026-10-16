@@ -4,7 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AI Passport 明信片与设备管理">
   <title>Tokens Kanban · 设备管理</title>
-  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css">
+  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 <header class="topbar">
@@ -35,7 +35,7 @@
   </section>
   <section class="edit-panel"><div class="section-row"><h2>自定义文本</h2><button id="monResetText" type="button" class="secondary">恢复默认文本</button></div><div class="monitor-display-grid"><div class="field"><label for="monUpLabel">上传标签 · 最多 2 字</label><input id="monUpLabel" maxlength="2" value="↑"></div><div class="field"><label for="monDownLabel">下载标签 · 最多 2 字</label><input id="monDownLabel" maxlength="2" value="↓"></div></div><p class="setting-help">标题最多 6 字；支持常用中文、英文和箭头。无法显示的文字会明确提示并阻止保存。</p><p id="monTextError" class="text-error" role="alert" hidden></p></section>
  </fieldset></form>
- <section class="edit-panel monitor-downloads"><h2>TrafficMonitor 桥接插件</h2><p>适配 TrafficMonitor 1.86 x64 · Tokens Kanban v15</p><div class="download-links"><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v15/TokensKanbanBridge.dll" download>下载桥接插件</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v15/Tokens-Kanban-v15-Windows.zip" download>下载电脑同步程序</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v15/Tokens-Kanban-v15-installation.txt" download>安装说明</a></div><ol><li>下载插件，放入 TrafficMonitor 安装目录的 plugins 文件夹。</li><li>退出并重启 TrafficMonitor，运行同版本电脑同步程序。</li><li>通过 USB 或蓝牙连接 AI Passport。</li></ol><p class="setting-help">插件安装在电脑端，网页不能直接安装。只读取已有数据，不修改 TrafficMonitor 的设置或网卡选择。今日总流量是主程序的今日记录，不是累计流量。</p></section>
+ <section class="edit-panel monitor-downloads"><h2>TrafficMonitor 桥接插件</h2><p>适配 TrafficMonitor 1.86 x64 · Tokens Kanban v16</p><div class="download-links"><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v16/TokensKanbanBridge.dll" download>下载桥接插件</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v16/Tokens-Kanban-v16-Windows.zip" download>下载电脑同步程序</a><a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v16/Tokens-Kanban-v16-installation.txt" download>安装说明</a></div><ol><li>下载插件，放入 TrafficMonitor 安装目录的 plugins 文件夹。</li><li>退出并重启 TrafficMonitor，运行同版本电脑同步程序。</li><li>通过 USB 或蓝牙连接 AI Passport。</li></ol><p class="setting-help">插件安装在电脑端，网页不能直接安装。只读取已有数据，不修改 TrafficMonitor 的设置或网卡选择。今日总流量是主程序的今日记录，不是累计流量。</p></section>
  </div>
 </section>
 <main id="postcardPage" class="workspace" hidden>
@@ -77,5 +77,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js"></script>
+<script type="module" src="editor.js?v=16"></script>
 </body></html>

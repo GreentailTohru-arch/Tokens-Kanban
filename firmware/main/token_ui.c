@@ -19,7 +19,7 @@ static lv_obj_t *home_group, *stats_group, *page_marks[PAGE_COUNT], *card_group,
 static lv_image_dsc_t card_faces[2];
 static const uint8_t *card_data;
 static bool card_contact;
-static lv_obj_t *system_group,*system_status,*system_values[6],*system_second[6],*system_titles[6],*system_panels[6],*system_empty;
+static lv_obj_t *system_group,*system_clock,*system_status,*system_values[6],*system_second[6],*system_titles[6],*system_panels[6],*system_empty;
 static lv_obj_t *model_names[2], *model_totals[2], *model_shares[2], *stats_period;
 static lv_obj_t *active_days, *heat_months[3], *trend_dates[3], *peak_label, *heat_obj, *trend_obj;
 static uint8_t heat_data[TOKEN_HEAT_DAYS];
@@ -150,6 +150,7 @@ void token_ui_create(void) {
     card_image=lv_image_create(card_group);lv_obj_set_pos(card_image,0,38);
     visible(card_group,false);visible(card_image,false);
     system_group=group(screen);
+    system_clock=label(system_group,18,14,46,"00:00",INK);
     label(system_group,18,43,140,"系统检测",INK);
     system_status=label(system_group,18,64,204,"等待电脑同步",MUTED);
     system_empty=label(system_group,18,156,204,"暂无检测卡片",MUTED);lv_obj_set_style_text_align(system_empty,LV_TEXT_ALIGN_CENTER,0);
@@ -184,7 +185,7 @@ void token_ui_postcard_image(const uint8_t *data) {
 }
 void token_ui_postcard_clock(uint64_t seconds,bool dated,bool contact) {
     char text[48];snprintf(text,sizeof(text),"%02u:%02u",(unsigned)(seconds/3600%24),(unsigned)(seconds/60%60));
-    lv_label_set_text(clock_label,text);
+    lv_label_set_text(clock_label,text);lv_label_set_text(system_clock,text);
     unsigned month,day,weekday;
     static const char *weekdays[]={"日","一","二","三","四","五","六"};
     if(dated && postcard_calendar(seconds,&month,&day,&weekday))
@@ -205,7 +206,7 @@ void token_ui_update(const token_snapshot_t *s,unsigned period,bool show_cost,bo
     if(period>2) period=0;
     if(page>=PAGE_COUNT) page=0;
     visible(home_group,page==0);visible(stats_group,page==1);visible(card_group,page==PAGE_POSTCARD);visible(system_group,page==PAGE_SYSTEM);
-    visible(signal_light,page!=PAGE_POSTCARD);visible(signal_label,page!=PAGE_POSTCARD);visible(battery_label,page!=PAGE_POSTCARD);
+    visible(signal_light,page!=PAGE_POSTCARD && page!=PAGE_SYSTEM);visible(signal_label,page!=PAGE_POSTCARD && page!=PAGE_SYSTEM);visible(battery_label,page!=PAGE_POSTCARD);
     visible(quota_panel,!show_cost);visible(detail_panel,show_cost);
     for(unsigned i=0;i<3;++i) {
         lv_obj_set_style_bg_color(tabs[i],lv_color_hex(i==period?0x516471:PANEL),0);

@@ -794,3 +794,10 @@ The v14 minimal quick-volume bar and pending 88x109 startup logo are retained.
 Merged 0x0 flashing may reset NVS; preserving data needs a partition-checked
 application-only upgrade without full-chip erase. v15 is not yet flashed or accepted
 on hardware. Build, native rendering and browser simulation are separate results.
+
+## v16 System Monitor clock
+
+System Monitor uses the shared computer-synchronized local HH:MM clock at the top
+left, replacing the Codex signal light/text on that page only. Before time sync it
+shows 00:00; top-right battery and the other pages are unchanged. The v15 bridge
+component is byte-identical and requires no host restart for this UI update.

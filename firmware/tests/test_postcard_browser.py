@@ -216,7 +216,7 @@ def main():
         expect(page.locator('#monBits')).to_have_value('1');expect(page.locator('#monUpLabel')).to_have_value('上传')
         assert page.get_by_role('textbox',name='第1张卡片标题',exact=True).input_value()=='中央处理频率'
         assert page.locator('#monitorPage .download-links a').count()==3
-        assert all('/download/v15/' in h for h in page.locator('#monitorPage .download-links a').evaluate_all('(a)=>a.map(e=>e.href)'))
+        assert all('/download/v16/' in h for h in page.locator('#monitorPage .download-links a').evaluate_all('(a)=>a.map(e=>e.href)'))
         assert page.locator('#settingsPage .download-links').count()==0
         page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_enabled()
         expect(page.locator('#settingsState')).to_have_text('已读取设备设置')

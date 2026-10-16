@@ -1,6 +1,6 @@
 [简体中文](README.zh_CN.md)
 
-# TrafficMonitor bridge for Tokens Kanban v15
+# TrafficMonitor bridge for Tokens Kanban (component v15)
 
 The x64 bridge reuses **TrafficMonitor 1.86** data without polling sensors or
 network adapters. It adds no display item, edits no TrafficMonitor configuration,
@@ -14,8 +14,8 @@ unsupported until their independent sensor-plugin interfaces are verified.
    adapter. Copy `TokensKanbanBridge.dll` into its `plugins` subdirectory.
 2. Exit and reopen TrafficMonitor once to load the DLL. Ask the owner first when
    restarting a running copy. Preserve its existing elevation level and settings.
-3. Run the v15 `CodexTokenDisplay.exe`; USB is preferred automatically, or use
-   `--transport ble`. Only one v15 sync process may listen to the bridge at a time.
+3. Run the matching `CodexTokenDisplay.exe` (v15 or later); USB is preferred automatically, or use
+   `--transport ble`. Only one sync process may listen to the bridge at a time.
 4. On the Passport, double OK through the enabled pages to System Monitor.
    Up/Down and single OK keep their existing behavior on the other pages. The
    browser's first sidebar entry manages all four pages with previews, switches,
@@ -25,7 +25,7 @@ unsupported until their independent sensor-plugin interfaces are verified.
 connecting to the device or reading Codex logs. It includes the eleven raw metrics,
 TrafficMonitor's formatted taskbar strings and a eleven-bit callback/getter
 agreement mask (`2047` means all agree within the host's whole-degree precision).
-It cannot run concurrently with another v15 receiver. The normal sync process
+It cannot run concurrently with another bridge receiver. The normal sync process
 handles token/quota data independently if TrafficMonitor is absent.
 
 Unknown metrics use `-1`, displayed as `--`; zero load and zero traffic remain
@@ -100,3 +100,6 @@ Eleven readings matched host getters and formatted strings. Receiver reconnect,
 real cached-data expiry and a retired source PID were checked. Missing sensors and
 unsupported versions used an isolated actual-DLL mock host. v15 has not been flashed
 to the Passport; host tests do not imply physical device acceptance.
+
+The v16 release retains this verified v15 bridge DLL byte for byte; only the
+System Monitor clock, web preview and companion package version changed.
