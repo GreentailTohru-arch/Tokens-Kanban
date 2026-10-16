@@ -14,6 +14,7 @@
 #include "postcard.h"
 #include "device_runtime.h"
 #include "device_diagnostics.h"
+#include "boot_logo.h"
 #include "driver/usb_serial_jtag.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -27,6 +28,8 @@ static key_guard_t s_key_guard;
 static volatile bool s_input_ready;
 static atomic_bool input_overflow;
 static size_t accept_line(const char *line,char *reply,size_t capacity,unsigned transport) {
+    if(!strcmp(line,"PC_VERSION"))return snprintf(reply,capacity,"PC_VERSION v18\n");
+    size_t logo=boot_logo_line(line,reply,capacity);if(logo)return logo;
     size_t diagnostic=device_diagnostics_line(line,reply,capacity);if(diagnostic)return diagnostic;
     if(!strcmp(line,"PC_SYS_HELLO2"))return snprintf(reply,capacity,"PC_SYS_READY 2\n");
     if(!strcmp(line,"PC_SYS_HELLO"))return snprintf(reply,capacity,"PC_SYS_READY 1\n");
@@ -82,6 +85,8 @@ void app_main(void) {
     uint64_t boot_started=(uint64_t)esp_timer_get_time()/1000;bool boot_visible=true;
     if(!postcard_start()) ESP_LOGW("tokens","Postcard storage unavailable");
     if(!device_runtime_start()) ESP_LOGW("tokens","Settings/audio worker unavailable");
+    bsp_display_backlight(device_runtime_brightness());
+    if(!boot_logo_start())ESP_LOGW("tokens","Custom boot logo unavailable; using built-in logo");
     key_guard_arm(&s_key_guard,esp_timer_get_time(),10000000);
     esp_err_t buttons=bsp_button_init(on_key,NULL);
     if(buttons==ESP_OK) key_guard_sync_released(&s_key_guard,bsp_button_read_mv()>=BSP_BTN_MV_RELEASED_MIN);
@@ -102,7 +107,7 @@ void app_main(void) {
     uint64_t last=0,next_battery=0; int battery=-1;
     for(;;) {
         uint64_t now=(uint64_t)esp_timer_get_time()/1000;
-        bool boot_ended=boot_visible && now-boot_started>=1200 && (!device_runtime_booting() || now-boot_started>=6000);
+        bool boot_ended=boot_visible && now-boot_started>=boot_logo_duration() && (!device_runtime_booting() || now-boot_started>=6000);
         if(boot_ended) {boot_visible=false;(void)device_runtime_key(now);}
         bool changed=xQueueReceive(snapshots,&current,0)==pdTRUE;
         if(changed) { received=true; last=now; }
@@ -129,7 +134,8 @@ void app_main(void) {
         if(!boot_visible)device_runtime_tick(now,(changed || (boot_ended && received))?&current:NULL);
         if(now>=next_battery) { if(has_battery) battery=bsp_battery_soc(); next_battery=now+30000; }
         if(bsp_lvgl_lock(100)) {
-            if(!boot_visible)token_ui_startup(false);
+            if(!boot_visible){token_ui_startup(false);boot_logo_finish();}
+            else{unsigned side;const uint8_t *pixels=boot_logo_frame(now-boot_started,&side);if(pixels)token_ui_startup_frame(pixels,side);}
             token_ui_pages(&page_config,nav.page);
             monitor_config_t monitor=device_runtime_monitor();
             token_ui_system(&metrics,metrics_received && now-metrics_last<15000,&monitor);

@@ -124,3 +124,5 @@ Chinese labels use the existing licensed Noto Sans CJK subset.
 The web simulator serves copies of the existing supplied WAV recordings under
 companion/postcard/sim-audio/ and the checked startup preview as sim-startup.png.
 Original sources and conversion manifests stay here; no new synthesized audio.
+
+The v18 editor includes the Apache-2.0 esptool-js 0.7.0 browser bundle and license under companion/postcard/vendor. User-selected startup images remain local/device data and are never added to the source repository.

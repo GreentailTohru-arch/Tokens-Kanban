@@ -841,3 +841,48 @@ the experience page, clears disconnected/stale information and preserves older
 Token, settings, postcard and SM1/SM2 functionality. v17 build and simulated host
 checks are separate from physical acceptance; v16 has no diagnostic interface and
 must not be presented as a live diagnostic source.
+
+## v18 display, startup images and updates
+
+Settings exposes 5–100% screen brightness and Never for screen-off. Brightness is
+stored independently in `tokens_ui/display1`; legacy settings protocols preserve
+it, and wake restores it. Failed saves keep the previous value. `PC_DISPLAY_GET`
+returns `PC_DISPLAY 1 percent`, `PC_DISPLAY_SET id percent` shares the asynchronous
+`PC_CFG_STATUS` handshake. Existing cfg2, mon1, pages1, name1 and postcard remain.
+
+Startup Logo has a separate local draft, modal crop, animated preview and Save.
+PNG/JPEG/WebP and GIF are decoded in the browser; GIF needs ImageDecoder support.
+Sources are limited to 10 MB, 16 MP and 300 GIF source frames. Conversion takes at
+most the first six seconds and 40 sampled frames, resizes 96/80/64 square pixels
+and reduces frames as needed to fit 124 KiB. It reports the adapted dimensions and
+frame count. The immutable supplied 88x109 default remains available to restore.
+Reconnecting reads saved length/hash, not image pixels; that state is labeled so
+the local draft is never presented as a readback of a custom device image.
+
+`bootlogo` is an independent 256 KiB partition at 0x740000, two 128 KiB slots with
+4 KiB headers. The factory app shrinks to 0x730000 bytes at the same 0x10000 start;
+NVS, PHY and postcard offsets/sizes stay unchanged. FNV and strict RLE/frame bounds
+are checked before committing validity last; interrupted uploads keep the old
+slot. Reset commits a default marker. Boot allocates at most 18 KiB for one RGB565
+frame, releases it after the LVGL startup overlay is deleted, and refuses upload
+while that buffer uses a saved slot. `PC_LOGO_GET`, BEGIN/DATA/DONE/STATUS use the
+existing bounded USB/BLE line transport. Boot plays a GIF cycle up to six seconds.
+
+About reads `PC_VERSION` with a v17 chip-info fallback; unsupported older firmware
+is labeled, never inferred from the website version. Check Update queries the
+project's GitHub latest official Release and its tagged `update.json`. Installation
+is USB-only and starts only after the explicit Select USB and Install button.
+It checks application SHA256/size/ESP32-C3 header, actual chip/8MB Flash and known
+partition-table hashes before writing. It writes and verifies the application at
+0x10000, then migrates the table at 0x8000 if needed, verifies readback, and resets.
+It does not erase all Flash or write NVS/postcard/logo regions. A GitHub download
+blocked by browser CORS falls back to a GitHub link and a file picker, checking the
+same size/hash; a complete 0x0 image is not accepted in the application picker.
+Unknown layouts stop before writes. No firmware installation runs from Check alone.
+
+The pinned Apache-2.0 esptool-js 0.7.0 browser bundle and license live under the
+editor's vendor folder. TrafficMonitor download and a three-step modal installation
+guide are in System Monitor; that card no longer links the companion program.
+Windows packages remain available in Releases. No TrafficMonitor restart or device
+flash is part of this development increment; browser flasher tests use a fake USB
+loader, and physical migration/playback/brightness require fresh device approval.

@@ -147,6 +147,8 @@ int main(void) {
     for(unsigned i=0;i<200;++i){token_ui_volume(true,i%101);lv_tick_inc(200);lv_timer_handler();token_ui_volume(false,i%101);lv_tick_inc(200);lv_timer_handler();}
     for(int color=0;color<5;++color){token_ui_diagnostic(color);lv_refr_now(NULL);check_labels(lv_layer_top());}
     token_ui_diagnostic(-1);lv_refr_now(NULL);check_labels(lv_screen_active());
+    static uint8_t boot_pixels[96*96*2];memset(boot_pixels,0x5a,sizeof(boot_pixels));
+    for(unsigned i=0;i<20;++i){token_ui_startup(true);token_ui_startup_frame(boot_pixels,i%2?96:64);lv_refr_now(NULL);check_labels(lv_layer_top());token_ui_startup(false);}
     assert(lv_mem_test()==LV_RESULT_OK);
     lv_mem_monitor_t memory;lv_mem_monitor(&memory);
     printf("LVGL 48KB pool: free=%zu largest=%zu max_used=%zu after 1000 updates\n",memory.free_size,memory.free_biggest_size,memory.max_used);

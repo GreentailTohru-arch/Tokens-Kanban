@@ -8,6 +8,7 @@ void token_ui_system(const system_snapshot_t *snapshot,bool live,const monitor_c
 void token_ui_create(void);
 /* Called with the same LVGL lock as every other UI operation. */
 void token_ui_startup(bool show);
+void token_ui_startup_frame(const uint8_t *pixels,unsigned side);
 void token_ui_volume(bool show,unsigned percent);
 void token_ui_postcard_image(const uint8_t *data);
 void token_ui_postcard_clock(uint64_t seconds, bool dated, bool contact);

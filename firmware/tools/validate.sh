@@ -46,6 +46,8 @@ run_static_checks() {
     "${TMPDIR:-/tmp}/passport-diagnostic-model-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/diagnostic_stubs -Itests/postcard_stubs -Icomponents/bsp/include -Imain tests/test_device_diagnostics.c main/diagnostic_model.c -o "${TMPDIR:-/tmp}/passport-device-diagnostics-test"
     "${TMPDIR:-/tmp}/passport-device-diagnostics-test"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/postcard_stubs -Imain tests/test_boot_logo.c main/boot_logo_model.c main/postcard_codec.c -o "${TMPDIR:-/tmp}/passport-boot-logo-test"
+    "${TMPDIR:-/tmp}/passport-boot-logo-test"
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_system_monitor.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_events.py
     PYTHONDONTWRITEBYTECODE=1 python3 tools/convert_codex_sounds.py --check

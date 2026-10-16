@@ -10,6 +10,7 @@ static bool fail_commit,fail_task,have_stored;
 static device_config_t stored,staged;
 static page_config_t stored_pages,staged_pages;static bool have_pages,pages_write;
 static monitor_config_t stored_monitor,staged_monitor;static bool have_monitor,monitor_write;
+static unsigned stored_brightness=75,staged_brightness;static bool display_write,have_brightness;
 static uint32_t legacy[4];static bool have_legacy;
 static const int16_t *expected_pcm;
 static size_t expected_count,captured_count;
@@ -24,13 +25,14 @@ esp_err_t nvs_flash_init(void){return ESP_OK;}
 esp_err_t nvs_open(const char *name,int mode,nvs_handle_t *handle){(void)mode;assert(!strcmp(name,"tokens_ui"));*handle=1;return ESP_OK;}
 esp_err_t nvs_get_blob(nvs_handle_t handle,const char *key,void *data,size_t *size){
     (void)handle;
+    if(!strcmp(key,"display1")){assert(*size==4);if(!have_brightness)return ESP_FAIL;memcpy(data,&stored_brightness,4);return ESP_OK;}
     if(!strcmp(key,"mon1")){assert(*size==sizeof(stored_monitor));if(!have_monitor)return ESP_FAIL;memcpy(data,&stored_monitor,*size);return ESP_OK;}
     if(!strcmp(key,"pages1")){assert(*size==sizeof(stored_pages));if(!have_pages)return ESP_FAIL;memcpy(data,&stored_pages,*size);return ESP_OK;}
     if(!strcmp(key,"cfg2")){assert(*size==sizeof(stored));if(!have_stored)return ESP_FAIL;memcpy(data,&stored,*size);return ESP_OK;}
     assert(!strcmp(key,"cfg1")&&*size==sizeof(legacy));if(!have_legacy)return ESP_FAIL;memcpy(data,legacy,*size);return ESP_OK;
 }
-esp_err_t nvs_set_blob(nvs_handle_t handle,const char *key,const void *data,size_t size){(void)handle;monitor_write=!strcmp(key,"mon1");pages_write=!strcmp(key,"pages1");if(monitor_write){assert(size==sizeof(staged_monitor));memcpy(&staged_monitor,data,size);}else if(pages_write){assert(size==sizeof(staged_pages));memcpy(&staged_pages,data,size);}else{assert(!strcmp(key,"cfg2")&&size==sizeof(stored));memcpy(&staged,data,size);}writes++;return ESP_OK;}
-esp_err_t nvs_commit(nvs_handle_t handle){(void)handle;commits++;if(fail_commit)return ESP_FAIL;if(monitor_write){stored_monitor=staged_monitor;have_monitor=true;}else if(pages_write){stored_pages=staged_pages;have_pages=true;}else{stored=staged;have_stored=true;}if(inject_volume!=UINT32_MAX){unsigned next=inject_volume;inject_volume=UINT32_MAX;device_runtime_volume_set(next,(uint64_t)fake_time_us/1000);}return ESP_OK;}
+esp_err_t nvs_set_blob(nvs_handle_t handle,const char *key,const void *data,size_t size){(void)handle;display_write=!strcmp(key,"display1");if(display_write){assert(size==4);memcpy(&staged_brightness,data,4);writes++;return ESP_OK;}monitor_write=!strcmp(key,"mon1");pages_write=!strcmp(key,"pages1");if(monitor_write){assert(size==sizeof(staged_monitor));memcpy(&staged_monitor,data,size);}else if(pages_write){assert(size==sizeof(staged_pages));memcpy(&staged_pages,data,size);}else{assert(!strcmp(key,"cfg2")&&size==sizeof(stored));memcpy(&staged,data,size);}writes++;return ESP_OK;}
+esp_err_t nvs_commit(nvs_handle_t handle){(void)handle;commits++;if(fail_commit)return ESP_FAIL;if(display_write){stored_brightness=staged_brightness;have_brightness=true;}else if(monitor_write){stored_monitor=staged_monitor;have_monitor=true;}else if(pages_write){stored_pages=staged_pages;have_pages=true;}else{stored=staged;have_stored=true;}if(inject_volume!=UINT32_MAX){unsigned next=inject_volume;inject_volume=UINT32_MAX;device_runtime_volume_set(next,(uint64_t)fake_time_us/1000);}return ESP_OK;}
 void nvs_close(nvs_handle_t handle){(void)handle;}
 esp_err_t bsp_audio_init(void){return ESP_OK;}
 esp_err_t bsp_audio_wake(void){return ESP_OK;}
@@ -52,6 +54,11 @@ static char reply[384];
 static void line(const char *s,const char *expected){assert(device_runtime_line(s,reply,sizeof(reply))>0);assert(!strcmp(reply,expected));}
 static void reboot(void){count=save_id=save_state=event_host=event_sequence=0;event_seen=event_pending=false;behavior=(device_behavior_t){0};atomic_store(&wake_requested,false);assert(device_runtime_start());assert(device_runtime_booting());run();assert(!device_runtime_booting());}
 int main(void){
+    reboot();line("PC_DISPLAY_GET","PC_DISPLAY 1 75\n");
+    line("PC_DISPLAY_SET 240 5","PC_CFG_STATE 240 1\n");run();assert(device_runtime_brightness()==5);reboot();assert(device_runtime_brightness()==5);behavior.off=true;assert(device_runtime_key(100));assert(backlight==5);
+    fail_commit=true;line("PC_DISPLAY_SET 241 100","PC_CFG_STATE 241 1\n");run();assert(device_runtime_brightness()==5);fail_commit=false;
+    line("PC_DISPLAY_SET 242 0","PC_CFG_INVALID\n");line("PC_DISPLAY_SET 242 101","PC_CFG_INVALID\n");
+    have_brightness=false;reboot();writes=commits=0;
     /* Capture the actual BSP output, including the partial final block and drain. */
     assert(codex_notification_samples==9134 && codex_error_samples==9387);
     const int16_t *clips[]={codex_notification_pcm,codex_error_pcm,opencode_complete_pcm,opencode_error_pcm,antigravity_complete_pcm,antigravity_error_pcm,startup_sound_pcm};

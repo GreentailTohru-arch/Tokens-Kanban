@@ -27,6 +27,7 @@ static uint16_t trend_data[TOKEN_TREND_DAYS];
 static bool charts_available;
 static lv_obj_t *signal_light, *signal_label;
 static lv_obj_t *startup_panel;
+static lv_image_dsc_t startup_custom_image;
 static lv_obj_t *volume_panel,*volume_bar;
 static bool volume_visible;
 static unsigned volume_value=101;
@@ -171,10 +172,17 @@ void token_ui_startup(bool show) {
         lv_obj_t *image=lv_image_create(startup_panel);lv_obj_set_pos(image,0,0);
         lv_image_set_src(image,&startup_image);
     } else if(!show && startup_panel) {
-        lv_obj_delete(startup_panel);startup_panel=NULL;
+        lv_obj_delete(startup_panel);startup_panel=NULL;lv_image_cache_drop(&startup_custom_image);
     }
 }
+void token_ui_startup_frame(const uint8_t *pixels,unsigned side){
+    lv_image_dsc_t *custom=&startup_custom_image;if(!startup_panel||!pixels||side<16||side>96)return;
+    lv_obj_t *image=lv_obj_get_child(startup_panel,0);lv_image_cache_drop(custom);
+    *custom=(lv_image_dsc_t){.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=side,.h=side,.stride=side*2},.data_size=side*side*2,.data=pixels};
+    lv_obj_set_pos(image,(240-(int)side)/2,(320-(int)side)/2);lv_image_set_src(image,custom);lv_obj_invalidate(image);
+}
 void token_ui_postcard_image(const uint8_t *data) {
+    /* Boot images use their own descriptor and never replace these postcard faces. */
     for(unsigned i=0;i<2;++i) {
         lv_image_cache_drop(&card_faces[i]);
         card_faces[i]=(lv_image_dsc_t){.header={.magic=LV_IMAGE_HEADER_MAGIC,

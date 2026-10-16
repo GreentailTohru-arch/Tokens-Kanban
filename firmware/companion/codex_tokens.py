@@ -398,7 +398,7 @@ def main():
         return
     monitor=SystemPoller()
     index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False; can_monitor=False
-    print('Codex Token Display v17 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
+    print('Codex Token Display v18 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)

@@ -112,3 +112,5 @@ Codex 既有滤波后 PCM 保持不变。不手工裁剪、不归一化、不改
 
 网页模拟器在companion/postcard/sim-audio/提供已有用户录音的WAV副本，并使用已检查的
 开机预览sim-startup.png；原始来源与转换记录保留在本目录，没有新增合成音效。
+
+v18编辑器在companion/postcard/vendor保留Apache-2.0的esptool-js 0.7.0及许可。用户选择的开机图片仅在本地及设备处理，不加入源码仓库。

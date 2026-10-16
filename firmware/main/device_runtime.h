@@ -5,6 +5,7 @@
 monitor_config_t device_runtime_monitor(void);
 page_config_t device_runtime_pages(void);
 unsigned device_runtime_volume(void);
+unsigned device_runtime_brightness(void);
 void device_runtime_volume_set(unsigned value,uint64_t now_ms);
 bool device_runtime_start(void);
 /* The single startup request is owned by the audio worker, never by LVGL. */
