@@ -3,7 +3,7 @@
 # Tokens Kanban
 
 [Device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/) ·
-[Tokens Kanban v16 downloads](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v16)
+[Tokens Kanban v17 downloads](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v17)
 
 Keep Codex tokens, quota and activity on AI Passport, view configurable computer
 monitoring cards, or display a personal postcard. API cost is an estimate, not a
@@ -11,7 +11,7 @@ subscription charge. Usage covers readable local Codex history only.
 
 ## Start
 
-1. Install/sign in to Codex on Windows and extract the v16 Windows ZIP. For computer
+1. Install/sign in to Codex on Windows and extract the v17 Windows ZIP. For computer
    monitoring, put TokensKanbanBridge.dll in TrafficMonitor 1.86 x64's plugins folder
    and restart TrafficMonitor once. The plugin is installed on the computer; the
    website cannot install it. It reads existing data without changing host settings.
@@ -44,11 +44,14 @@ Custom card text is checked against the device font; unsupported glyphs block sa
 
 ## Verification and source
 
-v16 build, firmware archive, actual TrafficMonitor getter/formatted-value agreement,
-receiver reconnection/staleness, isolated-DLL missing-sensor tests, simulated browser
-USB/BLE saves and native LVGL layout/font checks passed. v16 has NOT been flashed;
-physical display/buttons/volume, power-cycle persistence and long-run/range tests
-remain unverified. Prior versions' hardware acceptance does not validate v16.
+v17 full build/archive, host models, native LVGL layout/fonts and diagnostic color
+overlays, browser USB/BLE simulations, packaged editor resources, supplied-recording
+decoding and 320/390-pixel mobile layouts passed. Real TrafficMonitor validation is
+the earlier v15/v16 result for the identical DLL; it was not restarted this time.
+v17 has NOT been flashed: new device telemetry, microphone/speaker/screen tests,
+name persistence after power loss and long-run/range tests remain unverified.
+The user accepted v16 date, cards, volume controls and rebooted volume retention;
+those results do not validate v17's new diagnostic interfaces.
 
 [Complete source](firmware/) and [application notes](firmware/docs/codex-token-display.md)
 retain the original BSP and supplied recordings. The release includes the full 0x0
@@ -62,3 +65,27 @@ licenses/notices apply; the original symmetric default avatar is MIT licensed.
 System Monitor shows the synchronized local HH:MM clock at top left, or 00:00 before
 time sync. Battery remains at top right. The bridge DLL is unchanged from the
 verified v15 component and needs no further TrafficMonitor restart.
+
+## Experience simulator and device information
+
+The first sidebar item is Experience Simulator, followed by Page Management,
+System Monitor, Postcard and Settings. The virtual device's left power key holds
+for about two seconds to turn off or half a second to start. The three right keys
+support mouse, touch and focused keyboard input. They simulate the current browser
+draft's page order, card layout, postcard, sounds, idle wake and volume without
+writing to the device. Illustrative data is explicitly labeled.
+
+Connect matching v17 firmware to use the separate live Passport dashboard. The
+default management name is `You's AI Passport`, editable up to 32 UTF-8 bytes and
+saved independently; Bluetooth advertising is unchanged. CPU use/frequency,
+allocatable internal heap, Flash/partition sizes, battery SOC/voltage and uptime
+come from the device. 500 mAh is the product rating, not measured remaining charge;
+heap is not total chip SRAM, and partition allocation is not used file storage.
+Unsupported, disconnected or stale readings show `--` rather than sample values.
+
+Explicit test buttons read the battery, sample microphone amplitude for about
+0.4 seconds without retaining recordings, play the selected supplied sound,
+observe physical key events and show five display colors. Screen testing ends
+after 15 seconds or a physical key, consuming that exit action. Confirm speaker
+quality by listening; volume zero remains silent. Older firmware disables these
+tests and name saving while retaining its existing editor features.
