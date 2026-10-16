@@ -1,8 +1,8 @@
-import {DraftState} from './draft-state.js?v=notices-1';
-import {LogoEditor} from './logo-editor.js?v=notices-1';
-import {AboutPanel} from './about.js?v=notices-1';
-import {DeviceInfoPanel} from './device-info.js?v=notices-1';
-import {ExperienceSimulator} from './simulator.js?v=notices-1';
+import {DraftState} from './draft-state.js?v=notices-2';
+import {LogoEditor} from './logo-editor.js?v=notices-2';
+import {AboutPanel} from './about.js?v=notices-2';
+import {DeviceInfoPanel} from './device-info.js?v=notices-2';
+import {ExperienceSimulator} from './simulator.js?v=notices-2';
 import {MonitorEditor} from './monitor.js';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js';
@@ -17,7 +17,7 @@ const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按�
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let toastTimer,simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null,drafts=null,savingAll=false;
 function status(text,kind='success'){
- clearTimeout(toastTimer);const node=$('status');node.textContent=text;node.hidden=!text;node.dataset.kind=kind;node.setAttribute('role',kind==='error'?'alert':'status');
+ clearTimeout(toastTimer);const node=$('status');node.textContent=text;node.title=text;node.hidden=!text;node.dataset.kind=kind;node.setAttribute('role',kind==='error'?'alert':'status');
  document.querySelectorAll('.dialog-notice').forEach(n=>n.remove());const modal=document.querySelector('dialog[open]');
  if(text&&modal){const notice=document.createElement('p');notice.className='toast dialog-notice';notice.dataset.kind=kind;notice.setAttribute('role',kind==='error'?'alert':'status');notice.textContent=text;modal.querySelector('.crop-heading')?.after(notice);}
  if(text)toastTimer=setTimeout(()=>{node.hidden=true;document.querySelectorAll('.dialog-notice').forEach(n=>n.remove());},10000);
@@ -274,7 +274,7 @@ function unsaved(){
  if(logoEditor?.dirty||(logoEditor?.pending&&(logoEditor.pending.file!==logoEditor.file||JSON.stringify(logoEditor.draftCrop)!==JSON.stringify(logoEditor.crop))))changes.push({key:'logo',label:'开机 Logo'});
  return changes;
 }
-function refreshDraftNotice(){const changes=unsaved();$('draftNotice').hidden=!changes.length;$('draftSummary').textContent='未保存：'+changes.map(c=>c.label).join('、');$('saveAll').disabled=busy||imageLoading||savingAll;}
+function refreshDraftNotice(){const changes=unsaved();$('draftNotice').hidden=!changes.length;$('draftSummary').textContent='未保存：'+changes.map(c=>c.label).join('、');$('draftNotice').title=$('draftSummary').textContent;$('saveAll').disabled=busy||imageLoading||savingAll;}
 async function saveAll(){
  if(busy||imageLoading||savingAll)return;if(!link){status('请先连接设备，再保存修改','error');return;}
  if(draft)closeCrop(true);if(logoEditor.pending){status('请先在小窗中确定 Logo 取景','error');return;}

@@ -889,8 +889,10 @@ loader, and physical migration/playback/brightness require fresh device approval
 
 ## Web notification and draft protection
 
-Notifications live in the sticky top region: green for normal/success messages,
-red for errors, with matching notices inside an open modal. A draft summary and
+Desktop notifications share one toolbar row with connection buttons and status;
+long messages are ellipsized with their full text available on hover. Mobile
+notifications slide down from the screen top without moving toolbar controls.
+Normal/success messages are green and errors red, with matching modal notices. A draft summary and
 Save Changes action cover display/sounds, page order, monitoring, postcard, device
 name and startup logo. Comparing saved snapshots avoids warnings for unchanged or
 reverted values. Only confirmed save/readback updates the baseline; failure keeps

@@ -17,11 +17,34 @@ def main():
  with sync_playwright() as p:
   browser=p.chromium.launch(executable_path=sys.argv[2],headless=True);page=browser.new_page(viewport={'width':1280,'height':960});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock);url=f'http://127.0.0.1:{server.server_port}/';page.goto(url)
   guarded=lambda:page.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented;})()")
-  expect(page.locator('#fields')).to_be_enabled();assert not guarded();page.locator('#ble').click();expect(page.locator('#connection')).to_have_text('蓝牙已连接');assert not guarded()
+  expect(page.locator('#fields')).to_be_enabled();baseline_height=page.locator('.topbar').bounding_box()['height'];assert not guarded();page.locator('#ble').click();expect(page.locator('#connection')).to_have_text('蓝牙已连接');assert not guarded()
   expect(page.locator('#status')).to_have_attribute('data-kind','success');assert page.locator('#status').evaluate('(e)=>e.closest("header")!==null');green=page.locator('#status').evaluate('(e)=>getComputedStyle(e).backgroundColor')
+  assert page.locator('#status').get_attribute('title')==page.locator('#status').inner_text()
+  assert page.locator('.topbar').bounding_box()['height']==baseline_height
+  def desktop_row():
+   boxes=[page.locator(q).bounding_box() for q in ['.toolbar','#status','#connection']]
+   centers=[b['y']+b['height']/2 for b in boxes];assert max(centers)-min(centers)<2,boxes
+   assert boxes[0]['x']+boxes[0]['width']<=boxes[1]['x'] and boxes[1]['x']+boxes[1]['width']<=boxes[2]['x'],boxes
+   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+  for width in [1564,1280,1024,800,761]:
+   page.set_viewport_size({'width':width,'height':960});desktop_row();assert page.locator('.topbar').bounding_box()['height']==baseline_height
+  page.set_viewport_size({'width':1280,'height':960})
   page.locator('#settingsNav').click();assert page.locator('#idleTime option').last.inner_text()=='保持常亮（不建议）';assert page.locator('#idleTime option').last.get_attribute('value')=='0'
   original=page.locator('#soundVolume').input_value();page.locator('#soundVolume').fill('70');assert guarded();expect(page.locator('#draftNotice')).to_be_visible();page.locator('#soundVolume').fill(original);assert not guarded();expect(page.locator('#draftNotice')).to_be_hidden()
-  page.locator('#soundVolume').fill('70');page.evaluate('window.failConfig=true');page.locator('#upload').click();expect(page.locator('#status')).to_have_attribute('data-kind','error');red=page.locator('#status').evaluate('(e)=>getComputedStyle(e).backgroundColor');assert red!=green and guarded();page.screenshot(path=str(out/'error-desktop.png'))
+  page.locator('#soundVolume').fill('70');page.evaluate('window.failConfig=true');page.locator('#upload').click();expect(page.locator('#status')).to_have_attribute('data-kind','error');red=page.locator('#status').evaluate('(e)=>getComputedStyle(e).backgroundColor');assert red!=green and guarded();desktop_row();page.screenshot(path=str(out/'error-desktop.png'))
+  # Stress long feedback and simultaneous unsaved controls without adding a desktop row.
+  actual_text=page.locator('#status').inner_text();page.locator('#status').evaluate('(e)=>e.textContent=e.textContent.repeat(15)')
+  for width in [1564,1280,1024,800,761]:
+   page.set_viewport_size({'width':width,'height':960});desktop_row();assert page.locator('.topbar').bounding_box()['height']==baseline_height
+  for width in [390,320]:
+   page.set_viewport_size({'width':width,'height':844});page.wait_for_timeout(300)
+   b=page.locator('#status').bounding_box();assert b['y']>=0 and b['y']<=12 and b['x']>=0 and b['x']+b['width']<=width,b
+   assert page.locator('#status').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
+   assert page.locator('#status').evaluate('(e)=>getComputedStyle(e).animationName')=='notice-from-top'
+   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+   page.locator('#status').evaluate('(e)=>e.hidden=true');height=page.locator('.topbar').bounding_box()['height'];page.locator('#status').evaluate('(e)=>e.hidden=false');assert page.locator('.topbar').bounding_box()['height']==height
+   page.locator('#status').evaluate('(e,t)=>e.textContent=t',actual_text);page.wait_for_timeout(300);page.screenshot(path=str(out/f'notice-mobile-{width}.png'))
+  page.emulate_media(reduced_motion='reduce');assert page.locator('#status').evaluate('(e)=>getComputedStyle(e).animationName')=='none';page.emulate_media(reduced_motion='no-preference');page.set_viewport_size({'width':1280,'height':960})
   page.evaluate('window.failConfig=false');page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备');assert not guarded();expect(page.locator('#status')).to_have_attribute('data-kind','success')
   page.locator('#pagesNav').click();page.get_by_role('switch',name='统计分析',exact=True).uncheck();assert guarded();page.locator('#monitorNav').click();page.locator('#monUpLabel').fill('U');page.locator('#monUpLabel').dispatch_event('input');assert guarded()
   page.locator('#experienceNav').click();page.locator('#deviceName').fill('我的设备');page.locator('#postcardNav').click();original_title=page.locator('#title').input_value();page.locator('#title').fill('新的标题');assert guarded()
@@ -43,6 +66,6 @@ def main():
    page.set_viewport_size({'width':width,'height':844});page.locator('#postcardNav').click();page.locator('#title').fill('手机未保存');page.evaluate('scrollTo(0,900)');page.wait_for_timeout(250);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');box=page.locator('#draftNotice').bounding_box();assert box['y']>=0 and box['y']+box['height']<844;page.screenshot(path=str(out/f'unsaved-mobile-{width}.png'));page.locator('#title').fill('新的标题');assert not guarded()
   # A completely saved page reloads without any close prompt.
   page.reload();expect(page.locator('#fields')).to_be_enabled();assert not guarded();assert not errors,errors
-  result={'topGreenAndRedNotices':'PASS','savedAndUnchangedNoPrompt':'PASS','failedSaveKeepsGuard':'PASS','allSixDraftSections':'PASS','realBeforeUnloadCancelKeepsBLE':'PASS','saveAllAndConfirmedReadback':'PASS','logoCancelDefaultAndSave':'PASS','simulatorIgnored':'PASS','alwaysOnLast':'PASS','mobile320390':'PASS','deviceAccess':'mock only'};(out/'notice-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
+  result={'topGreenAndRedNotices':'PASS','desktopSingleRow761to1564':'PASS','mobileTopSlideAndStableToolbar':'PASS','longMessageAndReducedMotion':'PASS','savedAndUnchangedNoPrompt':'PASS','failedSaveKeepsGuard':'PASS','allSixDraftSections':'PASS','realBeforeUnloadCancelKeepsBLE':'PASS','saveAllAndConfirmedReadback':'PASS','logoCancelDefaultAndSave':'PASS','simulatorIgnored':'PASS','alwaysOnLast':'PASS','mobile320390':'PASS','deviceAccess':'mock only'};(out/'notice-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
  server.shutdown()
 if __name__=='__main__':main()
