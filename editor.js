@@ -1,3 +1,4 @@
+import {MonitorEditor} from './monitor.js';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js';
 const $=id=>document.getElementById(id);
@@ -6,13 +7,13 @@ const rxId='9e7a0002-4b51-4a4c-9b50-2f53f077c301',txId='9e7a0003-4b51-4a4c-9b50-
 const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,zoom:1},qrCrop:{x:.5,y:.5,zoom:1}};
 let back=false,link=null,busy=false,imageLoading=true,activePage='pages',settingsSupported=false,startupSupported=false;
 let pagesSupported=false,pageEnabled=15,pageOrder=[0,1,2,3];
-const pageNames=['用量首页','统计分析','系统监测','明信片'];
-const pageDescriptions=['Token 数量与额度','模型、活动与趋势','CPU / GPU / RAM / NET','头像、文字与联系方式'];
+const pageNames=['用量首页','统计分析','系统检测','明信片'];
+const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按检测卡片配置显示','头像、文字与联系方式'];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let toastTimer;
 function status(text){clearTimeout(toastTimer);$('status').textContent=text;$('status').hidden=!text;if(text)toastTimer=setTimeout(()=>{$('status').hidden=true;},10000);}
 function repaint(){renderFace($('preview'),content,back);$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=locked||!link||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported);$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);}
+function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=locked||!link||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
 function updateClock(){const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
@@ -78,7 +79,7 @@ class Connection{
     try{await this.send(new TextEncoder().encode(line+'\n'));return await response;}
     finally{clearTimeout(timer);if(this.pending){this.pending.reject(new Error('发送未完成'));this.pending=null;}}
   }
-  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;settingsSupported=false;pagesSupported=false;$('pagesState').textContent='连接设备后读取页面设置';$('settingsState').textContent='连接设备后读取设置';controls();status('连接已断开');}}
+  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;settingsSupported=false;pagesSupported=false;monitorEditor.supported=false;$('monitorState').textContent='连接设备后读取检测配置';$('pagesState').textContent='连接设备后读取页面设置';$('settingsState').textContent='连接设备后读取设置';controls();status('连接已断开');}}
   async close(){this.lost();}
 }
 class BluetoothConnection extends Connection{
@@ -111,7 +112,7 @@ class SerialConnection extends Connection{
 async function connect(kind){
   busy=true;controls();let candidate=kind==='ble'?new BluetoothConnection():new SerialConnection();
   try{await candidate.open();if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);await readSettings(candidate);await readPages(candidate);link=candidate;status(dated?'已连接':'已连接，日期显示需要更新设备固件');
+    const dated=await syncClock(candidate);await readSettings(candidate);await readPages(candidate);await monitorEditor.read(candidate);link=candidate;status(dated?'已连接':'已连接，日期显示需要更新设备固件');
   }catch(error){await candidate.close();status(error.message);}finally{busy=false;controls();}
 }
 async function stateFor(id,reply){
@@ -147,9 +148,9 @@ async function upload(event){
   }catch(error){status(error.message);}finally{busy=false;controls();}
 }
 function setPage(page){
-  activePage=page;$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';
-  for(const name of ['pages','postcard','settings']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));}
-  $('upload').setAttribute('form',page==='settings'?'settingsForm':page==='pages'?'pagesForm':'form');controls();
+  activePage=page;$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';
+  for(const name of ['pages','monitor','postcard','settings']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));}
+  $('upload').setAttribute('form',page==='settings'?'settingsForm':page==='pages'?'pagesForm':page==='monitor'?'monitorForm':'form');controls();
 }
 function settingsValues(){const values=['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));if(startupSupported)values.push(Number($('startupSound').checked));return values;}
 function putSettings(values){
@@ -207,6 +208,8 @@ async function previewTone(field){
   try{const reply=await link.rpc(`PC_SOUND ${tone} ${volume}`);if(reply!=='PC_SOUND_QUEUED')throw new Error('设备暂忙，请稍后试听');status('试听已发送到设备');}
   catch(error){status(error.message);}finally{busy=false;controls();}
 }
+const monitorEditor=new MonitorEditor({status,getLink:()=>link,setBusy:value=>{busy=value;controls();},controls,onRender:url=>{document.querySelector('.page-card[data-page="2"] img')?.setAttribute('src',url);}});
+$('monitorNav').onclick=()=>setPage('monitor');
 $('pagesNav').onclick=()=>setPage('pages');$('pagesForm').addEventListener('submit',savePages);
 $('postcardNav').onclick=()=>setPage('postcard');$('settingsNav').onclick=()=>setPage('settings');
 $('settingsForm').addEventListener('submit',saveSettings);
@@ -245,7 +248,7 @@ function renderPages(){
   pageOrder.forEach((id,index)=>{
     const enabled=!!(pageEnabled&(1<<id)),card=document.createElement('article');card.className='page-card'+(enabled?'':' page-off');card.dataset.page=id;
     const thumb=document.createElement('div');thumb.className='page-thumbnail';
-    const image=document.createElement('img');image.src=`page-${id}.png`;image.width=240;image.height=320;image.alt=pageNames[id]+'布局预览';thumb.append(image);
+    const image=document.createElement('img');image.src=id===2?monitorEditor.previewURL():`page-${id}.png`;image.width=240;image.height=320;image.alt=pageNames[id]+'布局预览';thumb.append(image);
     const marks=document.createElement('div');marks.className='preview-marks';
     for(const other of pageOrder.filter(n=>pageEnabled&(1<<n))){const mark=document.createElement('i');if(other===id)mark.className='active';marks.append(mark);}thumb.append(marks);card.append(thumb);
     const info=document.createElement('div');info.className='page-info';

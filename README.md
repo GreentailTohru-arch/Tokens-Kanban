@@ -2,68 +2,63 @@
 
 # Tokens Kanban
 
-[Open the device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/)
+[Device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/) ·
+[Tokens Kanban v16 downloads](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v16)
 
-Keep Codex usage, remaining quota and live status in sight. Browse model rankings,
-activity and trends, or flip to a personal postcard with a portrait and contact QR.
-Amounts are estimates at API prices, not subscription charges. Statistics cover
-readable local Codex history, not lifetime usage across devices.
+Keep Codex tokens, quota and activity on AI Passport, view configurable computer
+monitoring cards, or display a personal postcard. API cost is an estimate, not a
+subscription charge. Usage covers readable local Codex history only.
 
 ## Start
 
-1. Install Codex and sign in on Windows. Download and extract the
-   [v9 Windows companion](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v9).
-   The device needs no Wi-Fi setup; live account quotas require the computer online.
-2. Connect by USB and run `start-auto.cmd`, or run `start-bluetooth.cmd` for Bluetooth.
-   Wait for `Connected`. Double-press OK for Home, Analytics and Postcard;
-   Up/Down changes periods on the first two pages. Single OK opens Home details
-   and estimated cost, or the postcard contact face.
-3. Stop the companion before connecting the manager in Chrome/Edge. Use the left
-   sidebar for Postcard or Settings; connect by USB or Bluetooth, edit and choose
-   **Save to device**. Disconnect the manager before restarting sync.
+1. Install/sign in to Codex on Windows and extract the v16 Windows ZIP. For computer
+   monitoring, put TokensKanbanBridge.dll in TrafficMonitor 1.86 x64's plugins folder
+   and restart TrafficMonitor once. The plugin is installed on the computer; the
+   website cannot install it. It reads existing data without changing host settings.
+2. Connect Passport by USB and run start-auto.cmd, or run start-bluetooth.cmd for BLE.
+   Wait for Connected. No device Wi-Fi setup is required; live account quotas need
+   the computer online. Double OK cycles enabled pages in their saved order. Up/Down
+   changes periods on Home/Analytics. Single OK opens Home details/cost or postcard
+   contact. Hold Up/Down for the minimal volume bar; OK dismisses it. A wake key is
+   consumed without changing volume or navigating.
+3. Stop sync before opening the manager in a desktop Chrome/Edge browser. Connect
+   USB/Bluetooth, edit and Save to device. Disconnect the manager before restarting
+   sync. Page Management previews/toggles/reorders pages, keeping at least one on.
+   System Monitor configures up to six cards, titles and units. All cards may be off.
+   Reconnect reads actual saved configuration. Previews use illustrative data.
 
-Avatar and QR framing uses a modal. Images are processed locally and sent directly
-to the device; the website never uploads personal cards to GitHub. Existing cards
-remain until a successful save. The default avatar is original symmetric vector
-artwork, available as `default-avatar.svg`.
+## Data and customization
 
-## Settings and sounds
+Monitoring supports CPU/GPU/RAM utilization, CPU/GPU temperatures, CPU frequency,
+disk utilization, upload/download/combined speed and today's traffic. Network data
+follows TrafficMonitor's selected adapters; today's historical total is not lifetime
+traffic or necessarily only the current adapter. RAM exposes percent only. Missing
+values show --; stale/dead sources become unavailable and reconnect recovers.
+Only TrafficMonitor 1.86 x64 is verified. See the [bridge guide](firmware/companion/trafficmonitor/README.md).
 
-Choose automatic screen-off, volume, and independent completion/quota sounds:
-Off, Codex, OpenCode or Antigravity. Only the supplied recordings are used;
-there are no generated presets. These are sound choices for Codex events, not
-OpenCode or Antigravity usage integrations. Both firmware and companion should
-be v9. Preview plays on the device without saving; **Save to device** retains
-settings across normal restart. Defaults are Never, Codex/Codex and 35% volume.
-Any key wakes a dark screen without also navigating; sync and sounds continue.
-Fresh completed Codex tasks trigger completion alerts; cancelled tasks and
-startup history do not. Exhausted quota alerts once per observed exhausted period.
+Postcard avatar/QR crops stay local and are sent directly to the device, never
+uploaded to GitHub. Existing cards remain until a successful save. Settings retain
+screen-off, shared volume, supplied Codex/OpenCode/Antigravity recordings and the
+startup-sound switch. Sound-bank names do not add usage tracking for those tools.
+Custom card text is checked against the device font; unsupported glyphs block saving.
 
-## Source and verification
+## Verification and source
 
-The complete v9 source, original recordings, tests, companion and reused BSP are
-in [firmware/](firmware/). [Application and test details](firmware/docs/codex-token-display.md).
-Build and host/browser checks passed. Device acceptance covered the supplied
-sounds and bounded BLE synchronization. Long-run/range/stress tests remain
-unverified; USB was busy after flashing, so no v9 startup console was captured.
-The [v9 release](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v9)
-contains the merged image for 0x0 flashing and Windows program. Back up personal
-settings before a complete merged-image refresh; do not erase the whole device.
+v16 build, firmware archive, actual TrafficMonitor getter/formatted-value agreement,
+receiver reconnection/staleness, isolated-DLL missing-sensor tests, simulated browser
+USB/BLE saves and native LVGL layout/font checks passed. v16 has NOT been flashed;
+physical display/buttons/volume, power-cycle persistence and long-run/range tests
+remain unverified. Prior versions' hardware acceptance does not validate v16.
 
-The BSP comes from [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport).
-See the accompanying license and retained notices. The default avatar is original
-MIT-licensed artwork.
+[Complete source](firmware/) and [application notes](firmware/docs/codex-token-display.md)
+retain the original BSP and supplied recordings. The release includes the full 0x0
+image, bridge, Windows companion, source ZIP, installation guide and SHA256 hashes.
+A merged flash may reset settings; preserving data needs a checked application-only
+upgrade without full-chip erase. No new community review was submitted.
 
-The startup-sound switch requires v10 firmware and is disabled on older firmware. It is enabled by default, follows device volume and does not replay on a normal screen wake. Save to device retains the choice.
+BSP source: [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport). Retained
+licenses/notices apply; the original symmetric default avatar is MIT licensed.
 
-## Page management preview
-
-The web manager now opens with four device-page previews, switches and order
-controls. At least one page stays enabled. Saving these options requires the
-newer page-management firmware (v13 or later); older firmware retains its existing
-postcard and settings controls. Previews contain illustrative data.
-
-The matching development update includes a six-panel System Monitor page fed by
-TrafficMonitor 1.86 x64 through a read-only bridge, plus quick volume controls.
-Network directions use arrows; hold Up/Down to open the minimal progress bar.
-These additions are not part of the older v9 release linked above.
+System Monitor shows the synchronized local HH:MM clock at top left, or 00:00 before
+time sync. Battery remains at top right. The bridge DLL is unchanged from the
+verified v15 component and needs no further TrafficMonitor restart.
