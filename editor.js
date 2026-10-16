@@ -158,16 +158,28 @@ function putSettings(values){
 async function readSettings(connection){
   const reply=await connection.rpc('PC_CFG_GET'),parts=reply.split(' ');
   settingsSupported=parts.length===6&&parts[0]==='PC_CFG'&&parts[1]==='1';
-  if(settingsSupported){const values=parts.slice(2).map(Number);if(values.some(v=>!Number.isInteger(v)))throw new Error('设备设置格式错误');putSettings(values);}
-  $('settingsState').textContent=settingsSupported?'已读取设备设置':'设备固件需更新至 v7 才能使用设置';
+  let migrated=false,banks=1;
+  if(settingsSupported){
+    const values=parts.slice(2).map(Number);
+    if(values.some(v=>!Number.isInteger(v))||values[0]<0||(values[0]>0&&(values[0]<15||values[0]>3600))||values[1]<0||values[1]>7||values[2]<0||values[2]>7||values[3]<0||values[3]>100)throw new Error('设备设置格式错误');
+    const capability=await connection.rpc('PC_SOUND_BANKS');
+    if(capability==='PC_SOUND_BANKS 3')banks=3;else if(capability==='PC_SOUND_BANKS 2')banks=2;
+    const done=values[1]===0?0:values[1]===4||values[1]===6?values[1]:1;
+    const quota=values[2]===0?0:values[2]===5||values[2]===7?values[2]:3;
+    migrated=done!==values[1]||quota!==values[2];values[1]=done;values[2]=quota;
+    if((banks<2&&(done===4||quota===5))||(banks<3&&(done===6||quota===7)))throw new Error('设备音效信息不一致，请重新连接');
+    putSettings(values);
+  }
+  for(const [id,value,needed] of [['doneTone','4',2],['quotaTone','5',2],['doneTone','6',3],['quotaTone','7',3]])$(id).querySelector(`option[value="${value}"]`).disabled=banks<needed;
+  $('settingsState').textContent=!settingsSupported?'设备固件需更新至 v7 才能使用设置':migrated?'旧版音效已改为 Codex，保存后应用':banks<3?'已读取设备设置 · 升级 v9 可用全部音效':'已读取设备设置';
 }
 async function saveSettings(event){
   event.preventDefault();if(!link||busy||!settingsSupported)return;
-  busy=true;controls();
+  busy=true;controls();$('settingsState').textContent='正在保存设置…';
   try{
     const values=settingsValues(),id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;
     let reply=await link.rpc(`PC_CFG_SET ${id} ${values.join(' ')}`),saved=false;
-    for(let i=0;i<100;i++){
+    for(let i=0;i<300;i++){
       const parts=reply.split(' ');
       if(parts[0]!=='PC_CFG_STATE'||Number(parts[1])!==id)throw new Error('设备暂忙，请稍后保存');
       if(parts[2]==='3')throw new Error('设备保存失败，原设置仍保留');
@@ -178,7 +190,7 @@ async function saveSettings(event){
     await readSettings(link);
     if(!settingsSupported||settingsValues().some((v,i)=>v!==values[i]))throw new Error('设置校验不一致，请重新读取');
     $('settingsState').textContent='设置已保存到设备';status('设置已保存到设备');
-  }catch(error){status(error.message);}finally{busy=false;controls();}
+  }catch(error){$('settingsState').textContent='保存未确认，请重新连接读取';status(error.message);}finally{busy=false;controls();}
 }
 async function previewTone(field){
   if(!link||busy||!settingsSupported)return;
