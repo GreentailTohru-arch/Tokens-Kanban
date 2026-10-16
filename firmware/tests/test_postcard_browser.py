@@ -25,6 +25,7 @@ Object.defineProperty(navigator,'serial',{value:{requestPort:async()=>{
    if(v[0]==='PC_TIME')reply='PC_TIME_OK';
    if(v[0]==='PC_CLOCK'){card.clock=+v[1];reply=window.legacyClock?'PC_INVALID':'PC_CLOCK_OK';}
    if(v[0]==='PC_CFG_GET'&&!window.legacySettings)reply='PC_CFG 1 '+window.testConfig.values.join(' ');
+   if(v[0]==='PC_SOUND_BANKS'&&!window.legacyBanks)reply='PC_SOUND_BANKS 3';
    if(v[0]==='PC_CFG_SET'){const c=window.testConfig;c.id=+v[1];c.state=window.failConfig?3:2;if(!window.failConfig)c.values=v.slice(2).map(Number);reply=`PC_CFG_STATE ${c.id} 1`;}
    if(v[0]==='PC_CFG_STATUS'){const c=window.testConfig;reply=`PC_CFG_STATE ${c.id} ${c.state}`;}
    if(v[0]==='PC_SOUND'){window.testConfig.sounds.push(v.slice(1).map(Number));reply='PC_SOUND_QUEUED';}
@@ -151,16 +152,18 @@ def main():
         page.locator('#usb').click();page.wait_for_function("document.getElementById('connection').textContent.includes('已连接')")
         page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_enabled()
         expect(page.locator('#settingsState')).to_have_text('已读取设备设置')
-        page.locator('#idleTime').select_option('60');page.locator('#doneTone').select_option('2');page.locator('#quotaTone').select_option('3');page.locator('#soundVolume').fill('45')
+        assert page.locator('#doneTone option').all_text_contents()==['关闭','Codex','OpenCode','Antigravity']
+        assert page.locator('#quotaTone option').all_text_contents()==['关闭','Codex','OpenCode','Antigravity']
+        page.locator('#idleTime').select_option('60');page.locator('#doneTone').select_option('4');page.locator('#quotaTone').select_option('7');page.locator('#soundVolume').fill('45')
         page.locator('#previewDone').click();expect(page.locator('#status')).to_contain_text('试听已发送')
-        assert page.evaluate('window.testConfig.sounds')==[[2,45]]
+        assert page.evaluate('window.testConfig.sounds')==[[4,45]]
         page.locator('#previewQuota').click();page.wait_for_function('window.testConfig.sounds.length===2')
         page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
-        assert page.evaluate('window.testConfig.values')==[60,2,3,45]
+        assert page.evaluate('window.testConfig.values')==[60,4,7,45]
         page.screenshot(path=str(out/'browser-settings.png'),full_page=True)
         page.evaluate('window.failConfig=true');page.locator('#idleTime').select_option('120')
         page.locator('#upload').click();expect(page.locator('#status')).to_contain_text('原设置仍保留')
-        assert page.evaluate('window.testConfig.values')==[60,2,3,45]
+        assert page.evaluate('window.testConfig.values')==[60,4,7,45]
         page.locator('#disconnect').click();expect(page.locator('#idleTime')).to_be_disabled()
         page.evaluate('window.failConfig=false');page.locator('#usb').click();expect(page.locator('#idleTime')).to_have_value('60')
         page.locator('#postcardNav').click()
@@ -185,7 +188,8 @@ def main():
         page.locator('#disconnect').click();page.wait_for_function("document.getElementById('connection').textContent==='未连接'")
         page.locator('#ble').click();page.wait_for_function("document.getElementById('connection').textContent.includes('蓝牙')")
         page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_have_value('60')
-        page.locator('#idleTime').select_option('300');page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
+        page.locator('#idleTime').select_option('300');page.locator('#doneTone').select_option('6');page.locator('#quotaTone').select_option('5')
+        page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
         assert page.evaluate('window.testConfig.values')[0]==300
         page.locator('#postcardNav').click()
         page.evaluate('window.testCard.saved=false')
@@ -193,6 +197,15 @@ def main():
         page.wait_for_function("document.getElementById('status').textContent.startsWith('已保存到设备')")
         assert bytes(page.evaluate('window.testCard.data'))==raw
         page.locator('#disconnect').click();page.wait_for_function("document.getElementById('connection').textContent==='未连接'")
+        page.evaluate('window.legacyBanks=true;window.testConfig.values=[300,2,2,45]')
+        page.locator('#usb').click();page.locator('#settingsNav').click()
+        expect(page.locator('#doneTone')).to_have_value('1');expect(page.locator('#quotaTone')).to_have_value('3')
+        expect(page.locator('#settingsState')).to_contain_text('旧版音效已改为 Codex')
+        assert page.locator('#doneTone option[value="4"]').evaluate('(o)=>o.disabled')
+        assert page.locator('#quotaTone option[value="7"]').evaluate('(o)=>o.disabled')
+        page.locator('#upload').click();expect(page.locator('#settingsState')).to_have_text('设置已保存到设备')
+        assert page.evaluate('window.testConfig.values')==[300,1,3,45]
+        page.locator('#disconnect').click();page.locator('#postcardNav').click()
         page.evaluate('window.legacyClock=true;window.legacySettings=true')
         page.locator('#usb').click();expect(page.locator('#status')).to_contain_text('需要更新设备固件')
         page.locator('#settingsNav').click();expect(page.locator('#idleTime')).to_be_disabled();expect(page.locator('#upload')).to_be_disabled()

@@ -344,7 +344,7 @@ through `tests/postcard_codec_probe.c`. These are not physical radio/QR tests.
 ## v4 device acceptance (2026-10-16)
 
 With the user's explicit upload approval, merged image `29cb512c9b7aa68e20c9d623e581e517ddec323c07bde2ba8f1bf688c3011537` was written
-at 0x0 to COM9 (ESP32-C3, MAC [device address omitted]); flash hash verification passed.
+at 0x0 to COM9 (ESP32-C3, MAC 98:C3:77:F4:DE:B0); flash hash verification passed.
 No full-chip erase or firmware rebuild was performed. Targeted application-header
 readback matched embedded ELF `8782c66ff3...`; early boot ELF logs were not captured.
 Captured application startup had no panic or storage-start failure. USB and BLE CT4
@@ -428,7 +428,7 @@ Build/host/deployment results and exact firmware identities accompany v6. No una
 ## v6 device acceptance (2026-10-16)
 
 After the user's explicit flash approval, verified merged image `75c08d1a7d2332eeec46ba86d4857445d055ba0bf722d5aecf8aa31ed21731e2` was written
-at 0x0 to COM9, ESP32-C3, MAC [device address omitted]. Write hash verification passed, with
+at 0x0 to COM9, ESP32-C3, MAC 98:C3:77:F4:DE:B0. Write hash verification passed, with
 no rebuild or full-chip erase. Targeted application-header readback matched ELF
 `05e9c232e98b98978a0d1fa8663af09416e1410f11b2fd38f63334054f0ec385`; early startup ELF log lines were not captured.
 USB CT4 handshake, real usage ACK, PC_CLOCK date/time ACK and postcard worker response passed.
@@ -490,3 +490,136 @@ queue pressure, NVS failure preservation, audio sample bounds, and simulated USB
 save/readback. Build and hardware results are reported with the v7 delivery. No v7 firmware
 is flashed without new user approval; physical sound quality, idle timing and concurrent
 audio/radio/flash behavior remain hardware checks.
+
+## v7 device acceptance (2026-10-16)
+
+With explicit user approval, merged image
+`373bacab0b75ba97c5b47bfefc9ebb6b1077999615b6f8973595a3f400548cec`
+was flashed at 0x0 to COM9 with write verification, no rebuild and no full-chip erase.
+The write ended at 0x160220, below the postcard partition at 0x780000; no postcard
+upload was performed. Targeted app-descriptor readback matched ELF
+`a5d4902082f315f716cda4ba917217cbfe4bfd9639ccef470ee3b142225cf034`.
+Early startup logs were not captured.
+
+USB CT4, actual statistics/clock, settings commit/readback and persistence across a
+hardware reset passed. Two previews, explicit completion/duplicate acknowledgements
+and a simulated fresh quota exhaustion were exercised, then actual data restored.
+The user confirmed sounds, 30-second screen-off and key wake normal. The test settings
+were restored to Never, Light completion, Low quota and 35% volume over USB with readback.
+BLE settings read and 15 seconds of actual statistics/clock updates passed. Windows
+cancelled a redundant final BLE save; a later USB open was denied. The packaged v7
+BLE companion subsequently connected successfully; no unrelated processes were stopped.
+
+Build: PASS. Host tests: PASS. Device tests: PASS for the checks above.
+Unverified: real browser chooser/save workflow, physical power loss, RF range, long-run
+stability, runtime heap/stack, precise sleep current and simultaneous Flash/audio/radio
+stress. Do not interpret the Windows connection interruption as verified reset-free operation.
+
+## v8 supplied notification sounds (2026-10-16)
+
+The user's `codex-notification.wav` replaces tone ID 1 for completion, and
+`codex-error.wav` replaces ID 3 for exhausted quota. Defaults remain IDs 1/3 at
+35% volume; existing saved IDs keep their event assignment. Off, volume zero,
+preview and the optional soft-double preset remain available. The web settings
+labels are Completion tone / Quota tone. The v7 companion already sends the
+required events, so event transport is unchanged. The v8 Windows package includes
+the updated local manager and version label.
+
+The supplied originals are preserved, with reproducible conversion and format/hash
+inventory under assets/music. Playback preserves duration and pitch, uses the
+existing 16kHz mono BSP path, streams 320 samples at a time, and drains DMA before
+sleep. Tests compare the actual BSP write stream with every supplied PCM sample
+and check partial final chunks, silence drain, source identity, duration, alias
+rejection, persistence and event deduplication. New sounds require v8 firmware;
+website labels alone cannot replace sound data in an already flashed v7.
+
+This is a new unflashed build: v7 hardware acceptance does not validate these
+clips on the speaker. Build/host results and exact identities accompany the v8
+delivery; flash approval is required separately. The running v7 BLE sync is retained.
+
+## v8 device acceptance (2026-10-16)
+
+After explicit user approval, the actual device partition table was read and
+matched the verified v8 table and previous v7 layout. The approved application
+was flashed at 0x10000, 1413856 bytes, with hash verification; no rebuild,
+NVS/PHY write or whole-chip erase occurred. The application bytes are identical
+to those in merged image `364a613d65adf0b30de7a3e31323e834c620d51adb535b60fd5a3ffac90ea99e`.
+Targeted app-descriptor readback matched ELF
+`948e88e0b09f3ef028e0409bdf1bde047f70bf13dc269479e6b036f3568e249b`;
+the startup ELF prefix and app_main entry were also observed.
+
+Settings before/after reset remained Never / completion 1 / quota 3 / volume 35.
+The card partition at 0x780000 was not written and no postcard upload occurred.
+USB real statistics/clock, completion event and duplicate ACK, a simulated quota
+exhaustion/repeat, restoration of real data, BLE settings read and 15 seconds of
+actual BLE synchronization passed. The user reported both supplied sounds
+matched and played normally. No panic or audio error appeared in the captured
+protocol observation window. The packaged v8 BLE companion is started for
+continued background synchronization; live connection is recorded separately.
+
+Build: PASS. Host tests: PASS. Device tests: PASS for the executed checks above.
+Unverified: physical power loss, long-run/range tests, heap/stack margins and
+Flash/audio/radio stress. New sounds were tested on hardware; v7 acceptance is
+not used as a substitute for this result. No Git push or community update is
+implied by the flash authorization.
+
+The initial background Windows BLE session timed out intermittently; restarting only
+the sync process restored connection. A subsequent 40-second USB observation found
+no panic/audio-failure markers and the companion logged no new timeout during that window.
+No paired Passport entry was present, so no pairing was removed.
+
+## v9 Codex, OpenCode and Antigravity (2026-10-16)
+
+Completion and exhausted-quota settings each offer only Off, Codex, OpenCode and
+Antigravity. They select the matching completion/error recording for that event,
+independently; no generated presets remain. Defaults stay Codex / Codex, volume 35%.
+Codex IDs 1/3 remain unchanged; OpenCode uses 4/5 and Antigravity 6/7. Preview ID 2
+is rejected. Setting validation accepts only event-appropriate IDs. Loading legacy
+ID 2 or old cross-event choices maps to that event's Codex clip while preserving
+idle timeout and volume; a later save commits the migration.
+
+`PC_SOUND_BANKS` returns `PC_SOUND_BANKS 3`. The website queries this capability:
+older firmware still reads settings and edits postcards, while unavailable banks
+are disabled and an upgrade hint is shown. The old generated menu choice is absent
+even on older firmware; saving its migrated choice applies Codex. Compressed AAC/MP3
+files are decoded only on the host, with originals, reproducible caches and SHA
+bindings retained. All six PCM clips are in Flash, streamed through the existing BSP.
+The longest supplied clip is 2.592 seconds; settings polling allows the bounded
+audio queue to drain rather than falsely reporting a five-second timeout.
+
+Host coverage includes every clip's actual BSP output and final partial chunk,
+source hashes, decode-cache binding, legacy migration commit, invalid/retires IDs,
+new-bank USB/BLE settings save/preview, old-firmware capability gating and the
+existing postcard workflow. v9 speaker acceptance is pending new flash approval;
+the running v8 companion/device are kept intact during preparation. Delivery reports
+Build / Host tests / Device tests / Unverified independently. No source recordings
+are sent to GitHub by the website.
+
+## v9 device acceptance (2026-10-16)
+
+After explicit flash approval, the actual partition table matched the verified
+archive and v8 layout. Only the approved application, 1552912 bytes at 0x10000,
+was written with hash verification. No rebuild or whole-chip erase occurred.
+NVS, PHY and the postcard partition at 0x780000 were not written; no card upload
+occurred. Merged-image SHA256 is
+`220dd600137cc9622754746a82492687c7006ebb2d4b0b619821147fb1bd25f3`,
+application SHA256 is `2cb3858b09260efb342deb2aae339efcc69336bedd70b690d04e541be4f4c2c7`,
+and ELF SHA256 is `73799fc598007dc75dd57a55d1bb1441b1e3d7b4c309231b0d656b8feca1282e`.
+
+BLE CT4 handshake, three-bank capability, rejection of generated ID 2, postcard
+protocol readiness, and real statistics/clock synchronization passed. The user
+confirmed all four OpenCode and Antigravity completion/quota recordings played
+correctly. Previews did not write settings; before/after readings were 30 seconds
+idle timeout / 4 / 5 / 100%. These latest settings were retained instead of
+restoring older pre-flash values. The packaged v9 companion resumed background
+BLE synchronization; it remained alive with no new timeout/error in a bounded
+observation of at least 40 seconds after connection.
+
+Build: PASS. Host tests: PASS. Device tests: PASS for the executed checks above.
+Unverified: COM9 remained busy after the verified write, so USB startup logs and
+app-descriptor readback were not obtained; acceptance continued over BLE.
+Protocol logs do not establish absence of crashes. Physical power loss, long-run
+and range tests, heap/stack margins, current and audio/Flash/radio stress remain
+unverified. Windows BLE has previously timed out and reconnected intermittently;
+short observation does not establish long-run stability. No Git push or community
+update occurred in this flash task.

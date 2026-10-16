@@ -1,0 +1,18 @@
+{
+  "opencode-complete.aac": {
+    "source_sha256": "01ad688048bca68a31ae6d1134f0977de6d35eb51242c983c441aec672b91c5a",
+    "decoded_sha256": "033b2b4bb2c3880b4e1fbf0c32a3c0a1bba70b6bb76badb52616969331ed13ac"
+  },
+  "opencode-error.aac": {
+    "source_sha256": "748f50a244b17a1a2f5020bc253adc1319f29c8b563b390e09627daa91b989c6",
+    "decoded_sha256": "6edd9186b09ca14dae16cf6f22bc9b837a4f6128925a0664a7d76fefb5579d52"
+  },
+  "antigravityCascadeDone.mp3": {
+    "source_sha256": "965965913e685e5dd7b484c39c78b2f2cb7b7cdb71a670f4bcbed8eba408e613",
+    "decoded_sha256": "29273dc6c77e9f13c955bb676d26a70f2559c98cd8b9c557f0d35579b509c3e2"
+  },
+  "antigravityActionRequired.mp3": {
+    "source_sha256": "7d8ae66c7ca962634860dcf901a69494dd6c7a425a8f11fd6f2775d3cafd3ed7",
+    "decoded_sha256": "559a212ea33a323bddc7f99d560bfa65dcc74e0bcc7b9568bbc8b5823c8695b0"
+  }
+}

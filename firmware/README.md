@@ -1,16 +1,15 @@
 [简体中文](README.zh_CN.md)
 
-# Codex Tokens Kanban v6
+# Codex Tokens Kanban v9
 
-This directory contains the complete current firmware, companion, tests and upstream BSP source.
-The checked v6 merged firmware SHA-256 is `75c08d1a7d2332eeec46ba86d4857445d055ba0bf722d5aecf8aa31ed21731e2`.
+Complete firmware, companion, tests, original recordings and reused BSP source.
+The verified merged-image SHA256 is `220dd600137cc9622754746a82492687c7006ebb2d4b0b619821147fb1bd25f3`.
 
-- [Application guide](docs/codex-token-display.md)
-- [Board setup and development](docs/README.md)
-- Use ESP-IDF 5.5.3 and run `./tools/validate.sh` to build and verify the merged 0x0 image.
-- For Python companion use `python -m pip install -r companion/requirements.txt` then
-  `python companion/codex_tokens.py --transport auto`, on a computer with Codex installed and signed in.
-- The Windows companion and launchers are available in the repository's v6 release.
+- [Application guide and acceptance](docs/codex-token-display.md)
+- [Board setup](docs/README.md)
+- Use ESP-IDF 5.5.3 and `./tools/validate.sh` to build and verify a merged 0x0 image.
+- Install `companion/requirements.txt`, then run `python companion/codex_tokens.py --transport auto`.
+- The Windows program and launchers are in this repository's v9 release.
 
-Build and host tests passed. Authorized device checks passed within the scope documented in the app guide.
-A later local rebuild can have a different identity; the released artifact is bound to the hash above.
+Build/host checks and bounded device acceptance passed; long-run/range/stress tests remain unverified.
+Rebuilding may produce a different identity from the checked release.

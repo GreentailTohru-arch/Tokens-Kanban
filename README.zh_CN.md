@@ -4,34 +4,44 @@
 
 [打开设备管理网页](https://greentailtohru-arch.github.io/Tokens-Kanban/)
 
-在 Chrome／Edge 中通过网页蓝牙或 USB 连接 AI Passport，在小窗中调整头像和二维码构图，
-编辑标题、副标题与联系方式，再保存到设备。需配合兼容的 Passport 固件。
-连接前先退出电脑用量同步程序，释放设备连接。
+把 Codex 用量、剩余额度和运行状态带在身边，翻页查看模型排行、活动热图与趋势，
+或展示带头像和联系二维码的个人明信片。金额是 API 单价估算，并非订阅扣款。
+统计仅覆盖可读取的本机 Codex 历史，不代表跨设备终身用量。
 
-图片在浏览器本地处理，经用户点击授权后直接写入设备。GitHub 仅托管静态编辑器和公开默认素材。
-通用头像和指向本网页的二维码为默认内容；设备上的个人卡片仅在保存成功后替换。
-网页不会把导入的图片提交到 GitHub 或上传到图片服务器。
+## 开始使用
 
-硬件应用复用 [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport) 的 BSP。
-代码沿用 MIT 授权。默认头像为原创、严格左右对称的矢量用户图，MIT 授权，源文件为 `default-avatar.svg`。
+1. Windows 电脑安装并登录 Codex，下载并解压
+   [v9 配套程序](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v9)。
+   设备无需配网，实时账户额度需要电脑联网。
+2. USB 连接后运行 `start-auto.cmd`；蓝牙运行 `start-bluetooth.cmd`，等待 `Connected`。
+   双击确定切换首页、统计和明信片；前两页上下切换周期。首页单击看明细和金额估算，
+   明信片单击看联系方式。
+3. 先关闭同步程序，在 Chrome／Edge 打开管理网页。左侧切换“明信片／设置”，
+   通过 USB 或蓝牙连接，编辑后点“保存到设备”。网页断开后再启动同步。
 
-## 固件与电脑同步程序
+头像和二维码使用小窗取景。图片在浏览器本地处理，直接发往设备，不会经网页上传至
+GitHub。已有卡片在保存成功前不会替换。默认头像是原创左右对称矢量图，
+源文件为 `default-avatar.svg`。
 
-当前 v7 的完整源码位于 [firmware/](firmware/)，包含 BSP、应用、测试与电脑同步程序。
-[下载 Windows 配套程序](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v7)。
-设备可查看 Codex 用量与金额估算、趋势，并展示个人明信片。上下键切换周期，单击确定查看明细或联系方式，双击确定循环三页。
-设备无需配网；获取当前账户额度需要电脑已登录 Codex 并可联网。
+## 设置与音效
 
-## 设备设置（v7）
+可设置自动熄屏、音量，并分别选择结束／额度音效：关闭、Codex、OpenCode 或
+Antigravity。仅使用提供的录音，无合成预设。这些是 Codex 事件的音效套装，
+不代表接入 OpenCode 或 Antigravity 用量。固件与电脑程序均建议使用 v9。
+“试听”在设备播放且不保存；“保存到设备”后正常重启仍保留。默认不自动熄屏、
+Codex／Codex、35% 音量。任意键唤醒熄屏且首次不翻页，同步和声音继续运行。
+只有新鲜的 Codex 任务完成事件触发结束提示，启动历史和取消不会触发；
+额度在每段观察到的耗尽期只提醒一次。
 
-左侧栏切换“明信片／设置”。先退出电脑同步程序，网页通过 USB 或蓝牙连接后进入设置，
-选择自动熄屏时间、思考结束音效、额度耗尽音效和音量。试听在设备播放，顶部“保存到设备”
-将设置持久保存。网页断开后再启动 v7 电脑同步程序。
+## 源码与验证
 
-熄屏只关闭背光，按任意键唤醒且首次按键不翻页。默认不自动熄屏、轻提示结束音、
-低音额度提醒和 35% 音量，音效可分别关闭。只有新鲜的实际完成事件触发结束提示，
-启动历史、取消和断线不会触发；额度耗尽期只提醒一次。结束提示需要固件与电脑程序均为
-v7。旧固件仍可编辑明信片，设置控件会禁用。设备无需配网。
+[firmware/](firmware/) 为完整 v9 源码，包含原始录音、测试、同步程序及复用 BSP。
+[实现与测试详情](firmware/docs/codex-token-display.zh_CN.md)。构建、主机和浏览器测试通过；
+设备已验收指定音效及有限时长的蓝牙同步。长期、距离和压力测试未验证，刷入后 USB
+占用，未采集 v9 启动串口日志。
+[v9 Release](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v9)
+提供从 0x0 刷写的合并镜像及 Windows 程序。完整合并刷新前请记录个人设置，
+不要全片擦除。
 
-v7 构建、主机及浏览器模拟测试已通过；新音效、熄屏时间、重启保持及并发运行
-仍需实机验收，v7 尚未烧录。[实现与验证说明](firmware/docs/codex-token-display.zh_CN.md)。
+BSP 来自 [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport)，保留相应授权与声明。
+默认头像为原创 MIT 授权作品。

@@ -57,3 +57,35 @@ Codex Token Display 使用 `fonts/NotoSansCJKsc-Regular.otf`，来源为
 - `images/postcard-default-avatar.svg`／`.png`：原创左右对称默认用户头像，MIT，使用 `tools/create_default_avatar.py` 生成并随网页分发。原用户参考图另存为 `images/postcard-avatar-reference.png`，不作为默认素材。
 - `images/postcard-editor-header-reference.png`：用户提供的原网页顶部截图，仅保留作为改版参考。
 - `images/postcard_default_rgb565.c`：由 `tools/postcard_defaults.py` 使用实际网页生成，作为只读 Flash 默认卡片，包含指向公开编辑器的二维码。
+
+## 用户提供的 Codex 提示音（v8）
+
+`music/codex-notification.wav` 用于思考结束（48kHz、16 位、立体声、0.570875 秒）；
+`music/codex-error.wav` 用于额度耗尽（48kHz、24 位、立体声、0.586646 秒）。
+来源：用户于 2026-10-16 提供的桌面附件；不另行声明所有权或再分发许可，
+原文件保持不变，用于本次指定实现。
+
+运行 `python3 tools/convert_codex_sounds.py`（或 `--check`）生成
+`music/codex_sounds.c` 和哈希／格式清单 `music/codex_sounds.json`。
+转换器仅依赖 Python 标准库，平均声道、低通滤波后降采样至 16kHz／16 位单声道，
+不增益、不裁剪、不改变速度。固件只读 Flash 保存 37042 字节采样，
+通过 640 字节栈缓冲分块交给 BSP，不在 RAM 中分配完整音效，也不在设备解析 WAV 头。
+清单记录原始与转换后内容哈希。
+
+## 三套用户提供音效（v9）
+
+只链接用户提供的录音：Codex 完成／错误 WAV，OpenCode 的
+`opencode-complete.aac`／`opencode-error.aac`，以及 Antigravity 的
+`antigravityCascadeDone.mp3`／`antigravityActionRequired.mp3`。来源为用户
+2026-10-16 附件，原文件保持不变，不另行声明再分发许可。Antigravity 的
+ActionRequired 用于额度耗尽事件。
+
+运行 `python3 tools/convert_codex_sounds.py --decode --ffmpeg <FFmpeg路径>`，
+先解码压缩源为 16kHz 单声道 WAV 缓存，再生成现有 `music/codex_sounds.c`
+与 JSON 清单，内含三套音效。`--decode --check` 可复核解码；普通 `--check`
+仅依赖标准库，通过 `recording_decode.json` 的源／缓存 SHA 绑定校验。
+Codex 既有滤波后 PCM 保持不变。不手工裁剪、不归一化、不改变速度，
+遵循解码器的标准填充元数据。
+
+六段采样共 181320 字节保存在只读 Flash，播放缓冲仍为 640 字节，
+设备不需要 AAC／MP3 解码器。原合成柔和双音和本应用的正弦合成播放代码均已移除。

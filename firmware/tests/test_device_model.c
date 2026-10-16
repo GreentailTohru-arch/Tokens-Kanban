@@ -7,6 +7,10 @@ int main(void){
     assert(!device_screen_off(&s,&c,14999));assert(device_screen_off(&s,&c,15000));assert(device_key(&s,16000));assert(!device_key(&s,16001));
     assert(!device_screen_off(&s,&c,30000));assert(device_screen_off(&s,&c,31001));
     c.idle_seconds=3601;assert(!device_config_valid(&c));
+    c=(device_config_t){600,2,2,55};assert(!device_config_valid(&c));device_config_upgrade(&c);
+    assert(device_config_valid(&c)&&c.idle_seconds==600&&c.volume==55&&c.done_tone==1&&c.quota_tone==3);
+    c.done_tone=6;c.quota_tone=7;assert(device_config_valid(&c));device_config_upgrade(&c);assert(c.done_tone==6&&c.quota_tone==7);
+    c.done_tone=99;device_config_upgrade(&c);assert(!device_config_valid(&c));
     token_snapshot_t p={0};p.v[T_QUOTA_AGE]=0;p.v[T_USED1]=100;p.v[T_WINDOW1]=300;p.v[T_RESET1]=500;
     assert(device_quota_alert(&s,&p));assert(!device_quota_alert(&s,&p));
     p.v[T_USED1]=-1;assert(!device_quota_alert(&s,&p)&&s.exhausted==1);

@@ -384,7 +384,7 @@ def main():
         return
     if args.port and args.transport=='ble': parser.error('--port cannot be used with --transport ble')
     index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False
-    print('Codex Token Display v7 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends. Ctrl+C to exit.',flush=True)
+    print('Codex Token Display v9 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)

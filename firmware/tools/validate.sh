@@ -31,9 +31,11 @@ run_static_checks() {
         tests/test_device_model.c main/device_model.c -o "${TMPDIR:-/tmp}/passport-device-model-test"
     "${TMPDIR:-/tmp}/passport-device-model-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/postcard_stubs -Icomponents/bsp/include -Imain \
-        tests/test_device_runtime.c main/device_model.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
+        tests/test_device_runtime.c main/device_model.c assets/music/codex_sounds.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
     "${TMPDIR:-/tmp}/passport-device-runtime-test"
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_events.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/convert_codex_sounds.py --check
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_device_sounds.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_bridge.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_analytics.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_ble.py

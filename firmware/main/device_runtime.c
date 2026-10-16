@@ -1,4 +1,5 @@
 #include "device_runtime.h"
+#include "device_sounds.h"
 #include "bsp_audio.h"
 #include "bsp_display.h"
 #include "esp_log.h"
@@ -8,7 +9,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
-#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdatomic.h>
@@ -16,32 +16,33 @@ typedef struct { unsigned command,id,tone,volume; device_config_t config; } requ
 static QueueHandle_t queue;
 static device_config_t config,requested;
 static device_behavior_t behavior;
-static bool nvs_ready,event_seen,event_pending;
+static bool nvs_ready,event_seen,event_pending,config_dirty;
 static unsigned save_id,save_state,event_host,event_sequence;
 static atomic_bool wake_requested;
 static portMUX_TYPE mutex=portMUX_INITIALIZER_UNLOCKED;
 
 static bool play_tone(unsigned tone,unsigned volume) {
     if(!tone || !volume) return true;
+    const int16_t *source;size_t count;
+    switch(tone) {
+        case 1:source=codex_notification_pcm;count=codex_notification_samples;break;
+        case 3:source=codex_error_pcm;count=codex_error_samples;break;
+        case 4:source=opencode_complete_pcm;count=opencode_complete_samples;break;
+        case 5:source=opencode_error_pcm;count=opencode_error_samples;break;
+        case 6:source=antigravity_complete_pcm;count=antigravity_complete_samples;break;
+        case 7:source=antigravity_error_pcm;count=antigravity_error_samples;break;
+        default:return false;
+    }
     static bool initialized;
     if(!initialized) { if(bsp_audio_init()!=ESP_OK) return false;initialized=true; }
-    if(bsp_audio_wake()!=ESP_OK || bsp_audio_set_format(16000,16,1)!=ESP_OK) return false;
+    if(bsp_audio_wake()!=ESP_OK || bsp_audio_set_format(CODEX_SOUND_HZ,16,1)!=ESP_OK) return false;
     bsp_audio_set_volume((uint8_t)volume);
-    /* Short generated PCM in 20ms chunks, with attack/release to avoid clicks. */
-    const unsigned frequency[3][2]={{880,0},{660,880},{392,294}};
-    unsigned notes=tone==1?1:2;int16_t pcm[320];
-    for(unsigned note=0;note<notes;++note) {
-        unsigned count=tone==3?2560:2080;
-        for(unsigned offset=0;offset<count;offset+=320) {
-            unsigned n=count-offset;if(n>320)n=320;
-            for(unsigned i=0;i<n;++i) {
-                unsigned pos=offset+i,fade=pos<count-pos?pos:count-pos;
-                float envelope=fade<192?fade/192.0f:1.0f;
-                pcm[i]=(int16_t)(6000.0f*envelope*sinf(6.28318530718f*frequency[tone-1][note]*pos/16000.0f));
-            }
-            if(bsp_audio_write(pcm,n*sizeof(*pcm))!=ESP_OK) return false;
-        }
-        memset(pcm,0,sizeof(pcm));if(bsp_audio_write(pcm,sizeof(pcm))!=ESP_OK)return false;
+    /* Only user-provided recordings; no synthesized tone fallback. */
+    int16_t pcm[320];
+    for(size_t offset=0;offset<count;offset+=320) {
+        size_t n=count-offset;if(n>320)n=320;
+        memcpy(pcm,source+offset,n*sizeof(*pcm));
+        if(bsp_audio_write(pcm,n*sizeof(*pcm))!=ESP_OK)return false;
     }
     /* Drain the last queued samples before suspending the codec. */
     memset(pcm,0,sizeof(pcm));
@@ -53,7 +54,7 @@ static void worker(void *arg) {
     for(;;) {
         if(xQueueReceive(queue,&request,portMAX_DELAY)!=pdTRUE) continue;
         if(request.command==1) {
-            portENTER_CRITICAL(&mutex);bool same=!memcmp(&config,&request.config,sizeof(config));portEXIT_CRITICAL(&mutex);
+            portENTER_CRITICAL(&mutex);bool same=!config_dirty && !memcmp(&config,&request.config,sizeof(config));portEXIT_CRITICAL(&mutex);
             nvs_handle_t handle;esp_err_t error=same?ESP_OK:nvs_open("tokens_ui",NVS_READWRITE,&handle);
             if(error==ESP_OK && !same) {
                 error=nvs_set_blob(handle,"cfg1",&request.config,sizeof(request.config));
@@ -61,7 +62,7 @@ static void worker(void *arg) {
                 nvs_close(handle);
             }
             portENTER_CRITICAL(&mutex);
-            if(error==ESP_OK) {config=request.config;save_state=2;atomic_store(&wake_requested,true);}
+            if(error==ESP_OK) {config=request.config;config_dirty=false;save_state=2;atomic_store(&wake_requested,true);}
             else save_state=3;
             portEXIT_CRITICAL(&mutex);
             if(error!=ESP_OK) ESP_LOGW("device","Settings save failed: %s",esp_err_to_name(error));
@@ -72,13 +73,16 @@ static void worker(void *arg) {
     }
 }
 bool device_runtime_start(void) {
-    config=device_config_default();behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
+    config=device_config_default();config_dirty=false;behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
     nvs_ready=nvs_flash_init()==ESP_OK;
     if(nvs_ready) {
         nvs_handle_t handle;
         if(nvs_open("tokens_ui",NVS_READONLY,&handle)==ESP_OK) {
             device_config_t stored;size_t size=sizeof(stored);
-            if(nvs_get_blob(handle,"cfg1",&stored,&size)==ESP_OK && size==sizeof(stored) && device_config_valid(&stored)) config=stored;
+            if(nvs_get_blob(handle,"cfg1",&stored,&size)==ESP_OK && size==sizeof(stored)) {
+                device_config_t previous=stored;device_config_upgrade(&stored);
+                if(device_config_valid(&stored)) {config=stored;config_dirty=memcmp(&previous,&stored,sizeof(stored))!=0;}
+            }
             nvs_close(handle);
         }
     }
@@ -118,6 +122,7 @@ static bool numbers(const char *line,const char *prefix,unsigned *out,unsigned c
 size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
     if(strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6))return 0;
     if(!queue)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
+    if(!strcmp(line,"PC_SOUND_BANKS"))return snprintf(reply,capacity,"PC_SOUND_BANKS 3\n");
     if(!strcmp(line,"PC_CFG_GET")) {
         portENTER_CRITICAL(&mutex);device_config_t c=config;portEXIT_CRITICAL(&mutex);
         return snprintf(reply,capacity,"PC_CFG 1 %lu %lu %lu %lu\n",(unsigned long)c.idle_seconds,
@@ -147,7 +152,7 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         }
         return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",id,duplicate?state:1);
     }
-    if(numbers(line,"PC_SOUND",values,2) && values[0]>=1 && values[0]<=3 && values[1]<=100) {
+    if(numbers(line,"PC_SOUND",values,2) && (values[0]==1 || (values[0]>=3 && values[0]<=7)) && values[1]<=100) {
         unsigned tone=values[0],volume=values[1];
         request_t request={.command=2,.tone=tone,.volume=volume};
         if(xQueueSend(queue,&request,0)!=pdTRUE)return snprintf(reply,capacity,"PC_CFG_RETRY\n");
