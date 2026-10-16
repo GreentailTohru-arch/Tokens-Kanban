@@ -53,3 +53,5 @@ settings before a complete merged-image refresh; do not erase the whole device.
 The BSP comes from [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport).
 See the accompanying license and retained notices. The default avatar is original
 MIT-licensed artwork.
+
+The startup-sound switch requires v10 firmware and is disabled on older firmware. It is enabled by default, follows device volume and does not replay on a normal screen wake. Save to device retains the choice.

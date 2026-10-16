@@ -45,3 +45,5 @@ Codex／Codex、35% 音量。任意键唤醒熄屏且首次不翻页，同步和
 
 BSP 来自 [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport)，保留相应授权与声明。
 默认头像为原创 MIT 授权作品。
+
+开机音效开关需要 v10 固件，旧固件仅禁用此项。默认开启，沿用设备音量；普通熄屏唤醒不重播，点击“保存到设备”后保留选择。

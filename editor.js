@@ -4,7 +4,7 @@ const $=id=>document.getElementById(id);
 const service='9e7a0001-4b51-4a4c-9b50-2f53f077c301';
 const rxId='9e7a0002-4b51-4a4c-9b50-2f53f077c301',txId='9e7a0003-4b51-4a4c-9b50-2f53f077c301';
 const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,zoom:1},qrCrop:{x:.5,y:.5,zoom:1}};
-let back=false,link=null,busy=false,imageLoading=true,activePage='postcard',settingsSupported=false;
+let back=false,link=null,busy=false,imageLoading=true,activePage='postcard',settingsSupported=false,startupSupported=false;
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let toastTimer;
 function status(text){clearTimeout(toastTimer);$('status').textContent=text;$('status').hidden=!text;if(text)toastTimer=setTimeout(()=>{$('status').hidden=true;},10000);}
@@ -148,20 +148,23 @@ function setPage(page){
   for(const name of ['postcard','settings']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));}
   $('upload').setAttribute('form',page==='settings'?'settingsForm':'form');controls();
 }
-function settingsValues(){return ['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));}
+function settingsValues(){const values=['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));if(startupSupported)values.push(Number($('startupSound').checked));return values;}
 function putSettings(values){
   const [idle,done,quota,volume]=values;
   if(!$('idleTime').querySelector(`option[value="${idle}"]`)){const option=new Option(idle+' 秒',String(idle));$('idleTime').add(option);}
   for(const [i,id] of ['idleTime','doneTone','quotaTone','soundVolume'].entries())$(id).value=values[i];
   $('soundVolumeValue').textContent=volume+'%';
+  $('startupSound').checked=values.length===5?values[4]===1:true;
 }
 async function readSettings(connection){
-  const reply=await connection.rpc('PC_CFG_GET'),parts=reply.split(' ');
-  settingsSupported=parts.length===6&&parts[0]==='PC_CFG'&&parts[1]==='1';
+  let parts=(await connection.rpc('PC_CFG_GET2')).split(' ');
+  startupSupported=parts.length===7&&parts[0]==='PC_CFG'&&parts[1]==='2';
+  if(!startupSupported)parts=(await connection.rpc('PC_CFG_GET')).split(' ');
+  settingsSupported=parts[0]==='PC_CFG'&&((parts.length===6&&parts[1]==='1')||startupSupported);
   let migrated=false,banks=1;
   if(settingsSupported){
     const values=parts.slice(2).map(Number);
-    if(values.some(v=>!Number.isInteger(v))||values[0]<0||(values[0]>0&&(values[0]<15||values[0]>3600))||values[1]<0||values[1]>7||values[2]<0||values[2]>7||values[3]<0||values[3]>100)throw new Error('设备设置格式错误');
+    if(values.some(v=>!Number.isInteger(v))||values[0]<0||(values[0]>0&&(values[0]<15||values[0]>3600))||values[1]<0||values[1]>7||values[2]<0||values[2]>7||values[3]<0||values[3]>100||(startupSupported&&values[4]!==0&&values[4]!==1))throw new Error('设备设置格式错误');
     const capability=await connection.rpc('PC_SOUND_BANKS');
     if(capability==='PC_SOUND_BANKS 3')banks=3;else if(capability==='PC_SOUND_BANKS 2')banks=2;
     const done=values[1]===0?0:values[1]===4||values[1]===6?values[1]:1;
@@ -171,6 +174,8 @@ async function readSettings(connection){
     putSettings(values);
   }
   for(const [id,value,needed] of [['doneTone','4',2],['quotaTone','5',2],['doneTone','6',3],['quotaTone','7',3]])$(id).querySelector(`option[value="${value}"]`).disabled=banks<needed;
+  $('startupSound').disabled=!startupSupported;
+  $('startupHint').textContent=startupSupported?'开机显示 Logo 时播放，使用下方音量。':'升级 v10 固件后可设置开机音效。';
   $('settingsState').textContent=!settingsSupported?'设备固件需更新至 v7 才能使用设置':migrated?'旧版音效已改为 Codex，保存后应用':banks<3?'已读取设备设置 · 升级 v9 可用全部音效':'已读取设备设置';
 }
 async function saveSettings(event){
@@ -178,7 +183,7 @@ async function saveSettings(event){
   busy=true;controls();$('settingsState').textContent='正在保存设置…';
   try{
     const values=settingsValues(),id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;
-    let reply=await link.rpc(`PC_CFG_SET ${id} ${values.join(' ')}`),saved=false;
+    let reply=await link.rpc(`PC_CFG_SET${startupSupported?'2':''} ${id} ${values.join(' ')}`),saved=false;
     for(let i=0;i<300;i++){
       const parts=reply.split(' ');
       if(parts[0]!=='PC_CFG_STATE'||Number(parts[1])!==id)throw new Error('设备暂忙，请稍后保存');
@@ -201,7 +206,7 @@ async function previewTone(field){
 }
 $('postcardNav').onclick=()=>setPage('postcard');$('settingsNav').onclick=()=>setPage('settings');
 $('settingsForm').addEventListener('submit',saveSettings);
-for(const id of ['idleTime','doneTone','quotaTone','soundVolume'])$(id).addEventListener('input',()=>{$('soundVolumeValue').textContent=$('soundVolume').value+'%';$('settingsState').textContent='有未保存的设置';controls();});
+for(const id of ['idleTime','doneTone','quotaTone','soundVolume','startupSound'])$(id).addEventListener('input',()=>{$('soundVolumeValue').textContent=$('soundVolume').value+'%';$('settingsState').textContent='有未保存的设置';controls();});
 $('previewDone').onclick=()=>previewTone('doneTone');$('previewQuota').onclick=()=>previewTone('quotaTone');
 for(const field of ['title','subtitle','name'])$(field).addEventListener('input',e=>{content[field]=e.target.value;repaint();});
 for(const field of ['photo','qr'])$(field).addEventListener('change',async e=>{
