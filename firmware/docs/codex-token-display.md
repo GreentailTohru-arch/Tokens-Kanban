@@ -12,9 +12,9 @@ Wi-Fi credentials, cloud key, or automatic flashing operation. Optional notifica
 - Up / Down: previous / next period (today, this week, all retained history).
 - Single OK on Home: toggle quota + exact tokens versus input/cache/output details + estimated USD.
   The TOTAL TOKENS heading and large count stay visible. Press again to return.
-- Double OK: cycle **three** pages, Home → Analytics → Postcard → Home. This does not also
+- Double OK: cycle enabled pages in the saved order. The default is **four** pages: Home → Analytics → System Monitor → Postcard → Home. This does not also
   trigger the single-click action. Home remembers its overview/detail mode.
-- The bottom has three thin page indicators; the active page is highlighted. No action-help text.
+- The bottom has one thin indicator per enabled page; the active page is highlighted. No action-help text.
 - Up/Down changes the selected period on Home/Analytics; the model ranking follows it.
   Single OK on Analytics does nothing; the single-click display modes belong to Home.
 - The top-right value is the hardware battery reading; unavailable is `--%`.
@@ -623,3 +623,174 @@ and range tests, heap/stack margins, current and audio/Flash/radio stress remain
 unverified. Windows BLE has previously timed out and reconnected intermittently;
 short observation does not establish long-run stability. No Git push or community
 update occurred in this flash task.
+
+## v10 startup identity and sound (2026-10-16)
+
+The supplied logo is centered on black during startup, without extra text. The
+original transparent PNG is composited on black, empty black margins are removed,
+and its aspect ratio is retained inside 180 by 224 pixels. The exact RGB565
+preview is generated with the firmware asset. No new artwork is substituted.
+The supplied MacOS startup MP3 is decoded offline to 16kHz/16-bit mono, 2.8775625
+seconds, preserving decoder timing and applying no gain or manual trimming.
+Original files and hashes remain under assets; no redistribution license is inferred.
+
+The Settings page adds a Startup sound switch, enabled by default and using the
+existing volume. Save to device persists the choice; volume zero also mutes it.
+The logo remains visible when muted/disabled. A normal screen wake does not replay
+startup. Audio is queued once on the existing worker; only that task accesses the
+BSP audio path. Logo presentation lasts at least 1.2 seconds and ends after startup
+audio, with a six-second display fallback on failure. The dashboard, transport,
+and buttons remain independent; input during the splash is discarded.
+
+Configuration v2 adds the boolean flag in NVS key cfg2. Missing v2 data migrates
+valid cfg1 values without changing timeout, completion/quota choices or volume.
+PC_CFG_GET2 returns PC_CFG 2 followed by timeout, completion, quota, volume and
+startup flag. PC_CFG_SET2 accepts a request ID plus those five values. Existing
+PC_CFG_GET/SET keep their v1 shape and preserve the new flag. The web manager
+falls back for older firmware and disables only the unsupported startup switch.
+Source conversion is checked by tools/convert_startup_assets.py; optional
+--decode --ffmpeg <path> regenerates caches, --decode --check verifies decoding.
+
+Build, host/browser tests, and exact image identity accompany the v10 delivery.
+Device tests: NOT RUN until separately authorized; prior v9 acceptance does not
+validate the logo, startup timing, speaker output or new setting on hardware.
+
+## v10 device acceptance (2026-10-16)
+
+The approved application (1799488 bytes) was written at 0x10000 with hash
+verification after matching the actual partition table. NVS, PHY and postcard
+partitions were not flashed. Merged SHA256 is
+`8cb16bda411c36f50f52e4e7c4eb5b1fdb7757edb4a4d11c61170d3b2df82a9c`;
+app SHA256 is `b4daa611103b7b5a74323c7c539983997422fb13de847d69d194fd36dd8461f7`.
+Targeted app-descriptor readback matched ELF SHA256
+`b5f94eb386a5f4fdfd5e749b22f3522528723b89adafc10bf75b1e26e03c3707`.
+The initial console capture missed early ELF lines; no identity claim relies on it.
+
+The user confirmed the logo, supplied sound and transition to the dashboard,
+then requested a smaller logo. Startup off/save/readback/reset and restored
+on/save/reset passed. Off boot did not initialize audio; on boot initialized
+audio and verified codec suspend registers. Final settings retain 30 seconds,
+OpenCode completion/quota, volume 100 and startup enabled. No card upload occurred.
+The packaged v10 BLE sync resumed with no new timeout/error during at least
+40 seconds of observation. A smaller v11 image requires separate flash approval.
+
+Build: PASS. Host tests: PASS. Device tests: PASS for those executed checks.
+Unverified: physical power loss, long-run/range/stress tests, current and target
+heap/stack margins. Early ELF console lines were not captured. The driver printed
+already-disabled I2S channel messages after verified codec suspend; the user
+confirmed normal audio. No BSP changes, Git push, release or community update occurred.
+
+## v11 smaller startup logo (2026-10-16)
+
+The creator requested a smaller logo after testing v10. The visible artwork is
+now 96 by 119 pixels, centered at (72, 100) on the same black 240 by 320 canvas.
+Only logo pixels and conversion geometry change; startup audio, its switch,
+volume, settings migration, timing and navigation remain unchanged. Use the v10
+Windows companion and current manager. v11 was later flashed with explicit approval; see acceptance below.
+
+## v11 device acceptance (2026-10-16)
+
+The approved 1799488-byte app was flashed at 0x10000 after matching the actual
+partition table. The write hash and targeted app-descriptor readback matched
+merged SHA256 `6fa574e3cc877f067c9d750f55c19998f67feba2866b378eb4d55abfa326fc48`
+and ELF SHA256 `7539e13d882a850b9150e71f54e58658a8a1774e163c094bfede64ff817a83a2`.
+Settings before/after remain 30 seconds, OpenCode completion/quota, volume 100
+and startup enabled. No setting or card writes occurred. USB CT4, card readiness
+and three sound-bank queries passed; audio initialization and codec suspend
+verification were observed. Early ELF console lines were not captured; identity
+was verified by descriptor readback. The user requested a slightly smaller logo.
+The existing v10 companion resumes BLE sync. These checks do not establish
+physical power-loss retention, long-run/range/stress performance or new visual acceptance.
+
+## v12 slightly smaller startup logo (2026-10-16)
+
+The visible logo is now 88 by 109 pixels, centered at (76, 105) on black: about
+8% smaller than v11 in each dimension. Only the image geometry and pixels change;
+all application logic, audio, timing, settings and companion files remain
+byte-identical to v10. The v10 companion and current web manager remain compatible.
+The exact rendered preview is checked against the embedded RGB565 pixels.
+v12 requires separate flash approval; the device continues running v11.
+
+## v13 System Monitor and page management
+
+The System Monitor page adds CPU/GPU/RAM load, CPU/GPU temperature and a sixth
+panel containing download and upload rates. The v13 Windows companion reads the
+TrafficMonitor bridge, retaining the host's selected network adapter and sensor
+values. It never repeats sensor collection. Missing data is `--`; stale or stopped
+sources are explicitly unavailable. See the paired [bridge installation guide](../companion/trafficmonitor/README.md)
+for supported TrafficMonitor 1.86 x64, loading, diagnostics and freshness limits.
+No additional hardware monitor is needed. The previous smaller 88 by 109 startup
+logo, settings, postcard images and supplied sound banks are retained.
+
+The browser opens Page Management first, before Postcard and Settings. Four
+layout previews use illustrative data from the actual LVGL renderer. Switches
+control visibility and move-up/down buttons change order. The last enabled page
+cannot be switched off; firmware validates this too. Save applies a separate
+persistent page configuration without changing postcard content, sound or idle
+settings. Reconnect reads the saved order. Unsupported older firmware shows the
+previews but disables page saving; existing postcard/settings compatibility stays
+available. Updating to v13 defaults to all four pages, System Monitor before
+Postcard. A hidden current page switches to the first enabled page; reboot starts
+at the first enabled page in the saved order.
+
+`PC_PAGES_GET` returns `PC_PAGES 1 <mask> <four page IDs>`; IDs are Home=0,
+Analytics=1, System=2, Postcard=3. `PC_PAGES_SET <request> <mask> <order>` commits
+through the settings worker and uses `PC_CFG_STATUS` for acknowledgment. The
+`pages1` NVS blob is independent of the existing `cfg2` settings. `PC_SYS_HELLO`
+returns `PC_SYS_READY 1` on compatible firmware. The checksummed `SM1` frame
+contains sequence plus seven integers (percent, tenths Celsius, bytes/second),
+and returns `PC_SYS_ACK <sequence>`. Existing CT1–CT4 frames are unchanged.
+
+Validation covers all 15 nonempty page masks and 24 orders, invalid/missing data,
+page persistence and failed storage, legacy setting migration, actual DLL ABI and
+local IPC, source freshness, native LVGL glyph/layout/heap checks, browser USB/BLE
+mocks and the complete firmware gate. Physical acceptance is tracked separately
+in the v13 delivery report; a passing build is not a device test.
+
+## v14 quick volume
+
+Hold Up/Down for the BSP's 500 ms threshold to open the narrow volume progress bar
+at the right edge and adjust by 5%. Keep holding to repeat about every 180 ms,
+bounded at 0–100%. While visible, short Up/Down adjusts volume instead of period.
+Release and wait three seconds to retract; OK closes and consumes its gesture,
+including a double-click in the dismissal window. The final design contains only
+the bar, with no heading or percentage. All pages retain their contents and order.
+The first wake gesture, its hold/release and delayed click are consumed.
+
+Volume shares the existing `cfg2` value used by the website. Changes apply in RAM
+immediately and consolidate to one save after one quiet second; NVS failure keeps
+the live value and retries after two seconds. Newer physical volume edits survive
+queued/in-progress browser saves, while the browser's other settings still apply.
+Refreshing/reconnecting the browser reads the current volume. Wait for quiet
+saving before removing power. Existing postcard and page records are independent.
+
+Previews use the selected completion recording, otherwise the selected quota
+recording, otherwise the supplied Codex recording. No sound is synthesized.
+At most one preview job is queued/playing; enqueue is limited to once per 1200 ms,
+continuous edits coalesce to the latest value, and previews over 800 ms old are
+skipped. Zero cancels queued volume previews and mutes an active volume preview at
+the next PCM chunk. The single audio worker prevents overlapping playback and
+never blocks LVGL/button callbacks. Native checks cover gestures, wake, boundaries,
+preview rate/coalescing/mute, delayed persistence, failed writes and concurrent
+browser edits; actual button timing, sound level and animation require the board.
+
+## v15 configurable System Monitor
+
+The sidebar is Page Management, System Monitor, Postcard, Settings. Up to six cards
+can be selected, reordered by drag/buttons and toggled. Disabled cards leave no
+gaps; all-off shows an empty state. At least one device page stays enabled. Page
+order and card options persist independently; reconnect reads actual configuration.
+Previews explicitly use illustrative data. The [bridge guide](../companion/trafficmonitor/README.md)
+documents all eleven verified metrics, units, daily scope and version compatibility.
+
+Custom titles accept six characters, direction labels two, checked against the shared
+GB2312/ASCII/arrow inventory. Unsupported text blocks saving. Configure bytes/bits,
+auto/fixed units, decimals, suffixes/percent/spaces and compact display. RAM only
+uses the real percentage. Independent NVS mon1 stores 148 bytes; PC_MON_GET returns
+version/hash, PC_MON_READ chunks the record, PC_MON_SET uses the asynchronous worker
+and readback. Existing settings, postcard, page and sounds remain independent.
+
+The v14 minimal quick-volume bar and pending 88x109 startup logo are retained.
+Merged 0x0 flashing may reset NVS; preserving data needs a partition-checked
+application-only upgrade without full-chip erase. v15 is not yet flashed or accepted
+on hardware. Build, native rendering and browser simulation are separate results.

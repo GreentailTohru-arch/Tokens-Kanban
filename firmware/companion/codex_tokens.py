@@ -15,6 +15,7 @@ import time
 from token_pricing import PRICE_DATE, request_nano_usd
 from token_analytics import summarize
 from token_events import CompletionTracker,supports_events
+from system_monitor import SystemPoller,encode_system
 
 MAX_VALUE = 10**15
 CREATE_FLAGS = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
@@ -366,6 +367,7 @@ def main():
     parser.add_argument('--transport',choices=('auto','usb','ble'),default='auto',help='Auto prefers USB, then BLE')
     parser.add_argument('--ble-address',help='BLE address from --list-ble (required for multiple devices)')
     parser.add_argument('--codex-home',type=Path,default=Path(os.environ.get('CODEX_HOME',Path.home()/'.codex')))
+    parser.add_argument('--system-only',action='store_true',help='Print local PC metrics once without connecting or reading Codex logs')
     parser.add_argument('--dry-run',action='store_true',help='Read statistics once; never open a serial port')
     parser.add_argument('--list-ports',action='store_true')
     parser.add_argument('--postcard-editor',action='store_true',help='Open the local browser postcard editor')
@@ -383,16 +385,28 @@ def main():
         for device in asyncio.run(discover()): print(device.address,device.name or 'Codex Passport')
         return
     if args.port and args.transport=='ble': parser.error('--port cannot be used with --transport ble')
-    index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False
-    print('Codex Token Display v9 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends. Ctrl+C to exit.',flush=True)
+    if args.system_only:
+        monitor=SystemPoller()
+        try:
+            monitor.ready.wait(3)
+            deadline=time.monotonic()+8
+            while monitor.diagnostics() is None and time.monotonic()<deadline and not monitor.error:time.sleep(.1)
+            values=monitor.values()
+            print(json.dumps({'system':dict(zip(('cpuPercent','gpuPercent','ramPercent','cpuTempDeciC','gpuTempDeciC','downloadBytesPerSecond','uploadBytesPerSecond','cpuFrequencyMHz','diskPercent','todayUploadBytes','todayDownloadBytes'),values)),
+                'trafficMonitor':monitor.diagnostics(),'listenerError':monitor.error,'frame':encode_system(1,values)},ensure_ascii=True))
+        finally:monitor.close()
+        return
+    monitor=SystemPoller()
+    index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False; can_monitor=False
+    print('Codex Token Display v15 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)
             totals=index.totals(); values=quota.values()
             print(json.dumps({'localDay':totals[0],'localWeek':totals[1],'localTotal':totals[2],
                 'quota':values,'activity':index.activity(),'priceDate':PRICE_DATE,'estimates':index.cost_summary(),
-                'analytics':index.analytics(),
-                'frame':encode_frame(1,totals,values,index.activity(),index.costs(),index.analytics()).decode().strip()},ensure_ascii=False)); return
+                'analytics':index.analytics(),'system':monitor.values(),
+                'frame':encode_frame(1,totals,values,index.activity(),index.costs(),index.analytics()).decode().strip()},ensure_ascii=True)); return
         last_status=''
         while True:
             index.refresh(); events.observe(index.completions()); sequence+=1
@@ -410,10 +424,17 @@ def main():
                         from token_ble import BLEConnection
                         connection=BLEConnection.open(args.ble_address)
                     can_notify=supports_events(connection)
+                    from token_events import rpc as device_rpc
+                    capability=device_rpc(connection,'PC_SYS_HELLO2')
+                    system_version=2 if capability=='PC_SYS_READY 2' else 1
+                    can_monitor=system_version==2 or device_rpc(connection,'PC_SYS_HELLO')=='PC_SYS_READY 1'
                 send_snapshot(connection,frame,sequence)
                 # Same local wall clock as the history calendar; not persisted across power loss.
                 from token_events import rpc as device_rpc
                 device_rpc(connection,f'PC_CLOCK {int(now.replace(tzinfo=dt.timezone.utc).timestamp())}')
+                if can_monitor:
+                    reply=device_rpc(connection,encode_system(sequence%0xffffffff or 1,monitor.values() if system_version==2 else monitor.values()[:7]))
+                    if reply!=f'PC_SYS_ACK {sequence%0xffffffff or 1}':raise OSError('System snapshot not acknowledged')
                 if can_notify:events.send(connection)
                 else:events.pending=None
                 status='Connected: '+connection.port+' | syncing every 5 seconds'
@@ -426,6 +447,6 @@ def main():
         pass
     finally:
         if connection: connection.close()
-        quota.close()
+        quota.close(); monitor.close()
 
 if __name__=='__main__': main()

@@ -3,7 +3,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import webbrowser
 
-ASSETS = {'/': ('index.html', 'text/html; charset=utf-8'),
+ASSETS = {'/monitor.js':('monitor.js','text/javascript; charset=utf-8'),'/font-coverage.json':('font-coverage.json','application/json; charset=utf-8'),**{f'/page-{i}.png':(f'page-{i}.png','image/png') for i in range(4)},'/': ('index.html', 'text/html; charset=utf-8'),
           '/editor.js': ('editor.js', 'text/javascript; charset=utf-8'),
           '/codec.js': ('codec.js', 'text/javascript; charset=utf-8'),
           '/style.css': ('style.css', 'text/css; charset=utf-8'),

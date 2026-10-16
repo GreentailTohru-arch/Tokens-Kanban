@@ -1,9 +1,9 @@
 #include "device_model.h"
-device_config_t device_config_default(void) { return (device_config_t){0,1,3,35}; }
+device_config_t device_config_default(void) { return (device_config_t){0,1,3,35,1}; }
 bool device_config_valid(const device_config_t *c) {
     return (c->idle_seconds==0 || (c->idle_seconds>=15 && c->idle_seconds<=3600)) &&
         (c->done_tone==0 || c->done_tone==1 || c->done_tone==4 || c->done_tone==6) &&
-        (c->quota_tone==0 || c->quota_tone==3 || c->quota_tone==5 || c->quota_tone==7) && c->volume<=100;
+        (c->quota_tone==0 || c->quota_tone==3 || c->quota_tone==5 || c->quota_tone==7) && c->volume<=100 && c->startup_sound<=1;
 }
 void device_config_upgrade(device_config_t *c) {
     if(c->done_tone==2 || c->done_tone==3)c->done_tone=1;

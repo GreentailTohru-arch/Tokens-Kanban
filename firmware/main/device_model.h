@@ -1,6 +1,6 @@
 #pragma once
 #include "token_model.h"
-typedef struct { uint32_t idle_seconds,done_tone,quota_tone,volume; } device_config_t;
+typedef struct { uint32_t idle_seconds,done_tone,quota_tone,volume,startup_sound; } device_config_t;
 typedef struct { uint64_t last_touch; bool off; unsigned exhausted; } device_behavior_t;
 device_config_t device_config_default(void);
 bool device_config_valid(const device_config_t *config);

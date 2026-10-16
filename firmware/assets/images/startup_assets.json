@@ -1,0 +1,33 @@
+{
+  "logo_source_sha256": "28191fb3cc34d7f26bb5807e347f8667de3b4ca9a6b8580f14b89724356a3df5",
+  "logo_source_size": [
+    1300,
+    1209
+  ],
+  "visible_source_bounds": [
+    301,
+    198,
+    997,
+    1063
+  ],
+  "logo_size": [
+    88,
+    109
+  ],
+  "logo_position": [
+    76,
+    105
+  ],
+  "canvas": [
+    240,
+    320
+  ],
+  "rgb565_sha256": "b1795e7f905e0af58f06ca890643f70d11c7bdbde73702d4b4f7d054b98907a4",
+  "audio_source_sha256": "72a2e8409c976e787718a40db13e6605bb7e161fa62fe5304069dd042e3fb6b6",
+  "wav_sha256": "cd706e96dd4943a49ab6bbd7e8e403a89d0afe8d4f877e169856e4f2119e4f79",
+  "rate": 16000,
+  "samples": 46041,
+  "seconds": 2.8775625,
+  "pcm_sha256": "521a7ab352d6b3ec973bdbf93dee43df8da6f65ec648801f02f508aaaf2ecee4",
+  "peak": 15073
+}

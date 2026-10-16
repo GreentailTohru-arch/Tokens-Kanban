@@ -132,13 +132,3 @@ int token_signal(const token_snapshot_t *s, bool received, uint64_t elapsed_ms) 
     }
     return s->v[T_ACTIVITY]>=TOKEN_IDLE && s->v[T_ACTIVITY]<=TOKEN_BUSY ? (int)s->v[T_ACTIVITY] : TOKEN_UNKNOWN;
 }
-void token_nav_key(token_nav_t *nav,unsigned key,bool double_click) {
-    if (key==TOKEN_KEY_OK) {
-        if (double_click) nav->page=(nav->page+1)%3;
-        else if (nav->page==0) nav->show_cost=!nav->show_cost;
-        else if (nav->page==2) nav->contact=!nav->contact;
-    } else if (!double_click && nav->page!=2) {
-        if (key==TOKEN_KEY_UP) nav->period=(nav->period+2)%3;
-        if (key==TOKEN_KEY_DOWN) nav->period=(nav->period+1)%3;
-    }
-}

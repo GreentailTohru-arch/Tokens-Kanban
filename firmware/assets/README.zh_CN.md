@@ -89,3 +89,23 @@ Codex 既有滤波后 PCM 保持不变。不手工裁剪、不归一化、不改
 
 六段采样共 181320 字节保存在只读 Flash，播放缓冲仍为 640 字节，
 设备不需要 AAC／MP3 解码器。原合成柔和双音和本应用的正弦合成播放代码均已移除。
+
+## 提供的开机素材（v10）
+
+`images/startup-logo.png`、`music/macos-startup.mp3` 为 2026-10-16 用户附件原件，
+保持不变，所有权／转载授权未注明。`tools/convert_startup_assets.py` 在黑底合成图片，
+将可见图案按比例适配到 88 × 110（v12；v10 为 180 × 224，v11 为 96 × 119），居中放入 240 × 320 画布，输出实际量化预览
+`images/startup-preview.png` 及只读 Flash 的 `startup_assets.c`。FFmpeg 在电脑端
+解码出 `music/startup.wav`（16kHz／16-bit 单声道）；源文件／缓存绑定为
+`music/startup_decode.json`，几何、时长和哈希写入 `images/startup_assets.json`。
+不手工裁剪音频、不加增益或变速。图片占 153600 Flash 字节，PCM 占 92082 字节，
+仍以 640 字节块播放，不在运行时申请完整素材大小的 RAM。
+
+素材转换依赖 `python3 -m pip install -r tools/requirements-assets.txt`（Pillow 11.3.0）；只有重新生成 MP3 解码缓存时才需要 FFmpeg。
+
+### 系统监测预览
+
+`images/system-monitor-reference.png` 为用户提供的六项指标参考。
+`companion/postcard/page-0.png` 至 `page-3.png` 为原生 LVGL 测试导出的原创布局预览，
+依次为首页、统计、系统监测、明信片。数据是示例，不冒充实机照片或实时电脑读数，
+中文沿用已获许可的 Noto Sans CJK 字体子集。

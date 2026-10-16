@@ -19,7 +19,6 @@ typedef struct { int64_t v[TOKEN_FIELDS]; uint8_t heat[TOKEN_HEAT_DAYS];
                  uint16_t trend[TOKEN_TREND_DAYS]; unsigned transport; } token_snapshot_t;
 typedef struct { unsigned page, period; bool show_cost, contact; } token_nav_t;
 enum { TOKEN_KEY_UP, TOKEN_KEY_DOWN, TOKEN_KEY_OK };
-void token_nav_key(token_nav_t *nav, unsigned key, bool double_click);
 typedef struct { char data[TOKEN_FRAME_MAX]; size_t len; bool dropping; } token_stream_t;
 uint32_t token_checksum(const char *s, size_t n);
 bool token_parse(const char *line, token_snapshot_t *out);

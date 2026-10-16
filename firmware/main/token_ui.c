@@ -1,6 +1,7 @@
 #include "token_ui.h"
 #include "postcard_codec.h"
 #include "postcard_defaults.h"
+#include "startup_assets.h"
 #include "lvgl.h"
 #include "src/misc/cache/instance/lv_image_cache.h"
 #include <stdio.h>
@@ -14,16 +15,24 @@ LV_FONT_DECLARE(token_font_14);
 static lv_obj_t *tabs[3], *tab_labels[3], *value, *exact, *battery_label;
 static lv_obj_t *quota_name[2], *quota_pct[2], *quota_time[2], *bars[2];
 static lv_obj_t *credits, *plan, *quota_panel, *detail_panel, *details[3];
-static lv_obj_t *home_group, *stats_group, *page_marks[3], *card_group, *card_image, *clock_label, *date_label;
+static lv_obj_t *home_group, *stats_group, *page_marks[PAGE_COUNT], *card_group, *card_image, *clock_label, *date_label;
 static lv_image_dsc_t card_faces[2];
 static const uint8_t *card_data;
 static bool card_contact;
+static lv_obj_t *system_group,*system_status,*system_values[6],*system_second[6],*system_titles[6],*system_panels[6],*system_empty;
 static lv_obj_t *model_names[2], *model_totals[2], *model_shares[2], *stats_period;
 static lv_obj_t *active_days, *heat_months[3], *trend_dates[3], *peak_label, *heat_obj, *trend_obj;
 static uint8_t heat_data[TOKEN_HEAT_DAYS];
 static uint16_t trend_data[TOKEN_TREND_DAYS];
 static bool charts_available;
 static lv_obj_t *signal_light, *signal_label;
+static lv_obj_t *startup_panel;
+static lv_obj_t *volume_panel,*volume_bar;
+static bool volume_visible;
+static unsigned volume_value=101;
+static const lv_image_dsc_t startup_image={.header={.magic=LV_IMAGE_HEADER_MAGIC,
+    .cf=LV_COLOR_FORMAT_RGB565,.w=STARTUP_WIDTH,.h=STARTUP_HEIGHT,.stride=STARTUP_WIDTH*2},
+    .data_size=sizeof(startup_logo_rgb565),.data=startup_logo_rgb565};
 static const char *periods[] = {"今日", "本周", "累计"};
 static lv_obj_t *label(lv_obj_t *parent, int x, int y, int w, const char *text, uint32_t color) {
     lv_obj_t *o = lv_label_create(parent);
@@ -140,9 +149,29 @@ void token_ui_create(void) {
     lv_obj_set_style_text_align(date_label,LV_TEXT_ALIGN_RIGHT,0);
     card_image=lv_image_create(card_group);lv_obj_set_pos(card_image,0,38);
     visible(card_group,false);visible(card_image,false);
-    for(int i=0;i<3;++i) page_marks[i]=box(screen,81+i*28,309,22,3,i==0?TEAL:0x52616E,2);
+    system_group=group(screen);
+    label(system_group,18,43,140,"系统检测",INK);
+    system_status=label(system_group,18,64,204,"等待电脑同步",MUTED);
+    system_empty=label(system_group,18,156,204,"暂无检测卡片",MUTED);lv_obj_set_style_text_align(system_empty,LV_TEXT_ALIGN_CENTER,0);
+    for(unsigned i=0;i<6;++i) {
+        system_panels[i]=box(system_group,14,90,102,60,PANEL,9);
+        system_titles[i]=label(system_panels[i],9,5,86,"",MUTED);
+        system_values[i]=label(system_panels[i],9,27,86,"--",INK);
+        system_second[i]=label(system_panels[i],9,41,86,"",MUTED);
+    }
+    visible(system_group,false);
+    for(unsigned i=0;i<PAGE_COUNT;++i)page_marks[i]=box(screen,67+i*28,309,22,3,i==0?TEAL:0x52616E,2);
     token_ui_postcard_image(postcard_default_pixels);
     lv_screen_load(screen);
+}
+void token_ui_startup(bool show) {
+    if(show && !startup_panel) {
+        startup_panel=box(lv_layer_top(),0,0,240,320,0,0);
+        lv_obj_t *image=lv_image_create(startup_panel);lv_obj_set_pos(image,0,0);
+        lv_image_set_src(image,&startup_image);
+    } else if(!show && startup_panel) {
+        lv_obj_delete(startup_panel);startup_panel=NULL;
+    }
 }
 void token_ui_postcard_image(const uint8_t *data) {
     for(unsigned i=0;i<2;++i) {
@@ -174,11 +203,10 @@ static void duration(char *out,size_t size,int64_t sec) {
 void token_ui_update(const token_snapshot_t *s,unsigned period,bool show_cost,bool received,uint64_t elapsed_ms,int battery,unsigned page) {
     char text[80],num[32];
     if(period>2) period=0;
-    if(page>2) page=0;
-    visible(home_group,page==0);visible(stats_group,page==1);visible(card_group,page==2);
-    visible(signal_light,page!=2);visible(signal_label,page!=2);visible(battery_label,page!=2);
+    if(page>=PAGE_COUNT) page=0;
+    visible(home_group,page==0);visible(stats_group,page==1);visible(card_group,page==PAGE_POSTCARD);visible(system_group,page==PAGE_SYSTEM);
+    visible(signal_light,page!=PAGE_POSTCARD);visible(signal_label,page!=PAGE_POSTCARD);visible(battery_label,page!=PAGE_POSTCARD);
     visible(quota_panel,!show_cost);visible(detail_panel,show_cost);
-    for(unsigned i=0;i<3;++i) lv_obj_set_style_bg_color(page_marks[i],lv_color_hex(i==page?TEAL:0x52616E),0);
     for(unsigned i=0;i<3;++i) {
         lv_obj_set_style_bg_color(tabs[i],lv_color_hex(i==period?0x516471:PANEL),0);
         lv_obj_set_style_text_color(tab_labels[i],lv_color_hex(i==period?0xBDECD8:MUTED),0);
@@ -252,4 +280,69 @@ void token_ui_update(const token_snapshot_t *s,unsigned period,bool show_cost,bo
     lv_label_set_text(plan,plans[s->v[T_PLAN]>=0&&s->v[T_PLAN]<=5?s->v[T_PLAN]:0]);
     if(received && s->v[T_CREDITS]>=0) snprintf(text,sizeof(text),"重置券 %lld",(long long)s->v[T_CREDITS]); else text[0]=0;
     lv_label_set_text(credits,text);
+}
+
+void token_ui_pages(const page_config_t *config,unsigned current) {
+    unsigned n=page_count(config),pos=page_position(config,current);
+    int start=(240-(int)(n*28-6))/2;
+    for(unsigned i=0;i<PAGE_COUNT;++i) {
+        visible(page_marks[i],i<n);
+        if(i<n) {lv_obj_set_x(page_marks[i],start+(int)i*28);lv_obj_set_style_bg_color(page_marks[i],lv_color_hex(i==pos?TEAL:0x52616E),0);}
+    }
+}
+static bool text_fits(lv_obj_t *obj,const char *text,const lv_font_t *font,int spacing) {
+    lv_point_t size;lv_text_get_size(&size,text,font,spacing,0,10000,LV_TEXT_FLAG_NONE);return size.x<=lv_obj_get_width(obj);
+}
+void token_ui_system(const system_snapshot_t *s,bool live,const monitor_config_t *config) {
+    bool any=false;for(unsigned i=SYS_CPU;i<SYS_FIELDS;++i)if(s->v[i]>=0)any=true;
+    lv_label_set_text(system_status,!live?"电脑未连接 / 数据过期":!any?"TrafficMonitor 未连接":"TrafficMonitor / 实时同步");
+    unsigned n=monitor_count(config),slot=0;visible(system_empty,!n);
+    for(unsigned i=0;i<6;++i)visible(system_panels[i],i<n);
+    for(unsigned i=0;i<MONITOR_SLOTS;++i) {
+        if(!config->cards[i].enabled)continue;
+        int x,y,w,h;monitor_layout(n,slot,&x,&y,&w,&h);
+        lv_obj_set_pos(system_panels[slot],x,y);lv_obj_set_size(system_panels[slot],w,h);
+        lv_obj_set_width(system_titles[slot],w-18);lv_obj_set_width(system_values[slot],w-18);lv_obj_set_width(system_second[slot],w-18);
+        lv_label_set_text(system_titles[slot],monitor_title(&config->cards[i]));
+        char first[64],second[64];unsigned metric=config->cards[i].metric;
+        monitor_format(config,metric,s,live,first,second,sizeof(first));
+        bool pair=metric==M_PAIR;const lv_font_t *font=pair?&token_font_14:&lv_font_montserrat_20;int spacing=0;
+        if(!text_fits(system_values[slot],first,font,0))font=&token_font_14;
+        if(!text_fits(system_values[slot],first,font,0)||!text_fits(system_second[slot],second,&token_font_14,0)) {
+            monitor_config_t compact=*config;compact.decimals=0;compact.compact=1;monitor_format(&compact,metric,s,live,first,second,sizeof(first));font=&token_font_14;spacing=-1;
+            while(spacing>-3 && (!text_fits(system_values[slot],first,font,spacing)||!text_fits(system_second[slot],second,&token_font_14,spacing)))--spacing;
+        }
+        lv_obj_set_style_text_font(system_values[slot],font,0);lv_obj_set_style_text_letter_space(system_values[slot],spacing,0);lv_obj_set_style_text_letter_space(system_second[slot],spacing,0);
+        lv_obj_set_y(system_values[slot],pair?(h>70?(h-40)/2:24):(h>70?(h-24)/2:27));
+        lv_obj_set_y(system_second[slot],pair?(h>70?(h-40)/2+22:41):41);
+        lv_label_set_text(system_values[slot],first);lv_label_set_text(system_second[slot],second);visible(system_second[slot],pair);
+        ++slot;
+    }
+}
+
+static void volume_slide(void *panel,int32_t x){lv_obj_set_x(panel,x);}
+static void volume_slide_done(lv_anim_t *animation){
+    (void)animation;if(!volume_visible && volume_panel)visible(volume_panel,false);
+}
+void token_ui_volume(bool show,unsigned percent) {
+    if(percent>100)percent=100;
+    if(show && !volume_panel) {
+        volume_panel=lv_bar_create(lv_layer_top());volume_bar=volume_panel;lv_obj_remove_style_all(volume_bar);
+        lv_obj_set_pos(volume_bar,240,88);lv_obj_set_size(volume_bar,8,144);lv_bar_set_range(volume_bar,0,100);
+        lv_obj_set_style_bg_color(volume_bar,lv_color_hex(0x40555E),0);lv_obj_set_style_bg_opa(volume_bar,LV_OPA_COVER,0);lv_obj_set_style_radius(volume_bar,4,0);
+        lv_obj_set_style_bg_color(volume_bar,lv_color_hex(TEAL),LV_PART_INDICATOR);lv_obj_set_style_bg_opa(volume_bar,LV_OPA_COVER,LV_PART_INDICATOR);lv_obj_set_style_radius(volume_bar,4,LV_PART_INDICATOR);
+        lv_obj_set_style_anim_duration(volume_bar,120,0);
+    }
+    if(!volume_panel)return;
+    if(volume_value!=percent) {
+        lv_bar_set_value(volume_bar,(int32_t)percent,volume_visible?LV_ANIM_ON:LV_ANIM_OFF);volume_value=percent;
+    }
+    if(show!=volume_visible) {
+        volume_visible=show;lv_anim_delete(volume_panel,volume_slide);
+        visible(volume_panel,true);
+        lv_anim_t animation;lv_anim_init(&animation);lv_anim_set_var(&animation,volume_panel);
+        lv_anim_set_values(&animation,lv_obj_get_x(volume_panel),show?222:240);
+        lv_anim_set_duration(&animation,160);lv_anim_set_exec_cb(&animation,volume_slide);
+        lv_anim_set_path_cb(&animation,lv_anim_path_ease_out);lv_anim_set_completed_cb(&animation,volume_slide_done);lv_anim_start(&animation);
+    }
 }

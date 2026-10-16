@@ -14,7 +14,13 @@ def build():
     font=ImageFont.truetype(str(source),14)
     coverage=TTFont(source).getBestCmap()
     strings=re.findall(r'"([^"\n]*)"',(ROOT/'main/token_ui.c').read_text(encoding='utf-8'))
-    chars=sorted(set(range(32,127))|{ord(c) for s in strings for c in s if ord(c)>127})
+    # GB2312 repertoire supports bounded user-authored Chinese card labels.
+    user_chars=set()
+    for high in range(0xA1,0xF8):
+        for low in range(0xA1,0xFF):
+            try:user_chars.add(ord(bytes([high,low]).decode('gb2312')))
+            except UnicodeDecodeError:pass
+    chars=sorted(set(range(32,127))|user_chars|{ord(c) for s in strings for c in s if ord(c)>127})
     assert all(c in coverage for c in chars), 'Source font missing glyph'
     assert 0x9F98 not in chars, 'Negative coverage control unexpectedly included'
     bitmap=[]; descriptors=['    {0},']; expected=[]
@@ -44,13 +50,18 @@ def build():
         decoded=[(serialized[offset+i//2]>>(4 if i%2==0 else 0))&15 for i in range(len(pixels))]
         assert decoded==pixels
     inventory=json.dumps({'fontSha256':hashlib.sha256(source.read_bytes()).hexdigest(),'size':14,'lineHeight':18,'codepoints':chars,'bitmapBytes':len(bitmap)},indent=2)+'\n'
-    return code,inventory
+    support='#include <stdint.h>\n#include <stdbool.h>\nstatic const uint16_t supported[]={'+','.join(str(c) for c in chars)+'};\nbool token_text_supported(uint32_t cp){unsigned a=0,b=sizeof(supported)/sizeof(*supported);while(a<b){unsigned m=(a+b)/2;if(supported[m]<cp)a=m+1;else b=m;}return a<sizeof(supported)/sizeof(*supported)&&supported[a]==cp;}\n'
+    return code,inventory,support
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');args=parser.parse_args()
-    code,inventory=build()
-    for name,content in [('token_font_14.c',code),('token_font_inventory.json',inventory)]:
+    code,inventory,support=build()
+    for name,content in [('token_font_14.c',code),('token_font_inventory.json',inventory),('token_text_coverage.c',support)]:
         path=ASSETS/name
         if args.check: assert path.read_text(encoding='utf-8')==content, f'Stale {name}'
         else: path.write_text(content,encoding='utf-8')
+    web=ROOT/'companion/postcard/font-coverage.json'
+    web_text=json.dumps(json.loads(inventory)['codepoints'],separators=(',',':'))+'\n'
+    if args.check:assert web.read_text(encoding='utf-8')==web_text,'Stale browser font coverage'
+    else:web.write_text(web_text,encoding='utf-8')
     print('Font coverage and bitmap round-trip: PASS')
 if __name__=='__main__':main()

@@ -34,7 +34,7 @@ static void check_labels(lv_obj_t *obj) {
             assert(lv_font_get_glyph_dsc(font,&d,cp,0)&&!d.is_placeholder);
         }
         lv_point_t size;
-        lv_text_get_size(&size,lv_label_get_text(obj),font,0,0,10000,LV_TEXT_FLAG_NONE);
+        lv_text_get_size(&size,lv_label_get_text(obj),font,lv_obj_get_style_text_letter_space(obj,0),0,10000,LV_TEXT_FLAG_NONE);
         if(size.x>lv_obj_get_width(obj)) { fprintf(stderr,"Clipped label: %s (%d > %d)\n",lv_label_get_text(obj),(int)size.x,(int)lv_obj_get_width(obj));abort(); }
     }
     for(uint32_t i=0;i<lv_obj_get_child_count(obj);++i) check_labels(lv_obj_get_child(obj,i));
@@ -46,7 +46,9 @@ int main(void) {
     lv_display_set_flush_cb(display,flush);
     lv_font_glyph_dsc_t d={0};assert(lv_font_get_glyph_dsc(&token_font_14,&d,0x4ECA,0)&&!d.is_placeholder);
     assert(!lv_font_get_glyph_dsc(&token_font_14,&d,0x9F98,0)||d.is_placeholder);
-    token_ui_create();
+    token_ui_create();page_config_t pages=page_config_default();token_ui_pages(&pages,0);
+    token_ui_startup(true);save("startup.ppm");check_labels(lv_layer_top());
+    token_ui_startup(false);token_ui_startup(false);
     token_snapshot_t s={.v={1,18800000,15000000,15200,215584794,209747072,506820,640773677,623715584,1746255,13,10080,530000,-1,-1,-1,1,3,0}};
     s.v[T_ACTIVITY]=TOKEN_BUSY;s.transport=TOKEN_BLE;
     s.v[T_DAY_CENTS]=2736;s.v[T_DAY_COST_STATUS]=1;
@@ -90,7 +92,7 @@ int main(void) {
     token_ui_update(&s,0,false,false,0,-1,0);save("waiting.ppm");check_labels(lv_screen_active());
     token_ui_update(&s,0,false,false,0,-1,1);save("analytics-waiting.ppm");check_labels(lv_screen_active());
     s=fixture;
-    token_ui_update(&s,0,false,true,0,86,2);token_ui_postcard_clock(0,false,false);save("postcard-empty.ppm");
+    token_ui_update(&s,0,false,true,0,86,PAGE_POSTCARD);token_ui_pages(&pages,PAGE_POSTCARD);token_ui_postcard_clock(0,false,false);save("postcard-empty.ppm");
     token_ui_postcard_clock(1792143660ULL,true,false);save("postcard-default-front.ppm");check_labels(lv_screen_active());
     token_ui_postcard_clock(1792143660ULL,true,true);save("postcard-default-contact.ppm");check_labels(lv_screen_active());
     static uint8_t card[POSTCARD_BYTES];
@@ -100,10 +102,38 @@ int main(void) {
     token_ui_postcard_image(card);token_ui_postcard_clock(1792143660ULL,true,false);save("postcard-front.ppm");check_labels(lv_screen_active());
     token_ui_postcard_clock(1792143660ULL,true,true);save("postcard-contact.ppm");check_labels(lv_screen_active());
     for(unsigned day=0;day<7;++day){token_ui_postcard_clock(1798416000ULL+day*86400,true,false);lv_refr_now(NULL);check_labels(lv_screen_active());}
+    monitor_config_t monitor=monitor_default();
+    system_snapshot_t metrics={.v={1,8,8,64,570,510,9910,1000}};
+    token_ui_pages(&pages,PAGE_SYSTEM);token_ui_system(&metrics,true,&monitor);token_ui_update(&s,0,false,true,0,86,PAGE_SYSTEM);save("system.ppm");check_labels(lv_screen_active());
+    for(unsigned i=SYS_CPU;i<SYS_FIELDS;++i)metrics.v[i]=-1;
+    token_ui_system(&metrics,true,&monitor);save("system-missing.ppm");check_labels(lv_screen_active());
+    metrics=(system_snapshot_t){.v={1,100,100,100,1500,1500,1000000000000LL,1000000000000LL}};
+    token_ui_system(&metrics,true,&monitor);save("system-max.ppm");check_labels(lv_screen_active());
+    token_ui_system(&metrics,false,&monitor);save("system-stale.ppm");check_labels(lv_screen_active());
+    for(unsigned mask=1;mask<16;++mask){pages.enabled=mask;token_nav_t nav={.page=PAGE_COUNT};page_nav_normalize(&pages,&nav);for(unsigned n=0;n<page_count(&pages);++n){token_ui_pages(&pages,nav.page);token_ui_update(&s,0,false,true,0,86,nav.page);lv_refr_now(NULL);check_labels(lv_screen_active());page_nav_key(&pages,&nav,TOKEN_KEY_OK,true);}}
+    pages=page_config_default();
     for(unsigned i=0;i<1000;++i) {
         s.v[T_DAY_IN]=(int64_t)i*90000;s.v[T_DAY_CACHE]=i;s.v[T_DAY_OUT]=i;
-        token_ui_update(&s,i%3,(i%3)==0,true,i*1000,86,i%3);token_ui_postcard_clock(1792143660ULL+(i%7)*86400,true,i%2==0);lv_refr_now(NULL);
+        token_ui_update(&s,i%3,(i%3)==0,true,i*1000,86,i%4);token_ui_pages(&pages,i%4);token_ui_system(&metrics,i%2==0,&monitor);token_ui_postcard_clock(1792143660ULL+(i%7)*86400,true,i%2==0);lv_refr_now(NULL);
     }
+    metrics=(system_snapshot_t){.v={1,100,100,100,1500,1500,1000000000000LL,1000000000000LL,100000,100,9007199254740991LL,9007199254740991LL}};
+    token_ui_update(&s,0,false,true,0,86,PAGE_SYSTEM);
+    for(unsigned n=0;n<=6;++n)for(unsigned metric=0;metric<M_METRICS;++metric)for(unsigned mode=0;mode<5;++mode) {
+        monitor=monitor_default();monitor.bits=1;monitor.unit=mode;monitor.decimals=2;monitor.space=1;strcpy(monitor.up_label,"上传");strcpy(monitor.down_label,"下载");
+        for(unsigned j=0;j<6;++j){monitor.cards[j].enabled=j<n;monitor.cards[j].metric=metric;strcpy(monitor.cards[j].title,"春夏秋冬天地");}
+        token_ui_system(&metrics,true,&monitor);lv_refr_now(NULL);check_labels(lv_screen_active());
+    }
+    monitor=monitor_default();metrics=(system_snapshot_t){.v={1,8,8,64,570,510,9910,1000,3380,12,1073741824,2147483648}};
+    token_ui_system(&metrics,true,&monitor);save("system-configurable.ppm");
+    for(unsigned page=0;page<PAGE_COUNT;++page) {
+        token_ui_pages(&pages,page);token_ui_update(&s,0,false,true,0,86,page);
+        lv_refr_now(NULL);unsigned char underlay[sizeof(framebuffer)];memcpy(underlay,framebuffer,sizeof(underlay));
+        token_ui_volume(true,page==0?0:page==1?100:35);lv_tick_inc(200);lv_timer_handler();lv_refr_now(NULL);
+        check_labels(lv_layer_top());char name[40];snprintf(name,sizeof(name),"volume-page-%u.ppm",page);save(name);
+        token_ui_volume(false,35);lv_tick_inc(200);lv_timer_handler();lv_refr_now(NULL);
+        assert(!memcmp(underlay,framebuffer,sizeof(underlay)));
+    }
+    for(unsigned i=0;i<200;++i){token_ui_volume(true,i%101);lv_tick_inc(200);lv_timer_handler();token_ui_volume(false,i%101);lv_tick_inc(200);lv_timer_handler();}
     assert(lv_mem_test()==LV_RESULT_OK);
     lv_mem_monitor_t memory;lv_mem_monitor(&memory);
     printf("LVGL 48KB pool: free=%zu largest=%zu max_used=%zu after 1000 updates\n",memory.free_size,memory.free_biggest_size,memory.max_used);

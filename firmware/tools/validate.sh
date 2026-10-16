@@ -31,11 +31,22 @@ run_static_checks() {
         tests/test_device_model.c main/device_model.c -o "${TMPDIR:-/tmp}/passport-device-model-test"
     "${TMPDIR:-/tmp}/passport-device-model-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/postcard_stubs -Icomponents/bsp/include -Imain \
-        tests/test_device_runtime.c main/device_model.c assets/music/codex_sounds.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
+        tests/test_device_runtime.c main/device_model.c main/page_model.c main/monitor_model.c assets/fonts/token_text_coverage.c assets/music/codex_sounds.c assets/images/startup_assets.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
     "${TMPDIR:-/tmp}/passport-device-runtime-test"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_page_system.c main/page_model.c main/system_model.c main/token_model.c -o "${TMPDIR:-/tmp}/passport-page-system-test"
+    "${TMPDIR:-/tmp}/passport-page-system-test"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_volume_model.c main/volume_model.c -o "${TMPDIR:-/tmp}/passport-volume-model-test"
+    "${TMPDIR:-/tmp}/passport-volume-model-test"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
+        tests/test_monitor_model.c main/monitor_model.c assets/fonts/token_text_coverage.c -o "${TMPDIR:-/tmp}/passport-monitor-model-test"
+    "${TMPDIR:-/tmp}/passport-monitor-model-test"
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_system_monitor.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_events.py
     PYTHONDONTWRITEBYTECODE=1 python3 tools/convert_codex_sounds.py --check
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_device_sounds.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tools/convert_startup_assets.py --check
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_bridge.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_analytics.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_ble.py

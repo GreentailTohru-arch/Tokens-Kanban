@@ -1,0 +1,7 @@
+LIBRARY KERNEL32.dll
+EXPORTS
+CreateFileW
+WriteFile
+CloseHandle
+GetTickCount64
+GetCurrentProcessId

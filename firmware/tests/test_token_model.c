@@ -43,17 +43,5 @@ int main(void) {
     assert(!token_parse(line,&s));
     frame(line,"CT3 1 100 60 20 200 100 40 1 0 1 99 10080 86400 -1 -1 -1 1 3 0 2 0 3 9999 2 -1 0");
     assert(!token_parse(line,&s));
-    token_nav_t nav={0};token_nav_key(&nav,TOKEN_KEY_OK,false);assert(nav.show_cost && nav.page==0);
-    token_nav_key(&nav,TOKEN_KEY_OK,true);assert(nav.page==1 && nav.show_cost);
-    token_nav_key(&nav,TOKEN_KEY_OK,false);assert(nav.page==1 && nav.show_cost);
-    token_nav_key(&nav,TOKEN_KEY_UP,false);assert(nav.period==2);
-    token_nav_key(&nav,TOKEN_KEY_OK,true);assert(nav.page==2 && nav.show_cost && !nav.contact);
-    token_nav_key(&nav,TOKEN_KEY_OK,false);assert(nav.contact && nav.show_cost);
-    token_nav_key(&nav,TOKEN_KEY_DOWN,false);assert(nav.period==2);
-    token_nav_key(&nav,TOKEN_KEY_OK,true);assert(nav.page==0 && nav.period==2 && nav.show_cost);
-    token_nav_key(&nav,TOKEN_KEY_OK,false);assert(!nav.show_cost);
-    token_nav_key(&nav,TOKEN_KEY_OK,true);assert(nav.page==1);
-    token_nav_key(&nav,TOKEN_KEY_DOWN,false);assert(nav.period==0);
-    token_nav_key(&nav,TOKEN_KEY_DOWN,true);assert(nav.period==0);
     puts("Token protocol/state/navigation tests: PASS");return 0;
 }

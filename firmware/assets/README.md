@@ -97,3 +97,26 @@ speed changes are applied; standard decoder padding metadata is honored.
 All six clips occupy 181320 sample bytes in read-only Flash, with the same 640-byte
 playback buffer. No AAC/MP3 decoder is needed on the device. The former generated
 soft-double preset and all application sine synthesis have been removed.
+
+## Supplied startup assets (v10)
+
+`images/startup-logo.png` and `music/macos-startup.mp3` are the unchanged user
+attachments supplied on 2026-10-16; ownership/redistribution license is unspecified.
+`tools/convert_startup_assets.py` composites the image on black and fits its visible
+artwork proportionally to 88 by 110 within a 240 by 320 canvas (v12; v10 used 180 by 224 and v11 used 96 by 119). It emits the exact
+quantized preview, `images/startup-preview.png`, and flash-only `startup_assets.c`.
+FFmpeg decodes MP3 offline to `music/startup.wav` (16kHz/16-bit mono); the source/cache
+binding is `music/startup_decode.json`. Hashes, geometry and timing are recorded in
+`images/startup_assets.json`. No manual trimming, gain or speed change is used.
+The image is 153600 flash bytes and PCM 92082 flash bytes. Playback retains the
+640-byte chunk buffer; neither asset needs a full runtime RAM allocation.
+
+Asset conversion requires `python3 -m pip install -r tools/requirements-assets.txt` (Pillow 11.3.0). FFmpeg is needed only when regenerating the MP3 cache.
+
+### System Monitor previews
+
+`images/system-monitor-reference.png` is the supplied six-metric reference.
+`companion/postcard/page-0.png` through `page-3.png` are original layout previews
+exported from the native LVGL fixture (Home, Analytics, System Monitor, Postcard).
+They use illustrative data, not a photographed device or live PC reading. Their
+Chinese labels use the existing licensed Noto Sans CJK subset.

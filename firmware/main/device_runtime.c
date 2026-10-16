@@ -1,5 +1,6 @@
 #include "device_runtime.h"
 #include "device_sounds.h"
+#include "startup_assets.h"
 #include "bsp_audio.h"
 #include "bsp_display.h"
 #include "esp_log.h"
@@ -12,13 +13,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdatomic.h>
-typedef struct { unsigned command,id,tone,volume; device_config_t config; } request_t;
+typedef struct { unsigned command,id,tone,volume,volume_revision; device_config_t config; page_config_t pages; monitor_config_t monitor; } request_t;
 static QueueHandle_t queue;
 static device_config_t config,requested;
+static page_config_t pages,requested_pages;
+static unsigned save_kind;
+static monitor_config_t monitor,requested_monitor;
+static unsigned volume_revision;
+static bool volume_unsaved,volume_save_pending,preview_requested,preview_pending;
+static uint64_t volume_changed_at,volume_save_after,preview_next;
+static atomic_uint live_volume;
+static atomic_bool preview_playback;
 static device_behavior_t behavior;
 static bool nvs_ready,event_seen,event_pending,config_dirty;
 static unsigned save_id,save_state,event_host,event_sequence;
-static atomic_bool wake_requested;
+static atomic_bool wake_requested,boot_finished;
 static portMUX_TYPE mutex=portMUX_INITIALIZER_UNLOCKED;
 
 static bool play_tone(unsigned tone,unsigned volume) {
@@ -31,6 +40,7 @@ static bool play_tone(unsigned tone,unsigned volume) {
         case 5:source=opencode_error_pcm;count=opencode_error_samples;break;
         case 6:source=antigravity_complete_pcm;count=antigravity_complete_samples;break;
         case 7:source=antigravity_error_pcm;count=antigravity_error_samples;break;
+        case 8:source=startup_sound_pcm;count=startup_sound_samples;break;
         default:return false;
     }
     static bool initialized;
@@ -38,8 +48,14 @@ static bool play_tone(unsigned tone,unsigned volume) {
     if(bsp_audio_wake()!=ESP_OK || bsp_audio_set_format(CODEX_SOUND_HZ,16,1)!=ESP_OK) return false;
     bsp_audio_set_volume((uint8_t)volume);
     /* Only user-provided recordings; no synthesized tone fallback. */
+    unsigned playing_volume=volume;
     int16_t pcm[320];
     for(size_t offset=0;offset<count;offset+=320) {
+        if(atomic_load(&preview_playback)) {
+            unsigned latest=atomic_load(&live_volume);
+            if(latest!=playing_volume){bsp_audio_set_volume((uint8_t)latest);playing_volume=latest;}
+            if(!latest)break;
+        }
         size_t n=count-offset;if(n>320)n=320;
         memcpy(pcm,source+offset,n*sizeof(*pcm));
         if(bsp_audio_write(pcm,n*sizeof(*pcm))!=ESP_OK)return false;
@@ -53,43 +69,123 @@ static void worker(void *arg) {
     (void)arg;request_t request;
     for(;;) {
         if(xQueueReceive(queue,&request,portMAX_DELAY)!=pdTRUE) continue;
-        if(request.command==1) {
-            portENTER_CRITICAL(&mutex);bool same=!config_dirty && !memcmp(&config,&request.config,sizeof(config));portEXIT_CRITICAL(&mutex);
-            nvs_handle_t handle;esp_err_t error=same?ESP_OK:nvs_open("tokens_ui",NVS_READWRITE,&handle);
-            if(error==ESP_OK && !same) {
-                error=nvs_set_blob(handle,"cfg1",&request.config,sizeof(request.config));
-                if(error==ESP_OK) error=nvs_commit(handle);
+        if(request.command==7) {
+            nvs_handle_t handle;esp_err_t error=nvs_open("tokens_ui",NVS_READWRITE,&handle);
+            if(error==ESP_OK){error=nvs_set_blob(handle,"mon1",&request.monitor,sizeof(request.monitor));if(error==ESP_OK)error=nvs_commit(handle);nvs_close(handle);}
+            portENTER_CRITICAL(&mutex);if(error==ESP_OK){monitor=request.monitor;save_state=2;atomic_store(&wake_requested,true);}else save_state=3;portEXIT_CRITICAL(&mutex);
+        } else if(request.command==4) {
+            nvs_handle_t handle;esp_err_t error=nvs_open("tokens_ui",NVS_READWRITE,&handle);
+            if(error==ESP_OK) {
+                error=nvs_set_blob(handle,"pages1",&request.pages,sizeof(request.pages));
+                if(error==ESP_OK)error=nvs_commit(handle);
                 nvs_close(handle);
             }
             portENTER_CRITICAL(&mutex);
-            if(error==ESP_OK) {config=request.config;config_dirty=false;save_state=2;atomic_store(&wake_requested,true);}
+            if(error==ESP_OK) {pages=request.pages;save_state=2;atomic_store(&wake_requested,true);}
             else save_state=3;
             portEXIT_CRITICAL(&mutex);
-            if(error!=ESP_OK) ESP_LOGW("device","Settings save failed: %s",esp_err_to_name(error));
+        } else if(request.command==1 || request.command==5) {
+            bool automatic=request.command==5;
+            portENTER_CRITICAL(&mutex);
+            if(automatic)request.config=config;
+            else if(request.volume_revision!=volume_revision)request.config.volume=config.volume;
+            unsigned written_revision=volume_revision;
+            bool same=!config_dirty && !memcmp(&config,&request.config,sizeof(config));
+            portEXIT_CRITICAL(&mutex);
+            nvs_handle_t handle;esp_err_t error=same?ESP_OK:nvs_open("tokens_ui",NVS_READWRITE,&handle);
+            if(error==ESP_OK && !same) {
+                error=nvs_set_blob(handle,"cfg2",&request.config,sizeof(request.config));
+                if(error==ESP_OK)error=nvs_commit(handle);
+                nvs_close(handle);
+            }
+            portENTER_CRITICAL(&mutex);
+            if(error==ESP_OK) {
+                bool moved=written_revision!=volume_revision;
+                if(!automatic) {
+                    unsigned latest=config.volume;config=request.config;if(moved)config.volume=latest;
+                    atomic_store(&live_volume,config.volume);save_state=2;atomic_store(&wake_requested,true);
+                }
+                config_dirty=moved;volume_unsaved=moved;
+            } else {
+                if(!automatic)save_state=3;
+                config_dirty=true;
+                volume_save_after=(uint64_t)esp_timer_get_time()/1000+2000;
+            }
+            if(automatic)volume_save_pending=false;
+            portEXIT_CRITICAL(&mutex);
+            if(error!=ESP_OK)ESP_LOGW("device","Settings save failed: %s",esp_err_to_name(error));
+        } else if(request.command==6) {
+            uint64_t now=(uint64_t)esp_timer_get_time()/1000;
+            portENTER_CRITICAL(&mutex);device_config_t latest=config;
+            bool fresh=now>=volume_changed_at && now-volume_changed_at<=800;
+            preview_requested=false;portEXIT_CRITICAL(&mutex);
+            unsigned tone=latest.done_tone?latest.done_tone:latest.quota_tone?latest.quota_tone:1;
+            atomic_store(&preview_playback,true);
+            if(fresh && latest.volume && !play_tone(tone,latest.volume)){ESP_LOGW("device","Volume preview failed");(void)bsp_audio_sleep();}
+            atomic_store(&preview_playback,false);
+            portENTER_CRITICAL(&mutex);preview_pending=false;portEXIT_CRITICAL(&mutex);
         } else if(!play_tone(request.tone,request.volume)) {
-            ESP_LOGW("device","Tone playback failed");
-            (void)bsp_audio_sleep();
+            ESP_LOGW("device","Tone playback failed");(void)bsp_audio_sleep();
         }
+        if(request.command==3)atomic_store(&boot_finished,true);
     }
 }
 bool device_runtime_start(void) {
-    config=device_config_default();config_dirty=false;behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
+    atomic_store(&boot_finished,false);
+    volume_revision=0;volume_unsaved=volume_save_pending=preview_requested=preview_pending=false;
+    volume_changed_at=volume_save_after=preview_next=0;atomic_store(&preview_playback,false);
+    config=device_config_default();pages=page_config_default();monitor=monitor_default();config_dirty=false;behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
     nvs_ready=nvs_flash_init()==ESP_OK;
     if(nvs_ready) {
         nvs_handle_t handle;
         if(nvs_open("tokens_ui",NVS_READONLY,&handle)==ESP_OK) {
             device_config_t stored;size_t size=sizeof(stored);
-            if(nvs_get_blob(handle,"cfg1",&stored,&size)==ESP_OK && size==sizeof(stored)) {
-                device_config_t previous=stored;device_config_upgrade(&stored);
-                if(device_config_valid(&stored)) {config=stored;config_dirty=memcmp(&previous,&stored,sizeof(stored))!=0;}
+            bool found=nvs_get_blob(handle,"cfg2",&stored,&size)==ESP_OK && size==sizeof(stored) && device_config_valid(&stored);
+            if(!found) {
+                uint32_t legacy[4];size=sizeof(legacy);
+                if(nvs_get_blob(handle,"cfg1",legacy,&size)==ESP_OK && size==sizeof(legacy)) {
+                    stored=(device_config_t){legacy[0],legacy[1],legacy[2],legacy[3],1};
+                    device_config_upgrade(&stored);found=device_config_valid(&stored);config_dirty=found;
+                }
             }
+            if(found) {
+                device_config_t previous=stored;device_config_upgrade(&stored);
+                if(device_config_valid(&stored)) {config=stored;config_dirty|=memcmp(&previous,&stored,sizeof(stored))!=0;}
+            }
+            page_config_t saved_pages;size=sizeof(saved_pages);
+            if(nvs_get_blob(handle,"pages1",&saved_pages,&size)==ESP_OK && size==sizeof(saved_pages) && page_config_valid(&saved_pages))pages=saved_pages;
+            monitor_config_t saved_monitor;size=sizeof(saved_monitor);
+            if(nvs_get_blob(handle,"mon1",&saved_monitor,&size)==ESP_OK && size==sizeof(saved_monitor) && monitor_valid(&saved_monitor))monitor=saved_monitor;
             nvs_close(handle);
         }
     }
-    queue=xQueueCreate(4,sizeof(request_t));if(!queue)return false;
-    if(xTaskCreate(worker,"device_io",4096,NULL,4,NULL)==pdPASS)return true;
-    vQueueDelete(queue);queue=NULL;return false;
+    atomic_store(&live_volume,config.volume);
+    queue=xQueueCreate(4,sizeof(request_t));
+    if(queue) {
+        request_t startup={.command=3,.tone=config.startup_sound?8:0,.volume=config.volume};
+        if(xQueueSend(queue,&startup,0)==pdTRUE && xTaskCreate(worker,"device_io",4096,NULL,4,NULL)==pdPASS)return true;
+        vQueueDelete(queue);queue=NULL;
+    }
+    atomic_store(&boot_finished,true);return false;
 }
+unsigned device_runtime_volume(void) {
+    portENTER_CRITICAL(&mutex);unsigned current=config.volume;portEXIT_CRITICAL(&mutex);return current;
+}
+void device_runtime_volume_set(unsigned value,uint64_t now) {
+    if(value>100)value=100;
+    portENTER_CRITICAL(&mutex);
+    if(config.volume!=value) {
+        config.volume=value;++volume_revision;config_dirty=true;volume_unsaved=true;
+        volume_changed_at=now;volume_save_after=now+1000;preview_requested=value>0;
+        atomic_store(&live_volume,value);
+    }
+    portEXIT_CRITICAL(&mutex);
+}
+monitor_config_t device_runtime_monitor(void){portENTER_CRITICAL(&mutex);monitor_config_t current=monitor;portEXIT_CRITICAL(&mutex);return current;}
+page_config_t device_runtime_pages(void) {
+    portENTER_CRITICAL(&mutex);page_config_t current=pages;portEXIT_CRITICAL(&mutex);return current;
+}
+bool device_runtime_booting(void) {return !atomic_load(&boot_finished);}
 static bool notify(bool done) {
     portENTER_CRITICAL(&mutex);device_config_t current=config;portEXIT_CRITICAL(&mutex);
     request_t request={.command=2,.tone=done?current.done_tone:current.quota_tone,.volume=current.volume};
@@ -104,6 +200,14 @@ void device_runtime_tick(uint64_t now,const token_snapshot_t *snapshot) {
     if(atomic_exchange(&wake_requested,false)) (void)device_key(&behavior,now);
     bool off=device_screen_off(&behavior,&current,now);
     if(previous!=off)bsp_display_backlight(off?0:75);
+    portENTER_CRITICAL(&mutex);
+    bool save=queue && nvs_ready && volume_unsaved && !volume_save_pending && save_state!=1 && now>=volume_save_after;
+    bool preview=queue && preview_requested && !preview_pending && current.volume && now>=preview_next && now>=volume_changed_at && now-volume_changed_at<=800;
+    if(save)volume_save_pending=true;
+    if(preview){preview_pending=true;preview_next=now+1200;}
+    portEXIT_CRITICAL(&mutex);
+    if(save){request_t request={.command=5};if(xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);volume_save_pending=false;portEXIT_CRITICAL(&mutex);}}
+    if(preview){request_t request={.command=6};if(xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);preview_pending=false;portEXIT_CRITICAL(&mutex);}}
     unsigned exhausted=behavior.exhausted;
     if(snapshot && device_quota_alert(&behavior,snapshot) && !notify(false))behavior.exhausted=exhausted;
 }
@@ -120,9 +224,14 @@ static bool numbers(const char *line,const char *prefix,unsigned *out,unsigned c
     return !*p;
 }
 size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
-    if(strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6))return 0;
+    if(strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6) && strncmp(line,"PC_PAGES",8) && strncmp(line,"PC_MON",6))return 0;
     if(!queue)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
     if(!strcmp(line,"PC_SOUND_BANKS"))return snprintf(reply,capacity,"PC_SOUND_BANKS 3\n");
+    if(!strcmp(line,"PC_CFG_GET2")) {
+        portENTER_CRITICAL(&mutex);device_config_t c=config;portEXIT_CRITICAL(&mutex);
+        return snprintf(reply,capacity,"PC_CFG 2 %lu %lu %lu %lu %lu\n",(unsigned long)c.idle_seconds,
+            (unsigned long)c.done_tone,(unsigned long)c.quota_tone,(unsigned long)c.volume,(unsigned long)c.startup_sound);
+    }
     if(!strcmp(line,"PC_CFG_GET")) {
         portENTER_CRITICAL(&mutex);device_config_t c=config;portEXIT_CRITICAL(&mutex);
         return snprintf(reply,capacity,"PC_CFG 1 %lu %lu %lu %lu\n",(unsigned long)c.idle_seconds,
@@ -132,22 +241,74 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         portENTER_CRITICAL(&mutex);unsigned id=save_id,state=save_state;portEXIT_CRITICAL(&mutex);
         return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",id,state);
     }
-    unsigned values[5];
-    if(numbers(line,"PC_CFG_SET",values,5)) {
-        unsigned id=values[0],timeout=values[1],done=values[2],quota=values[3],volume=values[4];
-        request_t request={.command=1,.id=id,.config={timeout,done,quota,volume}};
-        if(!id || !device_config_valid(&request.config))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+    if(!strcmp(line,"PC_PAGES_GET")) {
+        page_config_t c=device_runtime_pages();
+        return snprintf(reply,capacity,"PC_PAGES 1 %lu %lu %lu %lu %lu\n",(unsigned long)c.enabled,
+            (unsigned long)c.order[0],(unsigned long)c.order[1],(unsigned long)c.order[2],(unsigned long)c.order[3]);
+    }
+    if(!strcmp(line,"PC_MON_GET")) {
+        monitor_config_t c=device_runtime_monitor();return snprintf(reply,capacity,"PC_MON 1 %lu\n",(unsigned long)monitor_hash(&c));
+    }
+    unsigned read_offset[1];
+    if(numbers(line,"PC_MON_READ",read_offset,1) && read_offset[0]<MONITOR_CONFIG_BYTES) {
+        monitor_config_t c=device_runtime_monitor();char hex[MONITOR_CONFIG_BYTES*2+1];monitor_encode(&c,hex);
+        unsigned start=read_offset[0],count=MONITOR_CONFIG_BYTES-start;if(count>16)count=16;
+        return snprintf(reply,capacity,"PC_MON_DATA %lu %u %.*s\n",(unsigned long)monitor_hash(&c),start,(int)(count*2),hex+start*2);
+    }
+    if(!strncmp(line,"PC_MON_SET ",11)) {
+        const char *p=line+11;uint64_t number=0;
+        if(*p<'0'||*p>'9')return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+        do{number=number*10+(unsigned)(*p++-'0');if(number>UINT32_MAX)return snprintf(reply,capacity,"PC_CFG_INVALID\n");}while(*p>='0'&&*p<='9');
+        request_t request={.command=7,.id=(unsigned)number};
+        if(!number || *p++!=' ' || !monitor_decode(p,&request.monitor))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+        if(!nvs_ready)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
+        portENTER_CRITICAL(&mutex);unsigned state=save_state,old_id=save_id,old_kind=save_kind;
+        monitor_config_t previous=requested_monitor;
+        bool duplicate=save_kind==7 && request.id==save_id && !memcmp(&requested_monitor,&request.monitor,sizeof(request.monitor));
+        bool accept=!duplicate && state!=1 && request.id!=save_id;
+        if(accept){save_kind=7;save_id=request.id;save_state=1;requested_monitor=request.monitor;}
+        portEXIT_CRITICAL(&mutex);
+        if(!accept && !duplicate)return snprintf(reply,capacity,"PC_CFG_BUSY\n");
+        if(accept && xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);save_id=old_id;save_kind=old_kind;save_state=state;requested_monitor=previous;portEXIT_CRITICAL(&mutex);return snprintf(reply,capacity,"PC_CFG_RETRY\n");}
+        return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",request.id,duplicate?state:1);
+    }
+    unsigned values[6];
+    if(numbers(line,"PC_PAGES_SET",values,6)) {
+        request_t request={.command=4,.id=values[0],.pages={values[1],{values[2],values[3],values[4],values[5]}}};
+        if(!request.id || !page_config_valid(&request.pages))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
         if(!nvs_ready)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
         portENTER_CRITICAL(&mutex);
-        unsigned state=save_state;
-        bool duplicate=id==save_id && !memcmp(&requested,&request.config,sizeof(requested));
-        bool accept=!duplicate && state!=1 && id!=save_id;
-        unsigned old_id=save_id;device_config_t old_requested=requested;
-        if(accept) {save_id=id;save_state=1;requested=request.config;}
+        unsigned state=save_state,old_id=save_id,old_kind=save_kind;
+        page_config_t previous=requested_pages;
+        bool duplicate=save_kind==4 && request.id==save_id && !memcmp(&requested_pages,&request.pages,sizeof(request.pages));
+        bool accept=!duplicate && state!=1 && request.id!=save_id;
+        if(accept) {save_kind=4;save_id=request.id;save_state=1;requested_pages=request.pages;}
         portEXIT_CRITICAL(&mutex);
         if(!accept && !duplicate)return snprintf(reply,capacity,"PC_CFG_BUSY\n");
         if(accept && xQueueSend(queue,&request,0)!=pdTRUE) {
-            portENTER_CRITICAL(&mutex);save_id=old_id;save_state=state;requested=old_requested;portEXIT_CRITICAL(&mutex);
+            portENTER_CRITICAL(&mutex);save_id=old_id;save_kind=old_kind;save_state=state;requested_pages=previous;portEXIT_CRITICAL(&mutex);
+            return snprintf(reply,capacity,"PC_CFG_RETRY\n");
+        }
+        return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",request.id,duplicate?state:1);
+    }
+    bool extended=numbers(line,"PC_CFG_SET2",values,6);
+    if(extended || numbers(line,"PC_CFG_SET",values,5)) {
+        unsigned id=values[0],timeout=values[1],done=values[2],quota=values[3],volume=values[4];
+        portENTER_CRITICAL(&mutex);unsigned startup=config.startup_sound;portEXIT_CRITICAL(&mutex);
+        request_t request={.command=1,.id=id,.config={timeout,done,quota,volume,extended?values[5]:startup}};
+        if(!id || !device_config_valid(&request.config))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+        if(!nvs_ready)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
+        portENTER_CRITICAL(&mutex);
+        request.volume_revision=volume_revision;
+        unsigned state=save_state;
+        bool duplicate=save_kind==1 && id==save_id && !memcmp(&requested,&request.config,sizeof(requested));
+        bool accept=!duplicate && state!=1 && id!=save_id;
+        unsigned old_id=save_id,old_kind=save_kind;device_config_t old_requested=requested;
+        if(accept) {save_kind=1;save_id=id;save_state=1;requested=request.config;}
+        portEXIT_CRITICAL(&mutex);
+        if(!accept && !duplicate)return snprintf(reply,capacity,"PC_CFG_BUSY\n");
+        if(accept && xQueueSend(queue,&request,0)!=pdTRUE) {
+            portENTER_CRITICAL(&mutex);save_id=old_id;save_kind=old_kind;save_state=state;requested=old_requested;portEXIT_CRITICAL(&mutex);
             return snprintf(reply,capacity,"PC_CFG_RETRY\n");
         }
         return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",id,duplicate?state:1);
