@@ -886,3 +886,18 @@ guide are in System Monitor; that card no longer links the companion program.
 Windows packages remain available in Releases. No TrafficMonitor restart or device
 flash is part of this development increment; browser flasher tests use a fake USB
 loader, and physical migration/playback/brightness require fresh device approval.
+
+## Web notification and draft protection
+
+Notifications live in the sticky top region: green for normal/success messages,
+red for errors, with matching notices inside an open modal. A draft summary and
+Save Changes action cover display/sounds, page order, monitoring, postcard, device
+name and startup logo. Comparing saved snapshots avoids warnings for unchanged or
+reverted values. Only confirmed save/readback updates the baseline; failure keeps
+the draft. Closing/reloading uses the browser's native beforeunload prompt, which
+cannot provide custom Save buttons or await device writes. Stay on the page and
+use Save Changes. Canceling departure never disconnects Bluetooth; cleanup runs
+on pagehide. Pure simulator actions and previews do not mark settings dirty.
+Keep screen on (not recommended) is always the last screen-off option, including
+when a nonstandard saved timeout is inserted. This is a website change; firmware
+and published v18 binaries are unchanged.

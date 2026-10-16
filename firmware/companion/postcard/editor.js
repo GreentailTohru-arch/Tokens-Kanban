@@ -1,7 +1,8 @@
-import {LogoEditor} from './logo-editor.js?v=manage-18';
-import {AboutPanel} from './about.js?v=manage-18';
-import {DeviceInfoPanel} from './device-info.js?v=manage-18';
-import {ExperienceSimulator} from './simulator.js?v=manage-18';
+import {DraftState} from './draft-state.js?v=notices-1';
+import {LogoEditor} from './logo-editor.js?v=notices-1';
+import {AboutPanel} from './about.js?v=notices-1';
+import {DeviceInfoPanel} from './device-info.js?v=notices-1';
+import {ExperienceSimulator} from './simulator.js?v=notices-1';
 import {MonitorEditor} from './monitor.js';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js';
@@ -14,8 +15,14 @@ let pagesSupported=false,pageEnabled=15,pageOrder=[0,1,2,3];
 const pageNames=['用量首页','统计分析','系统检测','明信片'];
 const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按检测卡片配置显示','头像、文字与联系方式'];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-let toastTimer,simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null;
-function status(text){clearTimeout(toastTimer);$('status').textContent=text;$('status').hidden=!text;if(text)toastTimer=setTimeout(()=>{$('status').hidden=true;},10000);}
+let toastTimer,simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null,drafts=null,savingAll=false;
+function status(text,kind='success'){
+ clearTimeout(toastTimer);const node=$('status');node.textContent=text;node.hidden=!text;node.dataset.kind=kind;node.setAttribute('role',kind==='error'?'alert':'status');
+ document.querySelectorAll('.dialog-notice').forEach(n=>n.remove());const modal=document.querySelector('dialog[open]');
+ if(text&&modal){const notice=document.createElement('p');notice.className='toast dialog-notice';notice.dataset.kind=kind;notice.setAttribute('role',kind==='error'?'alert':'status');notice.textContent=text;modal.querySelector('.crop-heading')?.after(notice);}
+ if(text)toastTimer=setTimeout(()=>{node.hidden=true;document.querySelectorAll('.dialog-notice').forEach(n=>n.remove());},10000);
+}
+
 function repaint(){renderFace($('preview'),content,back);$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
 function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='about')||locked||!link||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
@@ -84,8 +91,8 @@ class Connection{
     try{await this.send(new TextEncoder().encode(line+'\n'));return await response;}
     finally{clearTimeout(timer);if(this.pending){this.pending.reject(new Error('发送未完成'));this.pending=null;}}
   }
-  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;devicePanel?.lost();logoEditor?.lost();aboutPanel?.lost();settingsSupported=false;pagesSupported=false;monitorEditor.supported=false;$('monitorState').textContent='连接设备后读取检测配置';$('pagesState').textContent='连接设备后读取页面设置';$('settingsState').textContent='连接设备后读取设置';controls();status('连接已断开');}}
-  async close(){this.lost();}
+  lost(){this.closed=true;if(this.pending){this.pending.reject(new Error('连接已断开，旧明信片仍保留'));this.pending=null;}if(link===this){link=null;devicePanel?.lost();logoEditor?.lost();aboutPanel?.lost();settingsSupported=false;pagesSupported=false;monitorEditor.supported=false;$('monitorState').textContent='连接设备后读取检测配置';$('pagesState').textContent='连接设备后读取页面设置';$('settingsState').textContent='连接设备后读取设置';controls();status('连接已断开',this.intentional?'success':'error');}}
+  async close(){this.intentional=true;this.lost();}
 }
 class BluetoothConnection extends Connection{
   constructor(){super('蓝牙');}
@@ -99,7 +106,7 @@ class BluetoothConnection extends Connection{
     this.tx.addEventListener('characteristicvaluechanged',this.notify);await this.tx.startNotifications();
   }
   async send(bytes){for(let i=0;i<bytes.length;i+=20)await this.rx.writeValueWithResponse(bytes.slice(i,i+20));}
-  async close(){if(this.tx){try{await this.tx.stopNotifications();}catch{}this.tx.removeEventListener('characteristicvaluechanged',this.notify);}this.device?.gatt.disconnect();this.lost();}
+  async close(){this.intentional=true;if(this.tx){try{await this.tx.stopNotifications();}catch{}this.tx.removeEventListener('characteristicvaluechanged',this.notify);}this.device?.gatt.disconnect();this.lost();}
 }
 class SerialConnection extends Connection{
   constructor(){super('USB');}
@@ -112,13 +119,13 @@ class SerialConnection extends Connection{
   }
   async readLoop(){try{while(!this.closed){const {done,value}=await this.reader.read();if(done)break;this.feed(value);}}catch{}finally{this.lost();}}
   async send(bytes){await this.writer.write(bytes);}
-  async close(){this.closed=true;if(this.reader){try{await this.reader.cancel();await this.readTask;}catch{}this.reader.releaseLock();}if(this.writer)this.writer.releaseLock();if(this.port){try{await this.port.close();}catch{}}this.lost();}
+  async close(){this.intentional=true;this.closed=true;if(this.reader){try{await this.reader.cancel();await this.readTask;}catch{}this.reader.releaseLock();}if(this.writer)this.writer.releaseLock();if(this.port){try{await this.port.close();}catch{}}this.lost();}
 }
 async function connect(kind){
   busy=true;controls();let candidate=kind==='ble'?new BluetoothConnection():new SerialConnection();
   try{await candidate.open();if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);await readSettings(candidate);await readPages(candidate);await monitorEditor.read(candidate);await devicePanel.read(candidate);await logoEditor.read(candidate);await aboutPanel.read(candidate);link=candidate;status(dated?'已连接':'已连接，日期显示需要更新设备固件');
-  }catch(error){await candidate.close();status(error.message);}finally{busy=false;controls();}
+    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await aboutPanel.read(candidate);link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');
+  }catch(error){await candidate.close();status(error.message,'error');}finally{busy=false;controls();}
 }
 async function stateFor(id,reply){
   for(let i=0;i<240;i++){
@@ -133,7 +140,7 @@ async function stateFor(id,reply){
 }
 async function upload(event){
   event.preventDefault();if(!link||busy||imageLoading||draft)return;
-  if(!content.photo||!content.qr||!content.title.trim()||!content.name.trim()){status('请导入图片、二维码，并填写标题和联系名字。');return;}
+  if(!content.photo||!content.qr||!content.title.trim()||!content.name.trim()){status('请导入图片、二维码，并填写标题和联系名字。','error');return;}
   busy=true;controls();$('progress').hidden=false;$('progress').value=0;
   try{
     const canvas=document.createElement('canvas');canvas.width=WIDTH;canvas.height=HEIGHT;
@@ -149,8 +156,8 @@ async function upload(event){
       status(`正在保存 ${Math.floor(sent/data.length*100)}%${sent>4096?' · 预计剩余 '+left+' 秒':''}`);
     }
     state=await stateFor(id,await link.rpc(`PC_DONE ${id}`));if(state.state!==3)throw new Error('设备尚未确认保存');
-    const dated=await syncClock(link);status('已保存到设备'+(dated?'':'，日期显示需要更新设备固件'));
-  }catch(error){status(error.message);}finally{busy=false;controls();}
+    drafts?.mark('postcard');const dated=await syncClock(link);status('已保存到设备'+(dated?'':'，日期显示需要更新设备固件'));
+  }catch(error){status(error.message,'error');}finally{busy=false;controls();}
 }
 function setPage(page){
   activePage=page;$('experiencePage').hidden=page!=='experience';simulator?.setActive(page==='experience');devicePanel?.setActive(page==='experience');$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';$('aboutPage').hidden=page!=='about';
@@ -160,7 +167,7 @@ function setPage(page){
 function settingsValues(){const values=['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));if(startupSupported)values.push(Number($('startupSound').checked));return values;}
 function putSettings(values){
   const [idle,done,quota,volume]=values;
-  if(!$('idleTime').querySelector(`option[value="${idle}"]`)){const option=new Option(idle+' 秒',String(idle));$('idleTime').add(option);}
+  if(!$('idleTime').querySelector(`option[value="${idle}"]`)){const option=new Option(idle+' 秒',String(idle));$('idleTime').add(option,$('idleTime').querySelector('option[value="0"]'));}
   for(const [i,id] of ['idleTime','doneTone','quotaTone','soundVolume'].entries())$(id).value=values[i];
   $('soundVolumeValue').textContent=volume+'%';
   $('startupSound').checked=values.length===5?values[4]===1:true;
@@ -191,9 +198,10 @@ async function readSettings(connection){
 }
 async function saveSettings(event){
   event.preventDefault();if(!link||busy||!settingsSupported)return;
+  const desired=settingsValues(),desiredBrightness=$('brightness').value;
   busy=true;controls();$('settingsState').textContent='正在保存设置…';
   try{
-    const values=settingsValues(),id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;
+    const values=desired,id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;
     let reply=await link.rpc(`PC_CFG_SET${startupSupported?'2':''} ${id} ${values.join(' ')}`),saved=false;
     for(let i=0;i<300;i++){
       const parts=reply.split(' ');
@@ -206,8 +214,8 @@ async function saveSettings(event){
     if(brightnessSupported)await saveBrightness();
     await readSettings(link);
     if(!settingsSupported||settingsValues().some((v,i)=>v!==values[i]))throw new Error('设置校验不一致，请重新读取');
-    $('settingsState').textContent='设置已保存到设备';status('设置已保存到设备');
-  }catch(error){$('settingsState').textContent='保存未确认，请重新连接读取';status(error.message);}finally{busy=false;controls();}
+    drafts?.mark('settings');$('settingsState').textContent='设置已保存到设备';status('设置已保存到设备');
+  }catch(error){putSettings(desired);$('brightness').value=desiredBrightness;$('brightnessValue').textContent=desiredBrightness+'%';$('settingsState').textContent='保存未确认，请重新连接读取';status(error.message,'error');}finally{busy=false;controls();}
 }
 async function saveBrightness(){
  const id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1,level=Number($('brightness').value);let reply=await link.rpc(`PC_DISPLAY_SET ${id} ${level}`),saved=false;
@@ -219,10 +227,10 @@ async function previewTone(field){
   const tone=Number($(field).value),volume=Number($('soundVolume').value);if(!tone||!volume)return;
   busy=true;controls();
   try{const reply=await link.rpc(`PC_SOUND ${tone} ${volume}`);if(reply!=='PC_SOUND_QUEUED')throw new Error('设备暂忙，请稍后试听');status('试听已发送到设备');}
-  catch(error){status(error.message);}finally{busy=false;controls();}
+  catch(error){status(error.message,'error');}finally{busy=false;controls();}
 }
-const monitorEditor=new MonitorEditor({status,getLink:()=>link,setBusy:value=>{busy=value;controls();},controls,onRender:url=>{document.querySelector('.page-card[data-page="2"] img')?.setAttribute('src',url);}});
-devicePanel=new DeviceInfoPanel({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
+const monitorEditor=new MonitorEditor({onSaved:()=>drafts?.mark('monitor'),status,getLink:()=>link,setBusy:value=>{busy=value;controls();},controls,onRender:url=>{document.querySelector('.page-card[data-page="2"] img')?.setAttribute('src',url);}});
+devicePanel=new DeviceInfoPanel({onSaved:()=>drafts?.mark('name'),getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 simulator=new ExperienceSimulator(()=>({mask:pageEnabled,order:[...pageOrder],content,volume:Number($('soundVolume').value),idle:Number($('idleTime').value),done:Number($('doneTone').value),quota:Number($('quotaTone').value),startup:$('startupSound').checked,drawBoot:ctx=>logoEditor.draw(ctx),bootDuration:logoEditor?.frames?.reduce((n,f)=>n+f.duration,0)||0}));
 logoEditor=new LogoEditor({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 aboutPanel=new AboutPanel({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
@@ -239,26 +247,50 @@ $('previewDone').onclick=()=>previewTone('doneTone');$('previewQuota').onclick=(
 for(const field of ['title','subtitle','name'])$(field).addEventListener('input',e=>{content[field]=e.target.value;repaint();});
 for(const field of ['photo','qr'])$(field).addEventListener('change',async e=>{
   const file=e.target.files[0];e.target.value='';if(!file||busy||imageLoading){restoreFile(field);return;}
-  if(file.size>25*1024*1024){status('请选择小于 25 MB 的图片');restoreFile(field);return;}
+  if(file.size>25*1024*1024){status('请选择小于 25 MB 的图片','error');restoreFile(field);return;}
   imageLoading=true;controls();
   try{
     const next=await createImageBitmap(file,{imageOrientation:'from-image'});
     if(next.width*next.height>50000000){next.close();throw new Error('图片像素过大，请选 5000 万像素以内的图片');}
     openCrop(field,next,true,file);
-  }catch(error){status('无法读取图片：'+error.message);}
+  }catch(error){status('无法读取图片：'+error.message,'error');}
   finally{imageLoading=false;controls();if(!draft)restoreFile(field);}
 });
 $('frontTab').onclick=()=>{back=false;repaint();};$('backTab').onclick=()=>{back=true;repaint();};
 $('ble').onclick=()=>connect('ble');$('usb').onclick=()=>connect('usb');
 $('disconnect').onclick=async()=>{busy=true;controls();try{await link?.close();}finally{link=null;busy=false;controls();}};
 $('form').addEventListener('submit',upload);
-window.addEventListener('beforeunload',()=>{if(link instanceof BluetoothConnection)link.device?.gatt.disconnect();});
+window.addEventListener('beforeunload',event=>{if(unsaved().length||aboutPanel?.installing||savingAll){event.preventDefault();event.returnValue='';}});
+window.addEventListener('pagehide',()=>{if(link instanceof BluetoothConnection)link.device?.gatt.disconnect();});
+drafts=new DraftState();
+const bitmapIds=new WeakMap();let nextBitmap=1;
+const bitmapId=image=>{if(!image)return 0;if(!bitmapIds.has(image))bitmapIds.set(image,nextBitmap++);return bitmapIds.get(image);};
+const cardKey=()=>JSON.stringify([content.title,content.subtitle,content.name,bitmapId(content.photo),bitmapId(content.qr),content.crop,content.qrCrop]);
+drafts.add('settings','显示与声音',()=>JSON.stringify([settingsValues(),Number($('brightness').value)]));
+drafts.add('pages','页面管理',()=>JSON.stringify([pageEnabled,pageOrder]));drafts.add('monitor','系统检测',()=>JSON.stringify(monitorEditor.config));drafts.add('name','设备名称',()=>$('deviceName').value.trim());drafts.add('postcard','明信片',cardKey);
+function unsaved(){
+ const changes=drafts?.changed()||[];
+ if(draft&&(draft.fresh||JSON.stringify(draft.crop)!==JSON.stringify(content[cropKey(draft.field)]))&&!changes.some(c=>c.key==='postcard'))changes.push({key:'postcard',label:'明信片'});
+ if(logoEditor?.dirty||(logoEditor?.pending&&(logoEditor.pending.file!==logoEditor.file||JSON.stringify(logoEditor.draftCrop)!==JSON.stringify(logoEditor.crop))))changes.push({key:'logo',label:'开机 Logo'});
+ return changes;
+}
+function refreshDraftNotice(){const changes=unsaved();$('draftNotice').hidden=!changes.length;$('draftSummary').textContent='未保存：'+changes.map(c=>c.label).join('、');$('saveAll').disabled=busy||imageLoading||savingAll;}
+async function saveAll(){
+ if(busy||imageLoading||savingAll)return;if(!link){status('请先连接设备，再保存修改','error');return;}
+ if(draft)closeCrop(true);if(logoEditor.pending){status('请先在小窗中确定 Logo 取景','error');return;}
+ savingAll=true;refreshDraftNotice();const event={preventDefault(){}};
+ const jobs={settings:()=>saveSettings(event),pages:()=>savePages(event),monitor:()=>monitorEditor.save(event),name:()=>devicePanel.saveName(event),postcard:()=>upload(event),logo:()=>logoEditor.save()};
+ try{for(const {key,label} of unsaved()){await jobs[key]();if(unsaved().some(c=>c.key===key)){status(label+'保存未确认，修改仍保留，请检查后重试','error');return;}}status('全部修改已保存到设备');}
+ catch(e){status(e.message,'error');}finally{savingAll=false;refreshDraftNotice();}
+}
+new ResizeObserver(()=>document.documentElement.style.setProperty('--topbar-height',document.querySelector('.topbar').offsetHeight+'px')).observe(document.querySelector('.topbar'));
+$('saveAll').onclick=saveAll;setInterval(refreshDraftNotice,150);document.addEventListener('input',refreshDraftNotice);document.addEventListener('change',refreshDraftNotice);
 renderPages();setPage('experience');repaint();controls();updateClock();setInterval(updateClock,1000);
 try{
   Object.assign(content,await loadDefaults());
   for(const field of ['title','subtitle','name'])$(field).value=content[field];
-  repaint();
-}catch(error){status(error.message);}
+  repaint();drafts?.mark('postcard');
+}catch(error){status(error.message,'error');}
 finally{imageLoading=false;controls();}
 
 function validPages(mask,order){return Number.isInteger(mask)&&mask>0&&mask<16&&order.length===4&&order.every(n=>Number.isInteger(n)&&n>=0&&n<4)&&new Set(order).size===4;}
@@ -278,7 +310,7 @@ function renderPages(){
     const description=document.createElement('p');description.textContent=pageDescriptions[id];info.append(description);
     const label=document.createElement('label');label.className='toggle-row';const text=document.createElement('span');text.textContent=enabled?'已开启':'已关闭';
     const toggle=document.createElement('input');toggle.type='checkbox';toggle.setAttribute('role','switch');toggle.setAttribute('aria-label',pageNames[id]);toggle.checked=enabled;toggle.disabled=enabled&&count===1;
-    toggle.onchange=()=>{const next=pageEnabled^(1<<id);if(!next){status('至少保留一个页面');toggle.checked=true;return;}pageEnabled=next;changedPages();};label.append(text,toggle);info.append(label);
+    toggle.onchange=()=>{const next=pageEnabled^(1<<id);if(!next){status('至少保留一个页面','error');toggle.checked=true;return;}pageEnabled=next;changedPages();};label.append(text,toggle);info.append(label);
     const actions=document.createElement('div');actions.className='page-actions';
     for(const [delta,name] of [[-1,'上移'],[1,'下移']]){const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=name;button.setAttribute('aria-label',pageNames[id]+name);button.disabled=index+delta<0||index+delta>=4;button.onclick=()=>{const target=index+delta;[pageOrder[index],pageOrder[target]]=[pageOrder[target],pageOrder[index]];changedPages();$('pageList').querySelector(`[data-page="${id}"] button[aria-label="${pageNames[id]+name}"]`)?.focus();};actions.append(button);}info.append(actions);card.append(info);list.append(card);
   });
@@ -292,7 +324,7 @@ async function readPages(connection){
 }
 async function savePages(event){
   event.preventDefault();if(!link||busy||!pagesSupported)return;
-  if(!validPages(pageEnabled,pageOrder)){status('至少保留一个页面，页面顺序不可重复');return;}
+  if(!validPages(pageEnabled,pageOrder)){status('至少保留一个页面，页面顺序不可重复','error');return;}
   const mask=pageEnabled,order=[...pageOrder],id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;
   busy=true;controls();$('pagesState').textContent='正在保存页面设置…';
   try{
@@ -304,6 +336,6 @@ async function savePages(event){
     }
     if(!saved)throw new Error('保存超时，请重新连接');
     await readPages(link);if(!pagesSupported||pageEnabled!==mask||order.some((v,i)=>v!==pageOrder[i]))throw new Error('页面设置校验不一致，请重新连接');
-    $('pagesState').textContent='页面设置已保存到设备';status('页面设置已保存到设备');
-  }catch(error){$('pagesState').textContent='保存未确认，请重新连接读取';status(error.message);}finally{busy=false;controls();}
+    drafts?.mark('pages');$('pagesState').textContent='页面设置已保存到设备';status('页面设置已保存到设备');
+  }catch(error){pageEnabled=mask;pageOrder=[...order];renderPages();$('pagesState').textContent='保存未确认，请重新连接读取';status(error.message,'error');}finally{busy=false;controls();}
 }

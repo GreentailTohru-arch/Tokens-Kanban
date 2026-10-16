@@ -4,8 +4,8 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AI Passport 明信片与设备管理">
   <title>Tokens Kanban · 设备管理</title>
-  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=manage-18">
-<link rel="stylesheet" href="manage.css?v=manage-18">
+  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=notices-1">
+<link rel="stylesheet" href="manage.css?v=notices-1">
 </head>
 <body>
 <header class="topbar">
@@ -17,6 +17,7 @@
   </nav>
   <span id="connection" class="connection" role="status">未连接</span>
   <progress id="progress" max="100" value="0" hidden aria-label="保存进度"></progress>
+<p id="status" class="toast" role="status" hidden></p><div id="draftNotice" class="draft-notice" hidden><span id="draftSummary"></span><button id="saveAll" type="button" class="secondary">保存修改</button></div>
 </header>
 <div class="app-shell">
 <aside class="sidebar"><nav aria-label="管理页面"><button id="experienceNav" class="nav-item" type="button" aria-controls="experiencePage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="4"/><path d="m10 8 5 4-5 4Z"/></svg>体验模拟</button><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="monitorNav" class="nav-item" type="button" aria-controls="monitorPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 11h3l2-4 3 7 2-3h2"/></svg>系统检测</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button><button id="aboutNav" class="nav-item" type="button" aria-controls="aboutPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v2"/></svg>关于</button></nav></aside>
@@ -102,7 +103,7 @@
 <section id="settingsPage" class="settings-page" hidden aria-label="设备设置">
   <div class="settings-heading"><h1>设备设置</h1><p id="settingsState">连接设备后读取设置</p></div>
   <form id="settingsForm"><fieldset id="settingsFields" disabled>
-    <section class="edit-panel"><h2>显示</h2><div class="field"><label for="brightness">屏幕亮度 <output id="brightnessValue">75%</output></label><input id="brightness" type="range" min="5" max="100" step="1" value="75" disabled><p id="brightnessHint" class="setting-help">连接配套固件后读取亮度。</p></div><div class="field"><label for="idleTime">自动熄屏</label><select id="idleTime"><option value="0">永不</option><option value="30">30 秒</option><option value="60">1 分钟</option><option value="120">2 分钟</option><option value="300">5 分钟</option><option value="600">10 分钟</option><option value="1800">30 分钟</option><option value="3600">1 小时</option></select><p class="setting-help">熄屏后继续同步，按任意键唤醒。</p></div></section>
+    <section class="edit-panel"><h2>显示</h2><div class="field"><label for="brightness">屏幕亮度 <output id="brightnessValue">75%</output></label><input id="brightness" type="range" min="5" max="100" step="1" value="75" disabled><p id="brightnessHint" class="setting-help">连接配套固件后读取亮度。</p></div><div class="field"><label for="idleTime">自动熄屏</label><select id="idleTime"><option value="30">30 秒</option><option value="60">1 分钟</option><option value="120">2 分钟</option><option value="300">5 分钟</option><option value="600">10 分钟</option><option value="1800">30 分钟</option><option value="3600">1 小时</option><option value="0" selected>保持常亮（不建议）</option></select><p class="setting-help">熄屏后继续同步，按任意键唤醒。</p></div></section>
 
     <section class="edit-panel"><h2>提示音</h2>
       <div class="field startup-setting"><label class="toggle-row" for="startupSound"><span>开机音效</span><input id="startupSound" type="checkbox" role="switch" checked disabled></label><p id="startupHint" class="setting-help">开机显示 Logo 时播放，使用下方音量。</p></div>
@@ -114,12 +115,12 @@
   </fieldset></form>    <section class="edit-panel logo-settings"><h2>开机 Logo</h2><p id="logoState" class="setting-help">保留原默认图，可导入静态图或 GIF。</p><canvas id="logoPreview" width="240" height="320" aria-label="开机 Logo 预览"></canvas><div class="logo-actions"><label class="file-button" for="logoFile">导入图片 / GIF</label><input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button id="logoReframe" type="button" class="secondary" disabled>取景</button><button id="logoDefault" type="button" class="secondary">恢复默认</button><button id="logoSave" type="button" disabled>保存开机 Logo</button></div><progress id="logoProgress" max="100" value="0" hidden></progress></section><p class="settings-footnote">显示与声音使用顶部“保存到设备”；Logo 单独保存，下次开机显示。</p>
 </section><section id="aboutPage" class="about-page" hidden aria-label="关于 Tokens Kanban"></section></div>
 <dialog id="bridgeDialog" aria-labelledby="bridgeTitle"><div class="crop-heading"><h2 id="bridgeTitle">安装桥接插件</h2><button id="bridgeClose" type="button" class="close-crop" aria-label="关闭安装说明">×</button></div><ol class="simple-steps"><li>将插件放入 TrafficMonitor 的 <code>plugins</code> 文件夹。</li><li>退出并重新启动 TrafficMonitor。</li><li>运行电脑同步程序，通过 USB 或蓝牙连接设备。</li></ol><p class="setting-help">插件安装在电脑端；网页不会安装插件或改动网卡设置。</p></dialog>
-<p id="status" class="toast" role="status" hidden></p>
+
 <dialog id="cropDialog" aria-labelledby="cropTitle" aria-describedby="cropHint">
   <div class="crop-heading"><h2 id="cropTitle">头像取景</h2><button id="cancelCrop" type="button" class="close-crop" aria-label="取消取景">×</button></div>
   <p id="cropHint" class="hint"></p><canvas id="crop" width="240" height="240" tabindex="0" aria-label="正方形取景区域：拖动或用方向键移动画面"></canvas>
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=manage-18"></script>
+<script type="module" src="editor.js?v=notices-1"></script>
 </body></html>

@@ -114,3 +114,5 @@ verified regions without full-chip erase. Unknown layouts stop before writes.
 The bridge card links TrafficMonitor and a short instruction dialog; companion
 downloads remain in Releases. Real brightness, GIF playback, physical USB migration
 and power-loss preservation remain unverified because v18 has not been flashed.
+
+Web notifications now appear at the top, green for normal/success and red for errors. A Save Changes summary tracks configuration drafts; closing/reloading warns only while unsaved. Canceling departure keeps Bluetooth connected. Native browser exit dialogs cannot save to the device: stay, then use Save Changes. Keep screen on (not recommended) is the last screen-off option. Firmware and the v18 release binaries are unchanged.
