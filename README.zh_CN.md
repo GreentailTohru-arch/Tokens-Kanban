@@ -13,4 +13,4 @@
 网页不会把导入的图片提交到 GitHub 或上传到图片服务器。
 
 硬件应用复用 [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport) 的 BSP。
-代码沿用 MIT 授权。通用默认头像由项目所有者提供并指定用于本应用，原始来源／授权信息未提供。
+代码沿用 MIT 授权。默认头像为原创、严格左右对称的矢量用户图，MIT 授权，源文件为 `default-avatar.svg`。
