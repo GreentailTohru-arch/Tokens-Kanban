@@ -111,3 +111,47 @@
 @media(max-width:760px){.sidebar{padding:18px 16px}.sidebar-brand{padding-bottom:16px}.sidebar .nav-item{height:40px;font-size:13px}.sidebar nav{gap:8px}.web-mode{margin-top:16px}.nav-group-label{margin-top:4px}}
 @media(prefers-reduced-motion:reduce){.section-jumps a{transition:none}}
 
+
+/* Management shell only: the workspace dimensions, contents and page layouts stay intact. */
+:root{--shell-sidebar-width:220px}
+.topbar{container-type:inline-size;transition:margin-left .24s var(--ease);padding-inline:24px}
+.topbar-context{order:-2;flex:0 0 auto;font-size:14px;font-weight:600;letter-spacing:.01em;color:var(--theme-text);margin-right:12px}
+.topbar .menu-toggle{order:-3}
+.sidebar{top:0;height:100dvh;z-index:35;padding:26px 14px 18px}
+.sidebar-brand{min-height:70px;gap:12px;padding:0 12px 22px;font-size:15px;color:var(--theme-text)!important}
+.sidebar-brand .brand-symbol{width:38px;height:38px;border-radius:11px}
+.sidebar-brand small{font-size:9px;letter-spacing:1.8px;margin-top:7px}
+.sidebar nav{gap:12px}
+.sidebar .nav-group{gap:4px}
+.sidebar .nav-group-label{margin:8px 16px 5px;font-size:10px}
+html[data-theme-styled=true] .sidebar .nav-item{height:44px;padding:11px 16px;gap:13px;font-size:13px;border-radius:24px;border-color:transparent}
+.sidebar .nav-item svg{width:19px;height:19px}
+html[data-theme-styled=true] .sidebar .nav-item.selected{border-color:transparent;background:var(--theme-soft);color:var(--theme-accent);font-weight:600}
+.sidebar .nav-item.selected::before{display:none}
+html[data-theme-styled=true] .sidebar .nav-item:hover:not(.selected){background:var(--theme-raised);color:var(--theme-text)}
+.web-mode{flex-wrap:wrap;gap:8px;margin-top:24px;padding:18px 8px 0}
+.web-mode-label{flex-basis:100%;color:var(--theme-muted);font-size:11px;margin-bottom:4px}
+.web-mode button{min-height:38px}
+@media(min-width:761px){body:has(.app-shell.sidebar-open)>.topbar{margin-left:var(--shell-sidebar-width)}}
+@media(min-width:761px) and (max-width:1100px){:root{--shell-sidebar-width:196px}.topbar{padding-inline:18px}.sidebar-brand{font-size:13px;padding-inline:8px;gap:9px}.sidebar .nav-group-label{margin-left:12px}}
+@container (max-width:1050px){
+ .topbar-context{display:none}
+ .topbar .toolbar .button-label,.topbar .draft-notice .button-label{display:none}
+ .topbar .toolbar button,.topbar .draft-notice button{width:36px;height:36px;padding:9px;justify-content:center;gap:0}
+ .topbar .draft-notice svg{display:block}
+ .topbar #draftSummary{display:none}
+}
+@media(max-width:760px){
+ .topbar{margin-left:0;padding:12px;transition:none}
+ .topbar-context{display:none}
+ .sidebar{top:var(--topbar-height,64px);height:calc(100dvh - var(--topbar-height,64px));z-index:25;padding:20px 16px 16px}
+ .sidebar-brand{min-height:64px;padding-bottom:18px}
+ .sidebar nav{gap:8px}
+ html[data-theme-styled=true] .sidebar .nav-item{height:42px;padding:10px 16px}
+ .sidebar .nav-group-label{margin-top:4px}
+ .web-mode{margin-top:18px}
+}
+@media(prefers-reduced-motion:reduce){.topbar{transition:none}}
+/* The navigation scrim is not an accent-colored action button. */
+html[data-theme-styled=true] button.sidebar-backdrop{background:rgba(0,0,0,.32);border:0;border-radius:0;box-shadow:none;filter:none;transform:none}
+html[data-theme-styled=true] button.sidebar-backdrop:hover,html[data-theme-styled=true] button.sidebar-backdrop:active{background:rgba(0,0,0,.32);box-shadow:none;filter:none;transform:none}
