@@ -14,7 +14,7 @@ def main():
    if(v[0]==='PC_INFO_SYSTEM')reply='PC_SYSTEM '+(window.freezeDevice?10000:10000+Math.floor(performance.now()))+' 245 160 200000 80000 60000 40000';
    if(v[0]==='PC_INFO_STORAGE')reply='PC_STORAGE 8388608 7798784 524288 12 500';
    if(v[0]==='PC_INFO_BATTERY')reply=window.noBattery?'PC_BATTERY -1 -1 500':'PC_BATTERY 86 4050 500';
-   if(v[0]==='PC_INFO_CHIP')reply='PC_CHIP ESP32-C3 1 101 98c377f4deb0 137ca20932c9 v17';
+   if(v[0]==='PC_INFO_CHIP')reply=`PC_CHIP ESP32-C3 1 101 98c377f4deb0 ${window.testELFPrefix||'e0e2b3b00'} v17`;
    if(v[0]==='PC_INFO_KEYS')reply='PC_KEYS 3300 '+(window.keyCounts||[0,0,0]).join(' ')+' 0 0';
    if(v[0]==='PC_INFO_NAME')reply='PC_NAME '+Array.from(new TextEncoder().encode(window.deviceName||"You's AI Passport"),b=>b.toString(16).padStart(2,'0')).join('');
    if(v[0]==='PC_NAME_SET'){window.nameId=+v[1];window.nameState=window.failName?3:2;if(!window.failName)window.deviceName=new TextDecoder().decode(Uint8Array.from(v[2].match(/../g),s=>parseInt(s,16)));reply=`PC_NAME_STATE ${window.nameId} 1`;}

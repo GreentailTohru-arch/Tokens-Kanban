@@ -25,7 +25,7 @@ export class DeviceInfoPanel {
   async readName(connection){const p=(await connection.rpc('PC_INFO_NAME')).split(' ');if(p.length!==2||p[0]!=='PC_NAME'||!/^(?:[0-9a-f]{2}){1,32}$/.test(p[1]))throw Error('设备名称编码错误');$('deviceName').value=new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(p[1].match(/../g),h=>parseInt(h,16)));this.validateName();$('deviceNameHint').textContent='已读取设备名称 · 不更改蓝牙广播名';}
   async snapshot(connection){
     const system=numeric(await connection.rpc('PC_INFO_SYSTEM'),'PC_SYSTEM',7),storage=numeric(await connection.rpc('PC_INFO_STORAGE'),'PC_STORAGE',5),battery=numeric(await connection.rpc('PC_INFO_BATTERY'),'PC_BATTERY',3),keys=numeric(await connection.rpc('PC_INFO_KEYS'),'PC_KEYS',6);
-    const chip=(await connection.rpc('PC_INFO_CHIP')).split(' ');if(chip.length!==7||chip[0]!=='PC_CHIP'||!/^\d+$/.test(chip[2])||!/^\d+$/.test(chip[3])||!/^[0-9a-f]{12}$/.test(chip[4])||!/^[0-9a-f]{12}$/.test(chip[5]))throw Error('设备芯片信息错误');
+    const chip=(await connection.rpc('PC_INFO_CHIP')).split(' ');if(chip.length!==7||chip[0]!=='PC_CHIP'||!/^\d+$/.test(chip[2])||!/^\d+$/.test(chip[3])||!/^[0-9a-f]{12}$/.test(chip[4])||!/^[0-9a-f]{8,64}$/.test(chip[5]))throw Error('设备芯片信息错误');
     if(connection.closed||(this.getLink()&&connection!==this.getLink()))return;
     const [up,cpu,mhz,total,free,min,largest]=system,[flash,app,card,usedEntries,freeEntries]=storage,[soc,mv,design]=battery;
     if(up!==this.lastUptime){this.lastUptime=up;this.freshAt=performance.now();}if(performance.now()-this.freshAt>6500){this.unavailable('数据已过期');return;}

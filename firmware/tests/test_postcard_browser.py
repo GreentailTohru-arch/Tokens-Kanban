@@ -14,6 +14,7 @@ import qrcode
 import zxingcpp
 
 MOCK=r'''
+window.usbSignalChanges=0;
 window.testCard={offset:0,data:[],saved:false};
 window.testPages=[15,0,1,2,3];
 window.testMonitor=new Uint8Array(148);window.testMonitor.set([1,0,0,1,1,0,1,0]);window.testMonitor.set(new TextEncoder().encode('↑'),8);window.testMonitor.set(new TextEncoder().encode('↓'),15);[0,1,2,3,4,11].forEach((m,i)=>window.testMonitor.set([m,1],22+i*21));
@@ -26,7 +27,7 @@ Object.defineProperty(navigator,'serial',{value:{requestPort:async()=>{
  const readable=new ReadableStream({start(c){feed=c;}});
  const writable=new WritableStream({write(bytes){buffer+=new TextDecoder().decode(bytes);
   while(buffer.includes('\n')){const p=buffer.indexOf('\n'),line=buffer.slice(0,p);buffer=buffer.slice(p+1);const v=line.split(' ');let reply='PC_INVALID';
-   if(v[0]==='PC_HELLO')reply='PC_READY 1';
+   if(v[0]==='PC_HELLO'){if(window.dropHello){window.dropHello--;return;}reply='PC_READY 1';}
    if(v[0]==='PC_TIME')reply='PC_TIME_OK';
    if(v[0]==='PC_CLOCK'){card.clock=+v[1];reply=window.legacyClock?'PC_INVALID':'PC_CLOCK_OK';}
    if(v[0]==='PC_MON_GET'&&!window.legacyMonitor)reply='PC_MON 1 '+window.monitorHash();
@@ -53,7 +54,7 @@ Object.defineProperty(navigator,'serial',{value:{requestPort:async()=>{
    feed.enqueue(new TextEncoder().encode(reply+'\n'));
   }
  }});
- return {open:async()=>{},setSignals:async()=>{},close:async()=>{},readable,writable};
+ return {open:async()=>{if(window.portBusy)throw Error("Port busy");},setSignals:async()=>{window.usbSignalChanges++;throw Error("Unexpected USB reset signal change");},close:async()=>{},readable,writable};
 }}});
 Object.defineProperty(navigator,'bluetooth',{value:{requestDevice:async options=>{
  if(!options.filters[0].services[0].startsWith('9e7a0001'))throw Error('Wrong BLE filter');

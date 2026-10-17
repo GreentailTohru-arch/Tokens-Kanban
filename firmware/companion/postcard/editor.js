@@ -1,8 +1,8 @@
-import {DraftState} from './draft-state.js?v=navigation-1';
-import {LogoEditor} from './logo-editor.js?v=navigation-1';
-import {AboutPanel} from './about.js?v=navigation-1';
-import {DeviceInfoPanel} from './device-info.js?v=navigation-1';
-import {ExperienceSimulator} from './simulator.js?v=navigation-1';
+import {DraftState} from './draft-state.js?v=usb-connect-1';
+import {LogoEditor} from './logo-editor.js?v=usb-connect-1';
+import {AboutPanel} from './about.js?v=usb-connect-1';
+import {DeviceInfoPanel} from './device-info.js?v=usb-connect-1';
+import {ExperienceSimulator} from './simulator.js?v=usb-connect-1';
 import {MonitorEditor} from './monitor.js';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js';
@@ -90,13 +90,13 @@ $('applyCrop').onclick=()=>closeCrop(true);$('cancelCrop').onclick=()=>closeCrop
 $('cropDialog').addEventListener('cancel',e=>{e.preventDefault();closeCrop(false);});
 for(const field of ['photo','qr'])$(field+'Edit').onclick=()=>openCrop(field);
 class Connection{
-  constructor(kind){this.commands=Promise.resolve();this.kind=kind;this.text='';this.pending=null;this.closed=false;}
+  constructor(kind){this.commands=Promise.resolve();this.kind=kind;this.text='';this.pending=null;this.closed=false;this.timeout=12000;}
   feed(bytes){this.text+=new TextDecoder().decode(bytes);let pos;while((pos=this.text.indexOf('\n'))>=0){const line=this.text.slice(0,pos).trim();this.text=this.text.slice(pos+1);if(line.startsWith('PC_')&&this.pending){this.pending.resolve(line);this.pending=null;}}if(this.text.length>2048)this.text='';}
   rpc(line){const command=this.commands.then(()=>this.exchange(line));this.commands=command.catch(()=>{});return command;}
   async exchange(line){
     if(this.closed)throw new Error('连接已断开');
     if(this.pending)throw new Error('上一个命令尚未完成');
-    let timer;const response=new Promise((resolve,reject)=>{this.pending={resolve,reject};timer=setTimeout(()=>{this.pending=null;reject(new Error('设备响应超时，请断开重连'));},12000);});
+    let timer;const response=new Promise((resolve,reject)=>{this.pending={resolve,reject};timer=setTimeout(()=>{this.pending=null;reject(new Error('设备响应超时，请断开重连'));},this.timeout);});
     // Attach a rejection handler immediately while BLE fragments are being written.
     response.catch(()=>{});
     try{await this.send(new TextEncoder().encode(line+'\n'));return await response;}
@@ -124,7 +124,9 @@ class SerialConnection extends Connection{
   async open(){
     if(!navigator.serial)throw new Error('此浏览器不支持 USB 串口，请使用 Windows Chrome / Edge');
     this.port=await navigator.serial.requestPort({filters:[{usbVendorId:0x303a,usbProductId:0x1001}]});
-    await this.port.open({baudRate:115200,bufferSize:4096});await this.port.setSignals({dataTerminalReady:false,requestToSend:false});
+    // ESP32-C3 USB Serial/JTAG uses DTR/RTS edges for reset/download control.
+    // Keep the browser's open state; clearing both here resets the running app.
+    await this.port.open({baudRate:115200,bufferSize:4096});
     this.writer=this.port.writable.getWriter();this.reader=this.port.readable.getReader();
     this.readTask=this.readLoop();
   }
@@ -134,8 +136,10 @@ class SerialConnection extends Connection{
 }
 async function connect(kind){
   busy=true;controls();let candidate=kind==='ble'?new BluetoothConnection():new SerialConnection();
-  try{await candidate.open();if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await aboutPanel.read(candidate);link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');
+  try{await candidate.open();const deadline=performance.now()+10000;candidate.timeout=kind==='usb'?1000:12000;
+    for(;;){try{if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
+    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await aboutPanel.read(candidate);candidate.timeout=12000;link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');break;
+    }catch(error){if(kind!=='usb'||candidate.closed||error.message!=='设备响应超时，请断开重连'||performance.now()>=deadline)throw error;candidate.text='';await delay(350);}}
   }catch(error){await candidate.close();status(error.message,'error');}finally{busy=false;controls();}
 }
 async function stateFor(id,reply){
