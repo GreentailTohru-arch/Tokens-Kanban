@@ -88,3 +88,8 @@ html[data-theme-styled=true] .diag-color-row button[data-screen-color]:not(.seco
 .diag-color-row button[data-screen-color="0"]{--swatch:#000}.diag-color-row button[data-screen-color="1"]{--swatch:#f00}.diag-color-row button[data-screen-color="2"]{--swatch:#0f0;--swatch-ink:#000}.diag-color-row button[data-screen-color="3"]{--swatch:#00f}.diag-color-row button[data-screen-color="4"]{--swatch:#fff;--swatch-ink:#000}
 .diag-color-row button[data-screen-color="5"]{--swatch:linear-gradient(90deg,#fff 0 14%,#ff0 14% 28%,#0ff 28% 42%,#0f0 42% 56%,#f0f 56% 70%,#f00 70% 84%,#00f 84%);--swatch-ink:#000;text-shadow:0 1px 2px #fff}
 .diag-color-row button[data-screen-color="6"]{--swatch:linear-gradient(90deg,#000,#fff);text-shadow:0 1px 3px #000}
+
+/* Full device-screen layouts in the four palette choices. */
+.theme-mini{height:auto;display:flex;justify-content:center;padding:14px;background:var(--sample-background)}
+.theme-mini canvas{display:block;width:min(100%,168px);height:auto;aspect-ratio:3/4;border-radius:10px}
+@media(max-width:760px){.theme-mini{height:auto;padding:8px}}

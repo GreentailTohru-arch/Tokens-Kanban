@@ -4,7 +4,7 @@ import {DraftState} from './draft-state.js?v=atelier-20';
 import {LogoEditor} from './logo-editor.js?v=dialog-close-22';
 import {AboutPanel} from './about.js?v=dialog-close-22';
 import {DeviceInfoPanel} from './device-info.js?v=screen-test-22';
-import {ExperienceSimulator} from './simulator.js?v=preview-22';
+import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=theme-cards-22';
 import {MonitorEditor} from './monitor.js?v=device-themes-21';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=preview-22';
@@ -271,6 +271,8 @@ simulator=new ExperienceSimulator(()=>({mask:pageEnabled,order:[...pageOrder],co
 logoEditor=new LogoEditor({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 aboutPanel=new AboutPanel({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 $('themeForm').addEventListener('submit',saveTheme);
+renderThemePreviews();
+window.addEventListener('device-theme-preview-change',renderThemePreviews);
 window.addEventListener('device-theme-change',()=>{monitorEditor.draw();repaint();simulator?.render();refreshDraftNotice();});
 $('aboutNav').onclick=()=>setPage('about');$('themeNav').onclick=()=>setPage('theme');
 $('bridgeHelp').onclick=()=>$('bridgeDialog').showModal();$('bridgeClose').onclick=()=>$('bridgeDialog').close();
