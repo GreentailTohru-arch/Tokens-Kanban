@@ -3,7 +3,7 @@ from pathlib import Path
 import sys,json,threading,base64,hashlib,re
 from http.server import ThreadingHTTPServer
 from playwright.sync_api import sync_playwright,expect
-from browser_navigation import navigate
+from browser_navigation import navigate,set_web_mode
 R=Path(__file__).resolve().parents[1];sys.path.insert(0,str(R/'companion'))
 from postcard_server import Handler
 
@@ -15,7 +15,7 @@ def main():
   page.add_init_script("""window.partialPaints=[];window.frameCopies=0;for(const name of ['fillRect','fillText','clearRect','stroke','fill']){const orig=CanvasRenderingContext2D.prototype[name];CanvasRenderingContext2D.prototype[name]=function(...a){if(this.canvas.id==='simScreen')window.partialPaints.push(name);return orig.apply(this,a)}}const draw=CanvasRenderingContext2D.prototype.drawImage;CanvasRenderingContext2D.prototype.drawImage=function(...a){if(this.canvas.id==='simScreen'){if(a[0].width!==240||a[0].height!==320)throw Error('Partial frame');window.frameCopies++}return draw.apply(this,a)};""")
   page.goto(url);expect(page.locator('#fields')).to_be_enabled()
   for mode in ['light','dark']:
-   page.locator('[data-web-mode-option='+mode+']').click();navigate(page,'aboutNav');expect(page.locator('#brandFavicon')).to_have_attribute('href','brand-'+mode+'.svg');expect(page.locator('.about-mark .brand-'+mode)).to_be_visible();assert page.locator('.about-mark img:visible').count()==1;assert page.locator('.brand-symbol img:visible').count()==1
+   set_web_mode(page,mode);navigate(page,'aboutNav');expect(page.locator('#brandFavicon')).to_have_attribute('href','brand-'+mode+'.svg');expect(page.locator('.about-mark .brand-'+mode)).to_be_visible();assert page.locator('.about-mark img:visible').count()==1;assert page.locator('.brand-symbol img:visible').count()==1
    for image in page.locator('.brand-image:visible').all():assert image.evaluate('e=>e.complete&&e.naturalWidth>0')
    response=page.request.get(url+'brand-'+mode+'.svg');assert response.ok and response.headers['content-type'].startswith('image/svg+xml');raw=base64.b64decode(re.search('base64,([^" ]+)',response.text())[1]);assert raw.startswith(b'\x89PNG\r\n\x1a\n')
    page.screenshot(path=str(out/(mode+'-desktop.png')),full_page=True)

@@ -183,3 +183,11 @@ html[data-theme-styled=true] button.sidebar-backdrop:hover,html[data-theme-style
 .crop-heading .close-crop{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;min-width:28px;min-height:28px;padding:0;line-height:0;font-size:0;align-self:center}
 .crop-heading .close-crop svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;pointer-events:none}
 .crop-heading .close-crop:hover:not(:disabled),.crop-heading .close-crop:active:not(:disabled){transform:none}
+
+/* Xiumuzaidiao day/night component; isolated from application button colors. */
+.web-mode{align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px}
+.web-mode-copy{display:flex;flex-direction:column;gap:4px}
+.web-mode-copy .web-mode-label{margin:0;white-space:nowrap}
+#webModeLabel{font-size:12px;color:var(--theme-text)}
+html[data-theme-styled=true] .web-mode #webModeToggle{display:flex;align-items:center;justify-content:center;flex:0 0 108px;width:108px;height:44px;min-height:44px;padding:0;border:0;background:transparent;border-radius:24px;box-shadow:none;transform:none;filter:none}
+#webModeToggle:focus-visible{outline:2px solid var(--theme-accent);outline-offset:4px}

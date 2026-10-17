@@ -41,7 +41,7 @@ def main():
    page.locator('#menuToggle').click();expect(page.locator('#sidebarBackdrop')).to_be_visible();assert page.locator('#pageContent').evaluate('(e)=>e.inert')
    assert page.locator('.sidebar nav').evaluate('(e)=>getComputedStyle(e).flexDirection')=='column'
    assert page.locator('.sidebar nav button').count()==8
-   expect(page.locator('#aboutNav')).to_be_visible();page.locator('[data-web-mode-option=dark]').focus();page.keyboard.press('Tab');assert page.locator('#menuToggle').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML');page.keyboard.press('Shift+Tab');assert page.locator('[data-web-mode-option=dark]').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML')
+   expect(page.locator('#aboutNav')).to_be_visible();page.locator('#webModeToggle').focus();page.keyboard.press('Tab');assert page.locator('#menuToggle').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML');page.keyboard.press('Shift+Tab');assert page.locator('#webModeToggle').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML')
    page.evaluate('() => Promise.all(document.querySelector(".sidebar").getAnimations().map(a=>a.finished))');page.screenshot(path=str(out/f'side-panel-{width}.png'))
    page.keyboard.press('Escape');expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false');assert not page.locator('#pageContent').evaluate('(e)=>e.inert')
    page.locator('#menuToggle').click();page.locator('#sidebarBackdrop').click(position={'x':width-4,'y':200});expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false')

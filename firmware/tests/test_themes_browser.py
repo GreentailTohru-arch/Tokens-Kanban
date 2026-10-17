@@ -3,7 +3,7 @@ from pathlib import Path
 import sys,json,threading,runpy
 from http.server import ThreadingHTTPServer
 from playwright.sync_api import sync_playwright,expect
-from browser_navigation import navigate
+from browser_navigation import navigate,set_web_mode
 R=Path(__file__).resolve().parents[1];sys.path.insert(0,str(R/'companion'))
 from postcard_server import Handler
 
@@ -24,6 +24,10 @@ def main():
   assert page.locator('[name=deviceTheme]').count()==4;assert page.locator('[value=github],[value=claude]').count()==0
   expect(page.locator('#themeMachineHost #simDevice')).to_be_visible();expect(page.locator('#upload')).to_be_disabled();expect(page.locator('#draftNotice')).to_be_hidden()
   default=page.evaluate('DeviceTheme.values()');assert default==[0,0x68c4cb,0x70bfff,0x2f3a49,0xf1f7f4,0xadb8c3],default
+  expect(page.locator('#webModeToggle')).to_have_attribute('role','switch')
+  expect(page.locator('theme-button .components')).to_have_css('width','108px')
+  assert page.locator('theme-button .moon').count()==3
+  assert page.locator('theme-button .star').count()==6
   bg=page.evaluate('getComputedStyle(document.body).backgroundColor')
   for name in ['default','obsidian','porcelain','ascii']:
    page.locator(f'.theme-choice:has([value={name}])').click();assert page.evaluate('getComputedStyle(document.body).backgroundColor')==bg
@@ -64,7 +68,7 @@ def main():
   page.evaluate('window.failTheme=false');page.locator('#saveAll').click();expect(page.locator('#draftNotice')).to_be_hidden();saved=page.evaluate('themeValues');writes=page.evaluate('themeWrites')
   # Web day/night never touches device values or creates a draft; persisted independently.
   for mode in ['light','dark']:
-   page.locator(f'[data-web-mode-option={mode}]').click();expect(page.locator('html')).to_have_attribute('data-web-mode',mode);assert page.evaluate('themeValues')==saved;assert page.evaluate('themeWrites')==writes;expect(page.locator('#draftNotice')).to_be_hidden()
+   set_web_mode(page,mode);expect(page.locator('html')).to_have_attribute('data-web-mode',mode);assert page.evaluate('themeValues')==saved;assert page.evaluate('themeWrites')==writes;expect(page.locator('#draftNotice')).to_be_hidden()
    for nav in ['experience','pages','monitor','postcard','settings','about','theme']:
     navigate(page,nav+'Nav');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(mode,nav)
    page.screenshot(path=str(out/f'winui-{mode}-desktop.png'),full_page=True)

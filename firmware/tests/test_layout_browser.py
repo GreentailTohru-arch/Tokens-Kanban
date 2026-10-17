@@ -5,7 +5,7 @@ from pathlib import Path
 import sys, threading, json, re
 from http.server import ThreadingHTTPServer
 from playwright.sync_api import sync_playwright, expect
-from browser_navigation import navigate
+from browser_navigation import navigate,set_web_mode
 R=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(R/'companion'))
 from postcard_server import Handler
@@ -29,7 +29,7 @@ def main():
    page.set_viewport_size({'width':width,'height':1000 if width>760 else 844});page.wait_for_timeout(300)
    for mode in ['light','dark']:
     if page.locator('#menuToggle').get_attribute('aria-expanded')!='true':page.locator('#menuToggle').click()
-    page.locator(f'[data-web-mode-option={mode}]').click()
+    set_web_mode(page,mode)
     for name in pages:
      navigate(page,name+'Nav');page.evaluate('() => Promise.all(document.querySelector(".app-shell").getAnimations({subtree:true}).filter(a=>a.effect?.getTiming().iterations!==Infinity).map(a=>a.finished))');expect(page.locator('#'+name+'Page')).to_be_visible()
      assert page.locator('#pageContent>:not([hidden]):is(section,main)').count()==1
