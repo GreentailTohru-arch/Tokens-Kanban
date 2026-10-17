@@ -32,10 +32,31 @@
  function webMode(next){mode=next;root.dataset.webMode=mode;root.dataset.themeStyled='true';root.dataset.themeLight=String(mode==='light');root.style.colorScheme=mode;const favicon=document.getElementById('brandFavicon');if(favicon)favicon.href='brand-'+mode+'.svg';
   const light=mode==='light',c=light?{background:'#F3F3F3',surface:'#FAFAFA',raised:'#FFFFFF',text:'#1B1B1B',muted:'#616161',line:'#DCDCDC',accent:'#0067C0',chart:'#0067C0',soft:'#E4EFF9',buttonText:'#FFFFFF'}:{background:'#202020',surface:'#272727',raised:'#2D2D2D',text:'#F4F4F4',muted:'#B6B6B6',line:'#414141',accent:'#60CDFF',chart:'#60CDFF',soft:'#293D48',buttonText:'#10232D'};
   for(const [k,v]of Object.entries({...c,font:'"Segoe UI Variable","Segoe UI","Microsoft YaHei UI",sans-serif',radius:'8px'}))root.style.setProperty('--theme-'+k,v);
-  const toggle=document.getElementById('webModeToggle');if(toggle){toggle.setAttribute('aria-checked',String(mode==='dark'));toggle.title=mode==='dark'?'切换为日间模式':'切换为夜间模式';document.getElementById('webModeVisual').setAttribute('value',mode);document.getElementById('webModeLabel').textContent=mode==='dark'?'夜间':'日间';}
+  const toggle=document.getElementById('webModeToggle');if(toggle){toggle.setAttribute('aria-checked',String(mode==='dark'));toggle.title=mode==='dark'?'切换为日间模式':'切换为夜间模式';document.getElementById('webModeVisual').setAttribute('value',mode);}
  }
  webMode(mode);
- function mountMode(){document.getElementById('webModeToggle').onclick=()=>{webMode(mode==='dark'?'light':'dark');try{localStorage.setItem(modeKey,mode);}catch{}};webMode(mode);}
+ let modeTransition=null,modeRequest=0,targetMode=mode;
+ async function switchWebMode(){
+  const request=++modeRequest,next=targetMode==='dark'?'light':'dark';targetMode=next;
+  modeTransition?.skipTransition();modeTransition=null;root.classList.remove('web-mode-reveal');
+  const apply=()=>{if(request!==modeRequest)return;webMode(next);try{localStorage.setItem(modeKey,next);}catch{}};
+  if(!document.startViewTransition||matchMedia('(prefers-reduced-motion:reduce)').matches||document.hidden){apply();return;}
+  const rect=document.getElementById('webModeToggle').getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+  const radius=Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y));
+  let transition;
+  try{
+   root.classList.add('web-mode-reveal');transition=document.startViewTransition(apply);modeTransition=transition;
+   await transition.ready;if(request!==modeRequest)return;
+   root.animate({clipPath:[`circle(0px at ${x}px ${y}px)`,`circle(${radius}px at ${x}px ${y}px)`]},
+    {duration:520,easing:'cubic-bezier(.2,.65,.3,1)',pseudoElement:'::view-transition-new(root)'});
+  }catch{apply();transition?.skipTransition();}
+  finally{
+   if(transition)await transition.finished.catch(()=>{});
+   if(request===modeRequest){modeTransition=null;root.classList.remove('web-mode-reveal');}
+  }
+ }
+ function mountMode(){document.getElementById('webModeToggle').onclick=switchWebMode;webMode(mode);}
+
  function mount(){const host=document.getElementById('themeOptions');if(!host)return;
   for(const [id,c] of Object.entries(palettes)){const label=document.createElement('label');label.className='theme-choice';label.innerHTML=`<input type="radio" name="deviceTheme" value="${id}" aria-label="${c.name}"><span class="theme-mini"><canvas width="240" height="320" data-theme-preview="${id}" aria-label="${c.name}设备首页配色预览，示例数据"></canvas></span><span class="theme-caption"><strong>${c.name}</strong><small>${c.note}</small><span class="theme-check" aria-hidden="true">✓</span></span>`;
    for(const f of Object.keys(fields))label.style.setProperty('--sample-'+f,c[f]);label.querySelector('input').onchange=()=>{state.theme=id;apply();changed();};host.append(label);
@@ -47,5 +68,5 @@
  }
  function ready(){mount();mountMode();}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready,{once:true});else ready();
- window.addEventListener('storage',e=>{if(e.key===modeKey&&(e.newValue==='light'||e.newValue==='dark'))webMode(e.newValue);});
+ window.addEventListener('storage',e=>{if(e.key===modeKey&&(e.newValue==='light'||e.newValue==='dark')){modeRequest++;modeTransition?.skipTransition();modeTransition=null;root.classList.remove('web-mode-reveal');targetMode=e.newValue;webMode(e.newValue);}});
 })();

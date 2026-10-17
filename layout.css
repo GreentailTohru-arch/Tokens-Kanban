@@ -188,6 +188,14 @@ html[data-theme-styled=true] button.sidebar-backdrop:hover,html[data-theme-style
 .web-mode{align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:8px}
 .web-mode-copy{display:flex;flex-direction:column;gap:4px}
 .web-mode-copy .web-mode-label{margin:0;white-space:nowrap}
-#webModeLabel{font-size:12px;color:var(--theme-text)}
+
 html[data-theme-styled=true] .web-mode #webModeToggle{display:flex;align-items:center;justify-content:center;flex:0 0 108px;width:108px;height:44px;min-height:44px;padding:0;border:0;background:transparent;border-radius:24px;box-shadow:none;transform:none;filter:none}
 #webModeToggle:focus-visible{outline:2px solid var(--theme-accent);outline-offset:4px}
+
+.web-mode-copy .web-mode-label{font-size:12px;color:var(--theme-text)}
+html.web-mode-reveal::view-transition-old(root),html.web-mode-reveal::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.web-mode-reveal::view-transition-old(root){z-index:1}
+html.web-mode-reveal::view-transition-new(root){z-index:2}
+html.web-mode-reveal::view-transition{pointer-events:none}
+
+html.web-mode-reveal body,html.web-mode-reveal body *{transition:none!important}
