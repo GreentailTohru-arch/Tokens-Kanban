@@ -178,3 +178,8 @@ html[data-theme-styled=true] button.sidebar-backdrop:hover,html[data-theme-style
  .topbar .toolbar{gap:4px}
  .topbar .toolbar .button-label,.topbar .draft-notice .button-label,.topbar #versionLabel{display:none}
 }
+
+/* Dialog close icons use geometric centering, independent of font baselines. */
+.crop-heading .close-crop{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;min-width:28px;min-height:28px;padding:0;line-height:0;font-size:0;align-self:center}
+.crop-heading .close-crop svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;pointer-events:none}
+.crop-heading .close-crop:hover:not(:disabled),.crop-heading .close-crop:active:not(:disabled){transform:none}

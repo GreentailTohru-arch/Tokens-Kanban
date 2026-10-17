@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="manage.css?v=atelier-20">
 <link rel="stylesheet" href="atelier.css?v=preview-22">
 <link rel="stylesheet" href="themes.css?v=preview-22">
-<link rel="stylesheet" href="layout.css?v=toolbar-labels-22">
+<link rel="stylesheet" href="layout.css?v=dialog-close-22">
 </head>
 <body>
 <header class="topbar">
@@ -146,13 +146,13 @@
     </section>
   </fieldset></form>    <section id="startupSettings" class="edit-panel logo-settings"><h2>开机 Logo</h2><p id="logoState" class="setting-help">保留原默认图，可导入静态图或 GIF。</p><canvas id="logoPreview" width="240" height="320" aria-label="开机 Logo 预览"></canvas><div class="logo-actions"><label class="file-button" for="logoFile">导入图片 / GIF</label><input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button id="logoReframe" hidden type="button" class="secondary" disabled>取景</button><button id="logoDefault" type="button" class="secondary">恢复默认</button><button id="logoSave" type="button" disabled>保存开机 Logo</button></div><progress id="logoProgress" max="100" value="0" hidden></progress></section><p class="settings-footnote">显示与声音使用顶部“保存到设备”；Logo 单独保存，下次开机显示。</p>
 </section><section id="aboutPage" class="about-page" hidden aria-label="关于 Tokens Kanban"></section></div></div>
-<dialog id="bridgeDialog" aria-labelledby="bridgeTitle"><div class="crop-heading"><h2 id="bridgeTitle">安装桥接插件</h2><button id="bridgeClose" type="button" class="close-crop" aria-label="关闭安装说明">×</button></div><ol class="simple-steps"><li>将插件放入 TrafficMonitor 的 <code>plugins</code> 文件夹。</li><li>退出并重新启动 TrafficMonitor。</li><li>运行电脑同步程序，通过 USB 或蓝牙连接设备。</li></ol><p class="setting-help">插件安装在电脑端；网页不会安装插件或改动网卡设置。</p></dialog>
+<dialog id="bridgeDialog" aria-labelledby="bridgeTitle"><div class="crop-heading"><h2 id="bridgeTitle">安装桥接插件</h2><button id="bridgeClose" type="button" class="close-crop" aria-label="关闭安装说明"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><ol class="simple-steps"><li>将插件放入 TrafficMonitor 的 <code>plugins</code> 文件夹。</li><li>退出并重新启动 TrafficMonitor。</li><li>运行电脑同步程序，通过 USB 或蓝牙连接设备。</li></ol><p class="setting-help">插件安装在电脑端；网页不会安装插件或改动网卡设置。</p></dialog>
 
 <dialog id="cropDialog" aria-labelledby="cropTitle" aria-describedby="cropHint">
-  <div class="crop-heading"><h2 id="cropTitle">头像取景</h2><button id="cancelCrop" type="button" class="close-crop" aria-label="取消取景">×</button></div>
+  <div class="crop-heading"><h2 id="cropTitle">头像取景</h2><button id="cancelCrop" type="button" class="close-crop" aria-label="取消取景"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
   <p id="cropHint" class="hint"></p><canvas id="crop" width="240" height="240" tabindex="0" aria-label="正方形取景区域：拖动或用方向键移动画面"></canvas>
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=toolbar-22"></script>
+<script type="module" src="editor.js?v=dialog-close-22"></script>
 </body></html>
