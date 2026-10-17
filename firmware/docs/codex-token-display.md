@@ -9,7 +9,7 @@ Wi-Fi credentials, cloud key, or automatic flashing operation. Optional notifica
 
 ## Web management layout
 
-The sidebar groups eight pages by task: Preview (Experience); Pages and content (Page management, System Monitor, Postcard); Appearance and device (Themes, Settings, Device Center); Help and updates (About and updates). Browser day/night controls stay at the bottom. Desktop navigation stays expanded; the menu button appears only on mobile. Toolbar action buttons use the same 36 × 36 px size on both, with accessible names and tooltips.
+The sidebar groups eight pages by task: Preview (Experience); Pages and content (Page management, System Monitor, Postcard); Appearance and device (Themes, Settings, Device Center); Help and updates (About and updates). Browser day/night controls stay at the bottom. Desktop navigation stays expanded; the menu button appears only on mobile. Desktop toolbar actions have equal widths and 36 px height with short text labels; mobile uses equal 36 × 36 px icon buttons. Accessible names and tooltips are retained.
 
 Device Center contains the existing real-device information, name editor and hardware tests; Experience only simulates current drafts. Content editors pair controls with a sticky preview on desktop and stack them on narrow screens. Settings are ordered Screen, Sound (master volume before individual tones), then Startup Logo, with section shortcuts. Existing save boundaries are unchanged: display/sound use the toolbar, the logo and device name have separate save buttons, and Save all still handles pending drafts. This layout update changes no firmware, stored configuration or transport protocol.
 

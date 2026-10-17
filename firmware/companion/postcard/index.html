@@ -9,17 +9,16 @@
 <link rel="stylesheet" href="manage.css?v=atelier-20">
 <link rel="stylesheet" href="atelier.css?v=preview-22">
 <link rel="stylesheet" href="themes.css?v=preview-22">
-<link rel="stylesheet" href="layout.css?v=toolbar-22">
+<link rel="stylesheet" href="layout.css?v=toolbar-labels-22">
 </head>
 <body>
 <header class="topbar">
   <button id="menuToggle" type="button" class="secondary menu-toggle" aria-label="打开页面导航" aria-controls="pageSidebar" aria-expanded="false" title="打开页面导航"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-  <span class="topbar-context">设备管理</span>
   <nav class="toolbar" aria-label="设备连接与保存">
-    <button id="ble" type="button" class="secondary" aria-label="搜索蓝牙设备" title="搜索蓝牙设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg><span class="button-label">搜索蓝牙设备</span></button>
+    <button id="ble" type="button" class="secondary" aria-label="搜索蓝牙设备" title="搜索蓝牙设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg><span class="button-label">连接蓝牙</span></button>
     <button id="usb" type="button" class="secondary" aria-label="连接 USB" title="连接 USB"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V3m-3 3 3-3 3 3M12 15l-5-4V7m5 11 5-4v-4"/><circle cx="7" cy="6" r="1"/><path d="M16 7h2v2h-2z"/></svg><span class="button-label">连接 USB</span></button>
-    <button id="disconnect" type="button" class="secondary" disabled aria-label="断开" title="断开"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12M4 8l12 12M3 3l18 18M6 11l-2 2a4 4 0 0 0 6 6l2-2M12 7l2-2a4 4 0 0 1 6 6l-2 2"/></svg><span class="button-label">断开</span></button>
-    <button id="upload" form="form" type="submit" disabled aria-label="保存到设备" title="保存到设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg><span class="button-label">保存到设备</span></button>
+    <button id="disconnect" type="button" class="secondary" disabled aria-label="断开" title="断开"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12M4 8l12 12M3 3l18 18M6 11l-2 2a4 4 0 0 0 6 6l2-2M12 7l2-2a4 4 0 0 1 6 6l-2 2"/></svg><span class="button-label">断开连接</span></button>
+    <button id="upload" form="form" type="submit" disabled aria-label="保存到设备" title="保存到设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg><span class="button-label">保存设置</span></button>
   </nav>
   <button id="versionStatus" type="button" class="version-status" aria-label="正在检查版本" title="正在检查版本"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M5 15v5h14v-5"/></svg><span id="versionLabel">检查版本…</span></button>
   <span id="connection" class="connection" role="status">未连接</span>

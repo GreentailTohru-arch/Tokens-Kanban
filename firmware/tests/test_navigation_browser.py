@@ -25,7 +25,8 @@ def main():
    expect(page.locator('#menuToggle')).to_be_hidden();expect(page.locator('#pageSidebar')).to_be_visible()
    page.keyboard.press('Escape');expect(page.locator('#pageSidebar')).to_be_visible()
    for target in ['#ble','#usb','#disconnect','#upload','#versionStatus']:
-    box=page.locator(target).bounding_box();assert box['width']==36 and box['height']==36,(width,target,box)
+    box=page.locator(target).bounding_box();assert box['width']==(104 if width>1100 else 76) and box['height']==36,(width,target,box)
+   assert page.locator('#ble .button-label').evaluate('(e)=>getComputedStyle(e).display')!='none'
    assert not guarded()
   for width in [760,480,390,320]:
    page.set_viewport_size({'width':width,'height':844});page.wait_for_timeout(250)
@@ -50,7 +51,17 @@ def main():
   page.locator('#usb').click();navigate(page,'settingsNav');page.locator('#soundVolume').fill('70');expect(page.locator('#draftNotice')).to_be_visible()
   boxes=[page.locator(q).bounding_box() for q in ['#menuToggle','#ble','#usb','#disconnect','#upload','#versionStatus','#saveAll','#connection']];assert max(b['y']+b['height']/2 for b in boxes)-min(b['y']+b['height']/2 for b in boxes)<2;assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert guarded()
   page.locator('#saveAll').click();expect(page.locator('#draftNotice')).to_be_hidden();assert not guarded();page.wait_for_timeout(300);page.screenshot(path=str(out/'saved-toolbar-mobile.png'))
+  for width in [1440,1101,1024,761]:
+   page.set_viewport_size({'width':width,'height':960});page.wait_for_timeout(300)
+   navigate(page,'postcardNav');page.locator('#title').fill('按钮布局检查')
+   expect(page.locator('#draftNotice')).to_be_visible();expect(page.locator('#menuToggle')).to_be_hidden()
+   boxes=[page.locator(q).bounding_box() for q in ['#ble','#usb','#disconnect','#upload','#versionStatus','#saveAll']]
+   assert all(b['width']==(104 if width>1100 else 76) and b['height']==36 for b in boxes)
+   assert max(b['y'] for b in boxes)-min(b['y'] for b in boxes)<2
+   assert max(b['x']+b['width'] for b in boxes)<=width
+   assert page.locator('.topbar-context').count()==0
+   if width==1440:page.screenshot(path=str(out/'desktop-equal-buttons.png'),animations='disabled')
   assert not errors,errors
-  result={'alwaysSingleRow320to1280':'PASS','narrowIconsWithAccessibleNames':'PASS','desktopFixedSidebarAndNoMenu':'PASS','uniform36pxButtons':'PASS','eightGroupedPagesAndAutoClose':'PASS','escapeBackdropFocusTrap':'PASS','dirtySaveStillWorks':'PASS','hardware':'mock only'};(out/'navigation-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
+  result={'alwaysSingleRow320to1280':'PASS','narrowIconsWithAccessibleNames':'PASS','desktopFixedSidebarAndNoMenu':'PASS','uniformDesktopLabelsAndMobileIcons':'PASS','eightGroupedPagesAndAutoClose':'PASS','escapeBackdropFocusTrap':'PASS','dirtySaveStillWorks':'PASS','hardware':'mock only'};(out/'navigation-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
  server.shutdown()
 if __name__=='__main__':main()

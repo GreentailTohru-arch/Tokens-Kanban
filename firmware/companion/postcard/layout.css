@@ -156,12 +156,25 @@ html[data-theme-styled=true] .sidebar .nav-item:hover:not(.selected){background:
 html[data-theme-styled=true] button.sidebar-backdrop{background:rgba(0,0,0,.32);border:0;border-radius:0;box-shadow:none;filter:none;transform:none}
 html[data-theme-styled=true] button.sidebar-backdrop:hover,html[data-theme-styled=true] button.sidebar-backdrop:active{background:rgba(0,0,0,.32);box-shadow:none;filter:none;transform:none}
 
-/* Equal-size actions across desktop and mobile; labels remain in accessible names/tooltips. */
-.topbar .toolbar{gap:4px}
-.topbar :is(#menuToggle,#ble,#usb,#disconnect,#upload,#versionStatus,#saveAll){width:36px;height:36px;min-width:36px;min-height:36px;max-width:36px;max-height:36px;flex:0 0 36px;padding:9px;gap:0;display:inline-flex;align-items:center;justify-content:center}
-.topbar .toolbar .button-label,.topbar .draft-notice .button-label,.topbar #versionLabel{display:none}
+/* Equal dimensions within each breakpoint: labelled desktop actions and mobile icons. */
+.topbar{--action-width:104px;--action-gap:6px}
+.topbar .toolbar{gap:6px}
+.topbar :is(#menuToggle,#ble,#usb,#disconnect,#upload,#versionStatus,#saveAll){width:var(--action-width);height:36px;min-width:var(--action-width);min-height:36px;max-width:var(--action-width);max-height:36px;flex:0 0 var(--action-width);padding:8px;gap:var(--action-gap);display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:18px}
+.topbar .toolbar .button-label,.topbar .draft-notice .button-label,.topbar #versionLabel{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar #draftSummary{display:none}
 .topbar :is(#menuToggle,#ble,#usb,#disconnect,#upload,#versionStatus,#saveAll) svg{display:block;width:16px;height:16px;flex:0 0 16px}
 .topbar #versionStatus{position:relative}
 .topbar #versionStatus[data-state=update]::after{position:absolute;right:3px;top:3px}
 @media(min-width:761px){.topbar #menuToggle{display:none}}
-@media(max-width:760px){.topbar{gap:4px}.topbar .toolbar{gap:4px}}
+@media(min-width:761px) and (max-width:1100px){
+ .topbar{--action-width:76px;--action-gap:4px;gap:4px;padding-inline:12px}
+ .topbar .toolbar{gap:4px}
+ .topbar :is(#ble,#usb,#disconnect,#upload,#versionStatus,#saveAll){padding:5px;font-size:11px}
+ .topbar :is(#ble,#usb,#disconnect,#upload,#versionStatus,#saveAll) svg{width:14px;height:14px;flex-basis:14px}
+ .topbar .connection{font-size:0;gap:0;min-width:7px}
+}
+@media(max-width:760px){
+ .topbar{--action-width:36px;--action-gap:0px;gap:4px}
+ .topbar .toolbar{gap:4px}
+ .topbar .toolbar .button-label,.topbar .draft-notice .button-label,.topbar #versionLabel{display:none}
+}
