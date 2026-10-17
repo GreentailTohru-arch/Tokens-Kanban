@@ -20,15 +20,19 @@ def main():
   guarded=lambda:page.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented;})()")
   expect(page.locator('#fields')).to_be_enabled()
   def guarded():return page.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented;})()")
-  expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','true')
-  page.evaluate('() => Promise.all(document.querySelector(".app-shell").getAnimations().map(a=>a.finished))')
-  before=page.locator('#pageContent').bounding_box();page.locator('#menuToggle').click();expect(page.locator('#pageSidebar')).not_to_be_visible();page.wait_for_timeout(250);after=page.locator('#pageContent').bounding_box();assert after['width']>before['width']+150
-  page.locator('#menuToggle').click();expect(page.locator('#pageSidebar')).to_be_visible();assert not guarded()
+  for width in [1600,1280,900,761]:
+   page.set_viewport_size({'width':width,'height':960});page.wait_for_timeout(300)
+   expect(page.locator('#menuToggle')).to_be_hidden();expect(page.locator('#pageSidebar')).to_be_visible()
+   page.keyboard.press('Escape');expect(page.locator('#pageSidebar')).to_be_visible()
+   for target in ['#ble','#usb','#disconnect','#upload','#versionStatus']:
+    box=page.locator(target).bounding_box();assert box['width']==36 and box['height']==36,(width,target,box)
+   assert not guarded()
   for width in [760,480,390,320]:
    page.set_viewport_size({'width':width,'height':844});page.wait_for_timeout(250)
    if page.locator('#menuToggle').get_attribute('aria-expanded')=='true':page.locator('#menuToggle').click()
    expect(page.locator('#pageSidebar')).not_to_be_visible()
-   boxes=[page.locator(q).bounding_box() for q in ['#menuToggle','#ble','#usb','#disconnect','#upload','#connection']]
+   boxes=[page.locator(q).bounding_box() for q in ['#menuToggle','#ble','#usb','#disconnect','#upload','#versionStatus','#connection']]
+   assert all(b['width']==36 and b['height']==36 for b in boxes[:-1]),boxes
    centers=[b['y']+b['height']/2 for b in boxes];assert max(centers)-min(centers)<2,boxes
    assert boxes[-1]['x']+boxes[-1]['width']<=width
    assert page.locator('#ble .button-label').evaluate('(e)=>getComputedStyle(e).display')=='none'
@@ -44,9 +48,9 @@ def main():
     navigate(page,target+'Nav');expect(page.locator('#'+target+'Page')).to_be_visible();expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
    page.evaluate('() => Promise.all(document.querySelector(".sidebar").getAnimations().map(a=>a.finished))');page.evaluate('scrollTo(0,0)');page.screenshot(path=str(out/f'single-toolbar-{width}.png'));assert not guarded()
   page.locator('#usb').click();navigate(page,'settingsNav');page.locator('#soundVolume').fill('70');expect(page.locator('#draftNotice')).to_be_visible()
-  boxes=[page.locator(q).bounding_box() for q in ['#menuToggle','#ble','#usb','#disconnect','#upload','#saveAll','#connection']];assert max(b['y']+b['height']/2 for b in boxes)-min(b['y']+b['height']/2 for b in boxes)<2;assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert guarded()
+  boxes=[page.locator(q).bounding_box() for q in ['#menuToggle','#ble','#usb','#disconnect','#upload','#versionStatus','#saveAll','#connection']];assert max(b['y']+b['height']/2 for b in boxes)-min(b['y']+b['height']/2 for b in boxes)<2;assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert guarded()
   page.locator('#saveAll').click();expect(page.locator('#draftNotice')).to_be_hidden();assert not guarded();page.wait_for_timeout(300);page.screenshot(path=str(out/'saved-toolbar-mobile.png'))
   assert not errors,errors
-  result={'alwaysSingleRow320to1280':'PASS','narrowIconsWithAccessibleNames':'PASS','desktopCollapse':'PASS','eightGroupedPagesAndAutoClose':'PASS','escapeBackdropFocusTrap':'PASS','dirtySaveStillWorks':'PASS','hardware':'mock only'};(out/'navigation-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
+  result={'alwaysSingleRow320to1280':'PASS','narrowIconsWithAccessibleNames':'PASS','desktopFixedSidebarAndNoMenu':'PASS','uniform36pxButtons':'PASS','eightGroupedPagesAndAutoClose':'PASS','escapeBackdropFocusTrap':'PASS','dirtySaveStillWorks':'PASS','hardware':'mock only'};(out/'navigation-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
  server.shutdown()
 if __name__=='__main__':main()

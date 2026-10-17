@@ -11,6 +11,7 @@ import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?
 const $=id=>document.getElementById(id);
 const drawerMedia=matchMedia('(max-width:760px)');
 function setSidebar(open,restoreFocus=false){
+ if(!drawerMedia.matches){open=true;restoreFocus=false;}
  document.querySelector('.app-shell').classList.toggle('sidebar-open',open);
  $('menuToggle').setAttribute('aria-expanded',String(open));
  $('menuToggle').setAttribute('aria-label',open?'收起页面导航':'打开页面导航');
@@ -326,7 +327,7 @@ $('sidebarBackdrop').onclick=()=>setSidebar(false,true);
 drawerMedia.addEventListener('change',()=>setSidebar(!drawerMedia.matches));
 document.addEventListener('keydown',event=>{
  if($('menuToggle').getAttribute('aria-expanded')!=='true'||document.querySelector('dialog[open]'))return;
- if(event.key==='Escape'){event.preventDefault();setSidebar(false,true);return;}
+ if(event.key==='Escape'&&drawerMedia.matches){event.preventDefault();setSidebar(false,true);return;}
  if(event.key==='Tab'&&drawerMedia.matches){
   const items=[$('menuToggle'),...$('pageSidebar').querySelectorAll('button')],index=items.indexOf(document.activeElement);
   event.preventDefault();items[(index+(event.shiftKey?-1:1)+items.length)%items.length].focus();

@@ -155,3 +155,13 @@ html[data-theme-styled=true] .sidebar .nav-item:hover:not(.selected){background:
 /* The navigation scrim is not an accent-colored action button. */
 html[data-theme-styled=true] button.sidebar-backdrop{background:rgba(0,0,0,.32);border:0;border-radius:0;box-shadow:none;filter:none;transform:none}
 html[data-theme-styled=true] button.sidebar-backdrop:hover,html[data-theme-styled=true] button.sidebar-backdrop:active{background:rgba(0,0,0,.32);box-shadow:none;filter:none;transform:none}
+
+/* Equal-size actions across desktop and mobile; labels remain in accessible names/tooltips. */
+.topbar .toolbar{gap:4px}
+.topbar :is(#menuToggle,#ble,#usb,#disconnect,#upload,#versionStatus,#saveAll){width:36px;height:36px;min-width:36px;min-height:36px;max-width:36px;max-height:36px;flex:0 0 36px;padding:9px;gap:0;display:inline-flex;align-items:center;justify-content:center}
+.topbar .toolbar .button-label,.topbar .draft-notice .button-label,.topbar #versionLabel{display:none}
+.topbar :is(#menuToggle,#ble,#usb,#disconnect,#upload,#versionStatus,#saveAll) svg{display:block;width:16px;height:16px;flex:0 0 16px}
+.topbar #versionStatus{position:relative}
+.topbar #versionStatus[data-state=update]::after{position:absolute;right:3px;top:3px}
+@media(min-width:761px){.topbar #menuToggle{display:none}}
+@media(max-width:760px){.topbar{gap:4px}.topbar .toolbar{gap:4px}}
