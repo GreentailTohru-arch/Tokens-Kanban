@@ -2,7 +2,7 @@ import {NoticeCenter} from './notices.js?v=atelier-20';
 import {LocalConnection} from './local-connection.js?v=atelier-20';
 import {DraftState} from './draft-state.js?v=atelier-20';
 import {LogoEditor} from './logo-editor.js?v=atelier-20';
-import {AboutPanel} from './about.js?v=preview-22';
+import {AboutPanel} from './about.js?v=organize-22';
 import {DeviceInfoPanel} from './device-info.js?v=preview-22';
 import {ExperienceSimulator} from './simulator.js?v=preview-22';
 import {MonitorEditor} from './monitor.js?v=device-themes-21';
@@ -34,7 +34,7 @@ const notices=new NoticeCenter($('status'));
 function status(text,kind='success'){notices.show(text,kind);}
 
 function repaint(){renderFace($('preview'),content,back,true);refreshPreviewColors();refreshThumbnails();$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const locked=busy||imageLoading;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='about')||locked||!link||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
+function controls(){const locked=busy||imageLoading;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
 function updateClock(){const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
@@ -178,8 +178,8 @@ async function upload(event){
 function setPage(page){
   const changed=activePage!==page;
   if(drawerMedia.matches)setSidebar(false,document.querySelector('.app-shell').classList.contains('sidebar-open'));
-  activePage=page;$('experiencePage').hidden=page!=='experience';if(page==='theme')$('themeMachineHost').append($('simDevice'));else if(page==='experience')$('experienceStage').prepend($('simDevice'));simulator?.setActive(page==='experience'||page==='theme');devicePanel?.setActive(page==='experience');$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';$('aboutPage').hidden=page!=='about';$('themePage').hidden=page!=='theme';
-  for(const name of ['experience','pages','monitor','postcard','settings','theme','about']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));}
+  activePage=page;$('experiencePage').hidden=page!=='experience';if(page==='theme')$('themeMachineHost').append($('simDevice'));else if(page==='experience')$('experienceStage').prepend($('simDevice'));simulator?.setActive(page==='experience'||page==='theme');devicePanel?.setActive(page==='device');$('devicePage').hidden=page!=='device';$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';$('aboutPage').hidden=page!=='about';$('themePage').hidden=page!=='theme';
+  for(const name of ['experience','pages','monitor','postcard','theme','settings','device','about']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));if(selected)$(name+'Nav').setAttribute('aria-current','page');else $(name+'Nav').removeAttribute('aria-current');}
   $('upload').setAttribute('form',page==='theme'?'themeForm':page==='settings'?'settingsForm':page==='pages'?'pagesForm':page==='monitor'?'monitorForm':'form');controls();if(changed)window.scrollTo({top:0,behavior:'instant'});
 }
 function settingsValues(){const values=['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));if(startupSupported)values.push(Number($('startupSound').checked));return values;}
@@ -274,7 +274,7 @@ window.addEventListener('device-theme-change',()=>{monitorEditor.draw();repaint(
 $('aboutNav').onclick=()=>setPage('about');$('themeNav').onclick=()=>setPage('theme');
 $('bridgeHelp').onclick=()=>$('bridgeDialog').showModal();$('bridgeClose').onclick=()=>$('bridgeDialog').close();
 $('brightness').oninput=()=>{$('brightnessValue').textContent=$('brightness').value+'%';$('settingsState').textContent='有未保存的设置';};
-$('experienceNav').onclick=()=>setPage('experience');
+$('experienceNav').onclick=()=>setPage('experience');$('deviceNav').onclick=()=>setPage('device');
 $('monitorNav').onclick=()=>setPage('monitor');
 $('pagesNav').onclick=()=>setPage('pages');$('pagesForm').addEventListener('submit',savePages);
 $('postcardNav').onclick=()=>setPage('postcard');$('settingsNav').onclick=()=>setPage('settings');

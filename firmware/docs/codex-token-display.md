@@ -7,6 +7,12 @@ mint tabs and cyan quota bars follow the supplied visual reference. The firmware
 uses the existing display, button and battery BSP; it has no demo-menu route,
 Wi-Fi credentials, cloud key, or automatic flashing operation. Optional notification tones use the audio BSP.
 
+## Web management layout
+
+The sidebar groups eight pages by task: Preview (Experience); Pages and content (Page management, System Monitor, Postcard); Appearance and device (Themes, Settings, Device Center); Help and updates (About and updates). Browser day/night controls stay at the bottom.
+
+Device Center contains the existing real-device information, name editor and hardware tests; Experience only simulates current drafts. Content editors pair controls with a sticky preview on desktop and stack them on narrow screens. Settings are ordered Screen, Sound (master volume before individual tones), then Startup Logo, with section shortcuts. Existing save boundaries are unchanged: display/sound use the toolbar, the logo and device name have separate save buttons, and Save all still handles pending drafts. This layout update changes no firmware, stored configuration or transport protocol.
+
 ## Controls and data
 
 - Up / Down: previous / next period (today, this week, all retained history).

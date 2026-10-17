@@ -35,18 +35,18 @@ def main():
    assert page.locator('#ble').get_attribute('aria-label')=='搜索蓝牙设备'
    page.locator('#menuToggle').click();expect(page.locator('#sidebarBackdrop')).to_be_visible();assert page.locator('#pageContent').evaluate('(e)=>e.inert')
    assert page.locator('.sidebar nav').evaluate('(e)=>getComputedStyle(e).flexDirection')=='column'
-   assert page.locator('.sidebar nav button').count()==7
+   assert page.locator('.sidebar nav button').count()==8
    expect(page.locator('#aboutNav')).to_be_visible();page.locator('[data-web-mode-option=dark]').focus();page.keyboard.press('Tab');assert page.locator('#menuToggle').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML');page.keyboard.press('Shift+Tab');assert page.locator('[data-web-mode-option=dark]').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML')
    page.evaluate('() => Promise.all(document.querySelector(".sidebar").getAnimations().map(a=>a.finished))');page.screenshot(path=str(out/f'side-panel-{width}.png'))
    page.keyboard.press('Escape');expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false');assert not page.locator('#pageContent').evaluate('(e)=>e.inert')
    page.locator('#menuToggle').click();page.locator('#sidebarBackdrop').click(position={'x':width-4,'y':200});expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false')
-   for target in ['experience','pages','monitor','postcard','settings','theme','about']:
+   for target in ['experience','pages','monitor','postcard','settings','theme','device','about']:
     navigate(page,target+'Nav');expect(page.locator('#'+target+'Page')).to_be_visible();expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
    page.evaluate('() => Promise.all(document.querySelector(".sidebar").getAnimations().map(a=>a.finished))');page.evaluate('scrollTo(0,0)');page.screenshot(path=str(out/f'single-toolbar-{width}.png'));assert not guarded()
   page.locator('#usb').click();navigate(page,'settingsNav');page.locator('#soundVolume').fill('70');expect(page.locator('#draftNotice')).to_be_visible()
   boxes=[page.locator(q).bounding_box() for q in ['#menuToggle','#ble','#usb','#disconnect','#upload','#saveAll','#connection']];assert max(b['y']+b['height']/2 for b in boxes)-min(b['y']+b['height']/2 for b in boxes)<2;assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert guarded()
   page.locator('#saveAll').click();expect(page.locator('#draftNotice')).to_be_hidden();assert not guarded();page.wait_for_timeout(300);page.screenshot(path=str(out/'saved-toolbar-mobile.png'))
   assert not errors,errors
-  result={'alwaysSingleRow320to1280':'PASS','narrowIconsWithAccessibleNames':'PASS','desktopCollapse':'PASS','sixMobilePagesAndAutoClose':'PASS','escapeBackdropFocusTrap':'PASS','dirtySaveStillWorks':'PASS','hardware':'mock only'};(out/'navigation-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
+  result={'alwaysSingleRow320to1280':'PASS','narrowIconsWithAccessibleNames':'PASS','desktopCollapse':'PASS','eightGroupedPagesAndAutoClose':'PASS','escapeBackdropFocusTrap':'PASS','dirtySaveStillWorks':'PASS','hardware':'mock only'};(out/'navigation-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
  server.shutdown()
 if __name__=='__main__':main()

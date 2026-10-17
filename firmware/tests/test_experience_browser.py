@@ -17,7 +17,7 @@ def main():
         page=browser.new_page(viewport={'width':1280,'height':980});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock)
         page.clock.install();page.goto(f'http://127.0.0.1:{server.server_port}/');expect(page.locator('#fields')).to_be_enabled()
         expect(page.locator('#experiencePage')).to_be_visible();expect(page.locator('#upload')).to_be_disabled()
-        assert page.locator('.sidebar nav button').all_text_contents()==['体验模拟','页面管理','系统检测','明信片','设置','主题','关于']
+        assert page.locator('.sidebar nav button').all_text_contents()==['体验模拟','页面管理','系统检测','明信片','主题','设置','设备中心','关于与更新']
         # Exercise the same event model at deterministic boundary timestamps.
         assert page.evaluate('''async()=>{
           const {ExperienceModel:M}=await import('./simulator.js');const c={mask:15,order:[0,1,2,3],volume:35,idle:1,startup:false};let m=new M(c);

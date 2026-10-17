@@ -1,0 +1,113 @@
+/* Information architecture: shared page frame, grouped navigation, editing before preview.
+   Device canvases and persisted settings remain independent of this presentation layer. */
+#pageContent{container-type:inline-size}
+#pageContent > :is(.experience-page,.pages-page,.monitor-page,.workspace,.theme-page,.settings-page,.device-page,.about-page){width:min(1120px,100%);margin:0 auto;padding:36px clamp(20px,3.4vw,40px) 64px}
+#pageContent .settings-heading{margin:0 0 28px}
+#pageContent .settings-heading h1{font-size:28px;font-weight:650;line-height:1.3;letter-spacing:-.035em;margin:0 0 9px}
+#pageContent .settings-heading p{font-size:13px;line-height:1.8;max-width:660px}
+.sidebar{padding:20px 14px 16px}
+.sidebar-brand{padding:2px 10px 20px}
+.sidebar nav{gap:10px}
+.nav-group{display:flex;flex-direction:column;gap:3px}
+.nav-group-label{font-size:10px;letter-spacing:.06em;color:var(--theme-muted);margin:6px 12px 5px;font-weight:500}
+.sidebar .nav-item{height:40px;padding:10px 13px;font-size:12px;border-radius:7px;gap:11px}
+.sidebar .nav-item.selected::before{left:0;top:11px;bottom:11px}
+.web-mode{margin-top:20px;padding-top:14px}
+#pageContent .edit-panel{max-width:none;padding:24px;margin-bottom:18px}
+#pageContent .edit-panel h2{font-size:15px;font-weight:600;margin:0 0 22px}
+#pageContent .edit-panel h3{font-size:14px;font-weight:600}
+#pageContent .section-row h2{margin:0}
+#pageContent .field:last-child{margin-bottom:0}
+#pageContent input:not([type=range]):not([type=checkbox]):not([type=color]),#pageContent select,#pageContent textarea{font-size:13px}
+.section-jumps{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 24px}
+.section-jumps a{display:inline-flex;align-items:center;min-height:36px;padding:7px 14px;border:1px solid var(--theme-line);background:var(--theme-surface);color:var(--theme-muted);border-radius:7px;font-size:12px;text-decoration:none;transition:background .15s,color .15s}
+.section-jumps a:hover{background:var(--theme-soft);color:var(--theme-accent)}
+#pageContent :is(#deviceOverview,#deviceTests,#screenTests,#displaySettings,#soundSettings,#startupSettings){scroll-margin-top:calc(var(--topbar-height,76px) + 20px)}
+/* All content editors put controls on the left and a stable preview on the right. */
+#pageContent :is(.monitor-page,.workspace){display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:0 28px;align-items:start}
+#pageContent :is(.monitor-page,.workspace) > .settings-heading{grid-column:1/-1}
+.monitor-editor-column,#form{grid-column:1;min-width:0}
+#pageContent :is(.monitor-preview-column,.preview-panel){grid-column:2;grid-row:2;position:sticky;top:calc(var(--topbar-height,76px) + 24px);margin:0;padding:20px 8px 24px;border:1px solid var(--theme-line);border-radius:var(--theme-radius);background:var(--theme-surface);display:flex;flex-direction:column;align-items:center}
+.preview-caption{font-size:12px;font-weight:600;color:var(--theme-muted);margin:0 0 22px}
+.preview-panel .segmented{margin-top:22px}
+#pageContent .monitor-display-grid{column-gap:14px}
+#pageContent .monitor-card{margin:10px 0;padding:14px}
+#pageContent .monitor-downloads{margin-top:24px}
+#pageContent .monitor-downloads .download-links{margin-bottom:0}
+#pageContent .theme-layout{grid-template-columns:minmax(0,1fr) 280px;gap:28px}
+#pageContent .theme-preview{top:calc(var(--topbar-height,76px) + 24px)}
+#pageContent .theme-advanced{padding:0;margin-top:22px}
+#pageContent .theme-advanced summary{font-size:14px}
+/* Settings use their existing separate save boundaries. */
+#pageContent .settings-page{display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:28px;align-items:start}
+.settings-page>.settings-heading,.settings-page>.section-jumps,.settings-page>.settings-footnote{grid-column:1/-1}
+#settingsForm{grid-column:1;min-width:0}
+#pageContent .logo-settings{grid-column:2;grid-row:3;margin:0;position:sticky;top:calc(var(--topbar-height,76px) + 24px)}
+#logoPreview{width:144px;height:192px;margin:20px auto;display:block}
+.logo-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.logo-actions>*{min-width:0;white-space:normal;font-size:11px;padding:9px 8px;text-align:center}
+#logoSave{grid-column:1/-1}
+#pageContent .startup-setting{border:0;border-top:1px solid var(--theme-line);padding:20px 0 0;margin-top:24px}
+#soundVolume{width:100%}
+/* Device center separates factual telemetry and intentional hardware tests. */
+#pageContent .device-overview{margin:0;padding:0;border:0}
+.device-page .device-name-form{border:1px solid var(--theme-line);border-radius:var(--theme-radius);background:var(--theme-surface);padding:20px;margin:22px 0}
+.device-name-form>div{max-width:none;min-width:0}
+#pageContent .device-metric{padding:20px 18px}
+#pageContent .device-tests{margin-top:32px;padding-top:26px}
+.device-tests-grid .edit-panel{display:flex;flex-direction:column;align-items:flex-start}
+.device-tests-grid .setting-help{flex:1}
+#pageContent .device-tests .screen-test-card{margin-top:18px}
+#pageContent .experience-layout{grid-template-columns:minmax(0,1fr) minmax(270px,340px);gap:28px;align-items:center}
+#pageContent .sim-guide{width:100%;display:flex;gap:0}
+#pageContent .sim-stage{min-height:0;padding:24px 24px 22px}
+#pageContent .sim-device.photo-device{max-width:360px}
+#themeMachineHost .sim-device.photo-device{max-width:420px}
+#pageContent .sim-guide .edit-panel:last-child{margin-bottom:0}
+#pageContent .page-list{gap:16px}
+#pageContent .page-card{padding:22px;gap:20px}
+#pageContent .page-thumbnail{width:112px}
+#pageContent .about-page{max-width:920px}
+#pageContent .about-release{padding:28px}
+#pageContent .about-page .eyebrow{font-size:10px;letter-spacing:.13em;margin-bottom:12px}
+/* Respond to actual content width, including an open desktop sidebar. */
+@container (max-width:870px){
+ #pageContent .experience-layout{grid-template-columns:1fr}
+ #pageContent .sim-guide{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+ #pageContent .sim-stage{padding:22px}
+ #pageContent .device-metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #pageContent .page-list{grid-template-columns:1fr}
+ #pageContent .page-thumbnail{width:120px}
+}
+@container (max-width:740px){
+ #pageContent :is(.monitor-page,.workspace,.settings-page),#pageContent .theme-layout{grid-template-columns:minmax(0,1fr)}
+ #pageContent :is(.monitor-preview-column,.preview-panel){grid-column:1;grid-row:2;position:static;margin:0 auto 24px;width:280px;max-width:100%}
+ .monitor-editor-column,#form{grid-row:3}
+ #pageContent .theme-preview{position:static;order:-1;width:min(280px,100%);margin:0 auto 8px}
+ #pageContent .logo-settings{position:static;grid-column:1;grid-row:auto;margin:6px 0 20px;display:grid;grid-template-columns:144px minmax(0,1fr);gap:12px 24px}
+ .logo-settings h2,.logo-settings>.setting-help,.logo-settings>progress{grid-column:1/-1}
+ #pageContent .logo-settings h2{margin:0}
+ #logoPreview{margin:8px 0;grid-column:1}
+ .logo-actions{grid-column:2;align-self:center}
+}
+@container (max-width:540px){
+ #pageContent > :is(.experience-page,.pages-page,.monitor-page,.workspace,.theme-page,.settings-page,.device-page,.about-page){padding:28px 20px 48px}
+ #pageContent .settings-heading h1{font-size:25px}
+ #pageContent .settings-heading{margin-bottom:24px}
+ #pageContent .sim-guide{display:flex}
+ #pageContent .edit-panel{padding:20px}
+ #pageContent .device-tests-grid{grid-template-columns:1fr}
+ #pageContent .device-name-form{flex-wrap:wrap;gap:8px;padding:18px}
+ #pageContent .device-name-form>div{flex-basis:100%}
+ #pageContent .device-name-form button{margin:0}
+ #pageContent .logo-settings{display:block}
+ #logoPreview{margin:18px auto}
+ #pageContent .page-card{padding:18px;gap:18px}
+ #pageContent .page-thumbnail{width:104px}
+ #pageContent .sim-stage{padding:20px 10px}
+ #pageContent .device-metric{padding:16px 12px}
+ #pageContent .settings-footnote{margin-top:10px}
+}
+@media(max-width:760px){.sidebar{padding:18px 16px}.sidebar-brand{padding-bottom:16px}.sidebar .nav-item{height:40px;font-size:13px}.sidebar nav{gap:8px}.web-mode{margin-top:16px}.nav-group-label{margin-top:4px}}
+@media(prefers-reduced-motion:reduce){.section-jumps a{transition:none}}
+

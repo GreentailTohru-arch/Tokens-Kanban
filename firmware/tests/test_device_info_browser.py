@@ -1,4 +1,5 @@
 """Read/write/test workflow against a simulated diagnostic-capable peripheral."""
+from browser_navigation import navigate
 from pathlib import Path
 import sys,threading,runpy,json
 from http.server import ThreadingHTTPServer
@@ -28,6 +29,10 @@ def main():
     with sync_playwright() as p:
         browser=p.chromium.launch(executable_path=sys.argv[2],headless=True);page=browser.new_page(viewport={'width':1280,'height':980});page.route('https://api.github.com/**',lambda r:r.fulfill(status=200,json={'tag_name':'v22','name':'Tokens Kanban v22','assets':[],'html_url':'https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v22'}));errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock);page.clock.install();page.goto(f'http://127.0.0.1:{server.server_port}/')
         expect(page.locator('#fields')).to_be_enabled();expect(page.locator('#deviceName')).to_have_value("You's AI Passport");expect(page.locator('#deviceCpu')).to_have_text('--');expect(page.locator('#diagFields')).to_have_attribute('disabled','')
+        page.clock.run_for(1000)
+        if page.locator('#status').is_visible():
+            page.locator('#status .notice-close').click();page.clock.run_for(500)
+        navigate(page,'deviceNav')
         page.locator('[data-screen-color="6"]').click();expect(page.locator('#screenPatternPreview')).to_have_attribute('data-pattern','6');assert page.evaluate('window.screenCalls||[]')==[]
         assert page.evaluate('window.testCalls||[]')==[]
         page.locator('#usb').click();expect(page.locator('#deviceConnectionState')).to_contain_text('设备实时')
