@@ -10,6 +10,7 @@ export class ExperienceModel {
   sync(config){if(config.volume!==this.baseVolume){this.baseVolume=config.volume;this.volume=config.volume;}this.config=config;if(!this.enabled().includes(this.page))this.page=this.enabled()[0];}
   cancel(){this.held=null;this.pendingOK=null;}
   power(now){this.cancel();this.overlay=false;this.on=!this.on;this.awake=this.on;this.lastAction=now;if(this.on){this.page=this.enabled()[0];this.period=0;this.details=this.contact=false;this.bootUntil=now+Math.max(this.config.startup&&this.volume?3000:1200,Math.min(6000,this.config.bootDuration||0));}}
+  screen(now){if(!this.on)return;this.cancel();this.overlay=false;this.awake=!this.awake;this.lastAction=now;}
   adjust(key,now){const old=this.volume;this.volume=Math.max(0,Math.min(100,this.volume+(key==='up'?5:-5)));this.lastVolume=this.lastAction=now;this.preview ||=old!==this.volume;}
   press(key,now){
     if(!this.on||now<this.bootUntil||this.held)return;
@@ -47,9 +48,10 @@ export class ExperienceSimulator {
     for(const [id,file] of [['startup','sim-startup.png']]){const im=new Image();im.onload=()=>this.render();im.src=file;this.images[id]=im;}
     for(const key of ['up','down','ok'])this.bind($('sim'+key[0].toUpperCase()+key.slice(1)),key);
     const power=()=>{this.sync();this.model.power(performance.now());this.stopAudio();if(this.model.on&&this.model.bootUntil>performance.now()&&this.model.config.startup)this.play('startup.wav');this.render();};
-    $('simPower').onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();$('simPower').setPointerCapture(e.pointerId);$('simPower').classList.add('pressed');clearTimeout(this.powerTimer);this.powerTimer=setTimeout(power,this.model.on?2000:500);};
-    const releasePower=e=>{e.preventDefault();clearTimeout(this.powerTimer);$('simPower').classList.remove('pressed');if($('simPower').hasPointerCapture(e.pointerId))$('simPower').releasePointerCapture(e.pointerId);};
-    $('simPower').onpointerup=releasePower;$('simPower').onpointercancel=releasePower;$('simPower').onlostpointercapture=()=>{clearTimeout(this.powerTimer);$('simPower').classList.remove('pressed');};$('simPower').onclick=e=>{if(e.detail===0)power();};
+    let powerHeld=false,powerFired=false;
+    $('simPower').onpointerdown=e=>{powerHeld=true;powerFired=false;if(e.button!==0)return;e.preventDefault();$('simPower').setPointerCapture(e.pointerId);$('simPower').classList.add('pressed');clearTimeout(this.powerTimer);this.powerTimer=setTimeout(()=>{powerFired=true;power();},this.model.on?2000:500);};
+    const releasePower=e=>{e.preventDefault();if(powerHeld&&!powerFired&&e.type==='pointerup'){this.model.screen(performance.now());this.stopAudio();this.render();}powerHeld=false;clearTimeout(this.powerTimer);$('simPower').classList.remove('pressed');if($('simPower').hasPointerCapture(e.pointerId))$('simPower').releasePointerCapture(e.pointerId);};
+    $('simPower').onpointerup=releasePower;$('simPower').onpointercancel=releasePower;$('simPower').onlostpointercapture=()=>{clearTimeout(this.powerTimer);$('simPower').classList.remove('pressed');};$('simPower').onclick=e=>{if(e.detail===0){this.model.screen(performance.now());this.stopAudio();this.render();}};
     $('simReset').onclick=()=>{this.stopAudio();this.model.reset(getConfig(),performance.now());this.render();};
     $('simTask').onclick=()=>{const m=this.model;if(!m.on)return;m.running=!m.running;m.lastAction=performance.now();if(!m.running)this.play(tones[m.config.done]);this.render();};
     $('simQuota').onclick=()=>{const m=this.model;if(!m.on)return;m.exhausted=!m.exhausted;m.lastAction=performance.now();if(m.exhausted)this.play(tones[m.config.quota]);this.render();};

@@ -1,8 +1,9 @@
-import {DraftState} from './draft-state.js?v=usb-connect-2';
-import {LogoEditor} from './logo-editor.js?v=usb-connect-2';
-import {AboutPanel} from './about.js?v=usb-connect-2';
-import {DeviceInfoPanel} from './device-info.js?v=usb-connect-2';
-import {ExperienceSimulator} from './simulator.js?v=usb-connect-2';
+import {NetworkPanel,HTTPConnection} from './network.js?v=wifi-19';
+import {DraftState} from './draft-state.js?v=wifi-19';
+import {LogoEditor} from './logo-editor.js?v=wifi-19';
+import {AboutPanel} from './about.js?v=wifi-19';
+import {DeviceInfoPanel} from './device-info.js?v=wifi-19';
+import {ExperienceSimulator} from './simulator.js?v=wifi-19';
 import {MonitorEditor} from './monitor.js';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js';
@@ -21,12 +22,12 @@ function setSidebar(open,restoreFocus=false){
 const service='9e7a0001-4b51-4a4c-9b50-2f53f077c301';
 const rxId='9e7a0002-4b51-4a4c-9b50-2f53f077c301',txId='9e7a0003-4b51-4a4c-9b50-2f53f077c301';
 const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,zoom:1},qrCrop:{x:.5,y:.5,zoom:1}};
-let back=false,link=null,busy=false,imageLoading=true,activePage='experience',settingsSupported=false,startupSupported=false,brightnessSupported=false;
+let back=false,link=null,busy=false,imageLoading=true,activePage='experience',settingsSupported=false,startupSupported=false,brightnessSupported=false,autoHTTPEnabled=true;
 let pagesSupported=false,pageEnabled=15,pageOrder=[0,1,2,3];
 const pageNames=['用量首页','统计分析','系统检测','明信片'];
 const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按检测卡片配置显示','头像、文字与联系方式'];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-let toastTimer,simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null,drafts=null,savingAll=false;
+let toastTimer,simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null,drafts=null,savingAll=false,networkPanel=null;
 function status(text,kind='success'){
  clearTimeout(toastTimer);const node=$('status');node.textContent=text;node.title=text;node.hidden=!text;node.dataset.kind=kind;node.setAttribute('role',kind==='error'?'alert':'status');
  document.querySelectorAll('.dialog-notice').forEach(n=>n.remove());const modal=document.querySelector('dialog[open]');
@@ -35,7 +36,7 @@ function status(text,kind='success'){
 }
 
 function repaint(){renderFace($('preview'),content,back);$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const locked=busy||imageLoading;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='about')||locked||!link||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
+function controls(){const locked=busy||imageLoading;$('wifi').disabled=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='about')||locked||!link||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);networkPanel?.controls();devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
 function updateClock(){const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
@@ -137,10 +138,10 @@ class SerialConnection extends Connection{
   async close(){this.intentional=true;this.closed=true;if(this.reader){try{await this.reader.cancel();await this.readTask;}catch{}this.reader.releaseLock();}if(this.writer)this.writer.releaseLock();if(this.port){try{await this.port.close();}catch{}}this.lost();}
 }
 async function connect(kind){
-  busy=true;controls();let candidate=kind==='ble'?new BluetoothConnection():new SerialConnection();
-  try{await candidate.open();const deadline=performance.now()+10000;candidate.timeout=kind==='usb'?1000:12000;
+  busy=true;controls();let candidate=kind==='http'?new HTTPConnection():kind==='ble'?new BluetoothConnection():new SerialConnection();
+  try{if(kind==='http')candidate.onlost=()=>Connection.prototype.lost.call(candidate);await candidate.open();const deadline=performance.now()+10000;candidate.timeout=kind==='usb'?1000:12000;
     for(;;){try{if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await aboutPanel.read(candidate);candidate.timeout=12000;link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');break;
+    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await aboutPanel.read(candidate);await networkPanel.read(candidate);candidate.timeout=12000;link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');break;
     }catch(error){if(kind!=='usb'||candidate.closed||error.message!=='设备响应超时，请断开重连'||performance.now()>=deadline)throw error;candidate.text='';await delay(350);}}
   }catch(error){await candidate.close();status(error.message,'error');}finally{busy=false;controls();}
 }
@@ -248,6 +249,7 @@ async function previewTone(field){
   catch(error){status(error.message,'error');}finally{busy=false;controls();}
 }
 const monitorEditor=new MonitorEditor({onSaved:()=>drafts?.mark('monitor'),status,getLink:()=>link,setBusy:value=>{busy=value;controls();},controls,onRender:url=>{document.querySelector('.page-card[data-page="2"] img')?.setAttribute('src',url);}});
+networkPanel=new NetworkPanel({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 devicePanel=new DeviceInfoPanel({onSaved:()=>drafts?.mark('name'),getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 simulator=new ExperienceSimulator(()=>({mask:pageEnabled,order:[...pageOrder],content,volume:Number($('soundVolume').value),idle:Number($('idleTime').value),done:Number($('doneTone').value),quota:Number($('quotaTone').value),startup:$('startupSound').checked,drawBoot:ctx=>logoEditor.draw(ctx),bootDuration:logoEditor?.frames?.reduce((n,f)=>n+f.duration,0)||0}));
 logoEditor=new LogoEditor({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
@@ -275,8 +277,9 @@ for(const field of ['photo','qr'])$(field).addEventListener('change',async e=>{
   finally{imageLoading=false;controls();if(!draft)restoreFile(field);}
 });
 $('frontTab').onclick=()=>{back=false;repaint();};$('backTab').onclick=()=>{back=true;repaint();};
+$('wifi').onclick=()=>{if(busy||imageLoading)return;if(!link&&document.querySelector('meta[name=passport-device]')){autoHTTPEnabled=true;connect('http');}setPage('settings');$('wifiState').scrollIntoView({behavior:'smooth',block:'center'});if(!link)status('请先连接 USB 或蓝牙配置网络；已配网可扫描设备上的二维码进入');};
 $('ble').onclick=()=>connect('ble');$('usb').onclick=()=>connect('usb');
-$('disconnect').onclick=async()=>{busy=true;controls();try{await link?.close();}finally{link=null;busy=false;controls();}};
+$('disconnect').onclick=async()=>{autoHTTPEnabled=false;busy=true;controls();try{await link?.close();}finally{link=null;busy=false;controls();}};
 $('form').addEventListener('submit',upload);
 window.addEventListener('beforeunload',event=>{if(unsaved().length||aboutPanel?.installing||savingAll){event.preventDefault();event.returnValue='';}});
 window.addEventListener('pagehide',()=>{if(link instanceof BluetoothConnection)link.device?.gatt.disconnect();});
@@ -285,6 +288,7 @@ const bitmapIds=new WeakMap();let nextBitmap=1;
 const bitmapId=image=>{if(!image)return 0;if(!bitmapIds.has(image))bitmapIds.set(image,nextBitmap++);return bitmapIds.get(image);};
 const cardKey=()=>JSON.stringify([content.title,content.subtitle,content.name,bitmapId(content.photo),bitmapId(content.qr),content.crop,content.qrCrop]);
 drafts.add('settings','显示与声音',()=>JSON.stringify([settingsValues(),Number($('brightness').value)]));
+drafts.add('network','Wi-Fi 网络',()=>JSON.stringify([$('wifiSSID').value,$('wifiPassword').value]));
 drafts.add('pages','页面管理',()=>JSON.stringify([pageEnabled,pageOrder]));drafts.add('monitor','系统检测',()=>JSON.stringify(monitorEditor.config));drafts.add('name','设备名称',()=>$('deviceName').value.trim());drafts.add('postcard','明信片',cardKey);
 function unsaved(){
  const changes=drafts?.changed()||[];
@@ -297,7 +301,7 @@ async function saveAll(){
  if(busy||imageLoading||savingAll)return;if(!link){status('请先连接设备，再保存修改','error');return;}
  if(draft)closeCrop(true);if(logoEditor.pending){status('请先在小窗中确定 Logo 取景','error');return;}
  savingAll=true;refreshDraftNotice();const event={preventDefault(){}};
- const jobs={settings:()=>saveSettings(event),pages:()=>savePages(event),monitor:()=>monitorEditor.save(event),name:()=>devicePanel.saveName(event),postcard:()=>upload(event),logo:()=>logoEditor.save()};
+ const jobs={network:()=>networkPanel.change('SET'),settings:()=>saveSettings(event),pages:()=>savePages(event),monitor:()=>monitorEditor.save(event),name:()=>devicePanel.saveName(event),postcard:()=>upload(event),logo:()=>logoEditor.save()};
  try{for(const {key,label} of unsaved()){await jobs[key]();if(unsaved().some(c=>c.key===key)){status(label+'保存未确认，修改仍保留，请检查后重试','error');return;}}status('全部修改已保存到设备');}
  catch(e){status(e.message,'error');}finally{savingAll=false;refreshDraftNotice();}
 }
@@ -368,4 +372,9 @@ async function savePages(event){
     await readPages(link);if(!pagesSupported||pageEnabled!==mask||order.some((v,i)=>v!==pageOrder[i]))throw new Error('页面设置校验不一致，请重新连接');
     drafts?.mark('pages');$('pagesState').textContent='页面设置已保存到设备';status('页面设置已保存到设备');
   }catch(error){pageEnabled=mask;pageOrder=[...order];renderPages();$('pagesState').textContent='保存未确认，请重新连接读取';status(error.message,'error');}finally{busy=false;controls();}
+}
+
+if(document.querySelector('meta[name="passport-device"]')){
+ const connectLocal=async()=>{if(autoHTTPEnabled&&!link&&!busy&&!imageLoading&&!unsaved().length)await connect('http');};
+ await connectLocal();setInterval(connectLocal,5000);
 }

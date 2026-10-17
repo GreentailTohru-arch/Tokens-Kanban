@@ -21,6 +21,9 @@ run_static_checks() {
     esac
 
     python3 tools/check_repo.py
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain tests/test_network_model.c main/network_model.c -o "${TMPDIR:-/tmp}/passport-network-model-test"
+    "${TMPDIR:-/tmp}/passport-network-model-test"
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_network_companion.py
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
         tests/test_token_model.c main/token_model.c -o "${TMPDIR:-/tmp}/passport-token-model-test"
     "${TMPDIR:-/tmp}/passport-token-model-test"

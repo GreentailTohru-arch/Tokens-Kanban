@@ -926,3 +926,6 @@ can restart the USB Serial/JTAG controller and interleave boot logs with replies
 The RTS-before-DTR release sequence avoids the observed Windows reset on both
 connect and close; an unrelated platform reset can still show the startup screen. No configuration is written
 during retry (only the volatile clock is synchronized). Bluetooth timing is unchanged.
+
+
+Wi-Fi / shared computer management: see [v19 connection steps](tokens-network.md).

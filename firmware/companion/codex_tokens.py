@@ -364,7 +364,9 @@ def send_snapshot(connection, frame, sequence):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port',help='Explicit Passport COM port; otherwise only Espressif 303A:1001')
-    parser.add_argument('--transport',choices=('auto','usb','ble'),default='auto',help='Auto prefers USB, then BLE')
+    parser.add_argument('--transport',choices=('auto','usb','wifi','ble'),default='auto',help='Auto prefers USB, then paired Wi-Fi, then BLE')
+    parser.add_argument('--wifi-host',help='Paired device IPv4 address')
+    parser.add_argument('--no-browser',action='store_true',help='Disable opening the management page on connection')
     parser.add_argument('--ble-address',help='BLE address from --list-ble (required for multiple devices)')
     parser.add_argument('--codex-home',type=Path,default=Path(os.environ.get('CODEX_HOME',Path.home()/'.codex')))
     parser.add_argument('--system-only',action='store_true',help='Print local PC metrics once without connecting or reading Codex logs')
@@ -375,6 +377,8 @@ def main():
     parser.add_argument('--list-ble',action='store_true',help='Discover matching BLE service; do not connect')
     args=parser.parse_args()
     if args.postcard_editor:
+        from management_server import existing_manager
+        if not args.editor_no_browser and existing_manager():return
         from postcard_server import serve
         serve(open_browser=not args.editor_no_browser); return
     if args.list_ports:
@@ -384,7 +388,7 @@ def main():
         from token_ble import discover
         for device in asyncio.run(discover()): print(device.address,device.name or 'Codex Passport')
         return
-    if args.port and args.transport=='ble': parser.error('--port cannot be used with --transport ble')
+    if args.port and args.transport not in ('auto','usb'): parser.error('--port requires auto or usb transport')
     if args.system_only:
         monitor=SystemPoller()
         try:
@@ -396,9 +400,13 @@ def main():
                 'trafficMonitor':monitor.diagnostics(),'listenerError':monitor.error,'frame':encode_system(1,values)},ensure_ascii=True))
         finally:monitor.close()
         return
+    from management_server import existing_manager
+    if not args.dry_run and existing_manager(open_browser=not args.no_browser):
+        print('Tokens Kanban is already running; reusing its management page.',flush=True);return
     monitor=SystemPoller()
     index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False; can_monitor=False
-    print('Codex Token Display v18 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
+    management=None
+    print('Tokens Kanban v19 | USB + Wi-Fi + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)
@@ -407,45 +415,61 @@ def main():
                 'quota':values,'activity':index.activity(),'priceDate':PRICE_DATE,'estimates':index.cost_summary(),
                 'analytics':index.analytics(),'system':monitor.values(),
                 'frame':encode_frame(1,totals,values,index.activity(),index.costs(),index.analytics()).decode().strip()},ensure_ascii=True)); return
+        from management_server import LinkManager,ManagementServer
+        from token_wifi import WiFiConnection,remember
+        manager=LinkManager();management=ManagementServer(manager);last_pair=0
         last_status=''
         while True:
             index.refresh(); events.observe(index.completions()); sequence+=1
             now=dt.datetime.now().astimezone()
             frame=encode_frame(sequence,index.totals(now),quota.values(),index.activity(),index.costs(now),index.analytics(now))
             try:
-                if connection is None:
-                    ports=[] if args.transport=='ble' else candidates(args.port)
-                    if len(ports)>1:
-                        raise OSError('Multiple USB devices; select --port COMx or --transport ble')
-                    if ports: connection=open_passport(ports[0])
-                    elif args.transport=='usb' or args.port:
-                        raise OSError('Connect Passport via USB')
-                    else:
-                        from token_ble import BLEConnection
-                        connection=BLEConnection.open(args.ble_address)
-                    can_notify=supports_events(connection)
+                with manager.lock:
+                    if connection is None:
+                        ports=candidates(args.port) if args.transport in ('auto','usb') else []
+                        if len(ports)>1:raise OSError('Multiple USB devices; select --port COMx')
+                        if ports:connection=open_passport(ports[0])
+                        elif args.transport=='usb' or args.port:raise OSError('Connect Passport via USB')
+                        else:
+                            if args.transport in ('auto','wifi'):
+                                try:connection=WiFiConnection.open(args.wifi_host)
+                                except OSError:
+                                    if args.transport=='wifi':raise
+                            if connection is None:
+                                from token_ble import BLEConnection
+                                connection=BLEConnection.open(args.ble_address)
+                        manager.attach(connection)
+                        can_notify=supports_events(connection)
+                        from token_events import rpc as device_rpc
+                        capability=device_rpc(connection,'PC_SYS_HELLO2')
+                        system_version=2 if capability=='PC_SYS_READY 2' else 1
+                        can_monitor=system_version==2 or device_rpc(connection,'PC_SYS_HELLO')=='PC_SYS_READY 1'
+                        last_pair=0
+                    send_snapshot(connection,frame,sequence)
                     from token_events import rpc as device_rpc
-                    capability=device_rpc(connection,'PC_SYS_HELLO2')
-                    system_version=2 if capability=='PC_SYS_READY 2' else 1
-                    can_monitor=system_version==2 or device_rpc(connection,'PC_SYS_HELLO')=='PC_SYS_READY 1'
-                send_snapshot(connection,frame,sequence)
-                # Same local wall clock as the history calendar; not persisted across power loss.
-                from token_events import rpc as device_rpc
-                device_rpc(connection,f'PC_CLOCK {int(now.replace(tzinfo=dt.timezone.utc).timestamp())}')
-                if can_monitor:
-                    reply=device_rpc(connection,encode_system(sequence%0xffffffff or 1,monitor.values() if system_version==2 else monitor.values()[:7]))
-                    if reply!=f'PC_SYS_ACK {sequence%0xffffffff or 1}':raise OSError('System snapshot not acknowledged')
-                if can_notify:events.send(connection)
-                else:events.pending=None
-                status='Connected: '+connection.port+' | syncing every 5 seconds'
+                    device_rpc(connection,f'PC_CLOCK {int(now.replace(tzinfo=dt.timezone.utc).timestamp())}')
+                    if can_monitor:
+                        reply=device_rpc(connection,encode_system(sequence%0xffffffff or 1,monitor.values() if system_version==2 else monitor.values()[:7]))
+                        if reply!=f'PC_SYS_ACK {sequence%0xffffffff or 1}':raise OSError('System snapshot not acknowledged')
+                    if can_notify:events.send(connection)
+                    else:events.pending=None
+                    if time.monotonic()-last_pair>=30:
+                        try:remember(connection)
+                        except OSError:print('Wi-Fi pairing cache unavailable; current data connection continues.',flush=True)
+                        last_pair=time.monotonic()
+                    status='Connected: '+connection.port+' | syncing every 5 seconds'
+                if not args.no_browser and status!=last_status:management.open()
             except OSError as error:
-                if connection: connection.close(); connection=None
+                with manager.lock:
+                    manager.detach()
+                    if connection:connection.close();connection=None
                 status=str(error)
             if status!=last_status: print(status,flush=True); last_status=status
             time.sleep(5)
     except KeyboardInterrupt:
         pass
     finally:
+        if management:management.close()
         if connection: connection.close()
         quota.close(); monitor.close()
 

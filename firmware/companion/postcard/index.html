@@ -4,8 +4,8 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AI Passport 明信片与设备管理">
   <title>Tokens Kanban · 设备管理</title>
-  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=usb-connect-2">
-<link rel="stylesheet" href="manage.css?v=usb-connect-2">
+  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=wifi-19">
+<link rel="stylesheet" href="manage.css?v=wifi-19">
 </head>
 <body>
 <header class="topbar">
@@ -13,6 +13,7 @@
   <nav class="toolbar" aria-label="设备连接与保存">
     <button id="ble" type="button" class="secondary" aria-label="搜索蓝牙设备" title="搜索蓝牙设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg><span class="button-label">搜索蓝牙设备</span></button>
     <button id="usb" type="button" class="secondary" aria-label="连接 USB" title="连接 USB"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V3m-3 3 3-3 3 3M12 15l-5-4V7m5 11 5-4v-4"/><circle cx="7" cy="6" r="1"/><path d="M16 7h2v2h-2z"/></svg><span class="button-label">连接 USB</span></button>
+    <button id="wifi" type="button" class="secondary" aria-label="Wi-Fi 连接" title="Wi-Fi 连接"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a15 15 0 0 1 18 0M6 12a10 10 0 0 1 12 0m-9 4a5 5 0 0 1 6 0"/><circle cx="12" cy="20" r="1"/></svg><span class="button-label">Wi-Fi 连接</span></button>
     <button id="disconnect" type="button" class="secondary" disabled aria-label="断开" title="断开"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12M4 8l12 12M3 3l18 18M6 11l-2 2a4 4 0 0 0 6 6l2-2M12 7l2-2a4 4 0 0 1 6 6l-2 2"/></svg><span class="button-label">断开</span></button>
     <button id="upload" form="form" type="submit" disabled aria-label="保存到设备" title="保存到设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg><span class="button-label">保存到设备</span></button>
   </nav>
@@ -28,7 +29,7 @@
   <div class="sim-stage">
    <div id="simDevice" class="sim-device" tabindex="0" role="group" aria-label="AI Passport 模拟设备，支持方向键与回车">
     <div class="sim-lanyard" aria-hidden="true"></div>
-    <button id="simPower" class="sim-key sim-power" type="button" aria-label="模拟电源键" title="电源 · 按住约2秒关机，0.5秒开机"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M7 5.5a8 8 0 1 0 10 0"/></svg></button>
+    <button id="simPower" class="sim-key sim-power" type="button" aria-label="模拟电源键" title="电源 · 单击熄屏或唤醒，按住约2秒关机，0.5秒开机"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M7 5.5a8 8 0 1 0 10 0"/></svg></button>
     <div class="sim-display"><canvas id="simScreen" width="240" height="320" aria-label="当前网页设置的模拟屏幕"></canvas><div id="simVolumeBar" class="sim-volume" role="progressbar" aria-label="模拟音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" hidden><i></i></div></div>
     <div class="sim-side-keys"><button id="simUp" class="sim-key" type="button" aria-label="模拟上键" title="上键 · 按住调高音量">↑</button><button id="simDown" class="sim-key" type="button" aria-label="模拟下键" title="下键 · 按住调低音量">↓</button><button id="simOk" class="sim-key" type="button" aria-label="模拟确定键" title="确定 · 单击或双击"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg></button></div>
     <div class="sim-grille" aria-hidden="true"></div><span class="sim-brand" aria-hidden="true">AI PASSPORT</span>
@@ -37,7 +38,7 @@
    <p class="sim-disclaimer">示例数据 · 使用当前网页草稿 · 操作不写入设备</p>
   </div>
   <div class="sim-guide">
-   <section class="edit-panel"><h2>像实机一样操作</h2><dl class="sim-instructions"><div><dt><kbd>↑</kbd><kbd>↓</kbd></dt><dd>首页和统计页切换周期<br><span>按住调音量，松手后约 3 秒收起</span></dd></div><div><dt><kbd>✓</kbd></dt><dd>单击看明细或联系方式<br><span>双击按已开启页面的顺序翻页</span></dd></div><div><dt><kbd>电源</kbd></dt><dd>按住 2 秒关机，0.5 秒开机<br><span>自动熄屏后，首次操作只唤醒</span></dd></div></dl><p class="setting-help">屏幕显示当前卡片、页面顺序与明信片草稿。修改其他页面的设置后，回来即可体验；重新体验会恢复网页设置。</p></section>
+   <section class="edit-panel"><h2>像实机一样操作</h2><dl class="sim-instructions"><div><dt><kbd>↑</kbd><kbd>↓</kbd></dt><dd>首页和统计页切换周期<br><span>按住调音量，松手后约 3 秒收起</span></dd></div><div><dt><kbd>✓</kbd></dt><dd>单击看明细或联系方式<br><span>双击按已开启页面的顺序翻页</span></dd></div><div><dt><kbd>电源</kbd></dt><dd>单击熄屏／唤醒<br><span>按住 2 秒关机，0.5 秒开机</span><br><span>自动熄屏后，首次操作只唤醒</span></dd></div></dl><p class="setting-help">屏幕显示当前卡片、页面顺序与明信片草稿。修改其他页面的设置后，回来即可体验；重新体验会恢复网页设置。</p></section>
    <section class="edit-panel sim-events"><h2>状态与声音</h2><div class="sim-event-actions"><button id="simTask" type="button" class="secondary">开始思考</button><button id="simQuota" type="button" class="secondary">额度耗尽</button></div><label class="check-row"><input id="simAudio" type="checkbox" checked>播放当前提示音</label><p id="simAudioHint" class="setting-help">声音在浏览器播放，使用当前选中的录音和音量。</p></section>
   </div>
  </div>
@@ -103,6 +104,14 @@
 </main>
 <section id="settingsPage" class="settings-page" hidden aria-label="设备设置">
   <div class="settings-heading"><h1>设备设置</h1><p id="settingsState">连接设备后读取设置</p></div>
+
+  <section class="edit-panel network-panel"><div class="section-row"><h2>Wi-Fi 与手机管理</h2><button id="wifiRefresh" type="button" class="secondary" disabled>刷新</button></div><p id="wifiState" role="status">连接设备后读取网络状态</p><p id="wifiSavedSSID" class="setting-help">尚未读取网络</p>
+   <form id="wifiForm"><div class="field"><label for="wifiSSID">2.4 GHz 网络名称</label><input id="wifiSSID" maxlength="32" autocomplete="off" placeholder="输入 Wi-Fi 名称" disabled></div><div class="field"><label for="wifiPassword">密码</label><input id="wifiPassword" type="password" maxlength="63" autocomplete="new-password" placeholder="开放网络留空" disabled></div><button id="wifiSave" type="submit" disabled>保存并自动连接</button></form>
+   <div class="network-actions"><button id="wifiToggle" type="button" class="secondary" disabled>开启 Wi-Fi</button><button id="wifiSetup" type="button" class="secondary" disabled>开启配网热点</button><button id="wifiForget" type="button" class="secondary" disabled>忘记网络</button></div>
+   <div id="wifiAPInfo" class="network-share" hidden><canvas id="wifiJoinQR" width="240" height="240" aria-label="扫码连接配网热点"></canvas><div><h3>先扫码连接热点</h3><p id="wifiAPName"></p><p>密码：<span id="wifiAPPassword"></span></p><p class="setting-help">有效10分钟；若手机未弹出页面，浏览器打开 192.168.4.1。</p></div></div>
+   <div id="wifiShare" class="network-share" hidden><canvas id="wifiQR" width="240" height="240" aria-label="手机管理入口二维码"></canvas><div><h3>扫码进入管理页</h3><a id="wifiURL" href="#" target="_blank" rel="noreferrer">打开设备管理页</a><p class="setting-help">与设备处于同一 Wi-Fi。二维码包含管理权限，请勿公开分享。</p></div></div>
+   <p class="setting-help">通过 USB 保存网络，或开启热点后用手机填写。蓝牙不传输 Wi-Fi 密码。长按设备确定键可显示入口，上下键切换配网二维码；配网热点尝试自动弹出页面。</p><p class="setting-help">电脑运行同步程序后，USB／蓝牙／Wi-Fi 均自动打开管理页并持续同步 Codex 与 TrafficMonitor 数据。手机管理网页不采集电脑数据。</p>
+  </section>
   <form id="settingsForm"><fieldset id="settingsFields" disabled>
     <section class="edit-panel"><h2>显示</h2><div class="field"><label for="brightness">屏幕亮度 <output id="brightnessValue">75%</output></label><input id="brightness" type="range" min="5" max="100" step="1" value="75" disabled><p id="brightnessHint" class="setting-help">连接配套固件后读取亮度。</p></div><div class="field"><label for="idleTime">自动熄屏</label><select id="idleTime"><option value="30">30 秒</option><option value="60">1 分钟</option><option value="120">2 分钟</option><option value="300">5 分钟</option><option value="600">10 分钟</option><option value="1800">30 分钟</option><option value="3600">1 小时</option><option value="0" selected>保持常亮（不建议）</option></select><p class="setting-help">熄屏后继续同步，按任意键唤醒。</p></div></section>
 
@@ -123,5 +132,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=usb-connect-2"></script>
+<script type="module" src="editor.js?v=wifi-19"></script>
 </body></html>

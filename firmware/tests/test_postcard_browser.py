@@ -91,7 +91,7 @@ def main():
         expect(page.locator('#title')).to_have_value('标题')
         expect(page.locator('#subtitle')).to_have_value('副标题')
         expect(page.locator('#name')).to_have_value('扫码QR Code')
-        assert page.locator('.toolbar button').all_text_contents()==['搜索蓝牙设备','连接 USB','断开','保存到设备']
+        assert page.locator('.toolbar button').all_text_contents()==['搜索蓝牙设备','连接 USB','Wi-Fi 连接','断开','保存到设备']
         expect(page.locator('#experiencePage')).to_be_visible();navigate(page,'pagesNav');expect(page.locator('#pagesPage')).to_be_visible();assert page.locator('.page-card').count()==4
         assert page.locator('.sidebar nav button').all_text_contents()==['体验模拟','页面管理','系统检测','明信片','设置','关于']
         page.screenshot(path=str(out/'browser-pages-default.png'),full_page=True)

@@ -65,3 +65,6 @@
  body.drawer-open{overflow:hidden}
 }
 @media(max-width:480px){.topbar .connection{font-size:0;gap:0;min-width:7px}.topbar .connection::before{width:7px;height:7px}}
+
+.network-panel{margin-bottom:24px}.network-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.network-share{display:flex;align-items:center;gap:22px;margin-top:24px}.network-share canvas{width:144px;height:144px;flex:none;border-radius:8px;image-rendering:pixelated}.network-share div{min-width:0;overflow-wrap:anywhere}.network-panel h3{font-size:15px}.network-panel input{width:100%}.network-panel #wifiState{color:var(--teal,#68c4cb)}
+@media(max-width:480px){.network-share{align-items:flex-start;flex-direction:column}.network-actions button{flex:1 1 auto}}

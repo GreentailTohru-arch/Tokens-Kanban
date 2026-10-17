@@ -1,3 +1,4 @@
+import {gifFrames} from './gif-frames.js';
 import {cropRect,rgb565,pack,hash} from './codec.js';
 const $=id=>document.getElementById(id),wait=ms=>new Promise(r=>setTimeout(r,ms));
 const rawPack=raw=>{let hex='';for(let i=0;i<raw.length;i+=256)hex+=pack(raw.slice(i,i+256));return Uint8Array.from(hex.match(/../g),s=>parseInt(s,16));};
@@ -24,9 +25,8 @@ export class LogoEditor{
  async apply(){if(!this.pending||this.isBusy())return;this.encoding=true;this.setBusy(true);$('logoApply').disabled=true;const {file,image}=this.pending,crop={...this.draftCrop};
   try{let frames=[];const canvas=document.createElement('canvas');canvas.width=canvas.height=96;const ctx=canvas.getContext('2d',{willReadFrequently:true});
    const capture=(im,duration)=>{const r=cropRect(im.displayWidth||im.width,im.displayHeight||im.height,crop);ctx.fillStyle='#000';ctx.fillRect(0,0,96,96);ctx.drawImage(im,r.x,r.y,r.size,r.size,0,0,96,96);frames.push({duration,rgba:ctx.getImageData(0,0,96,96).data});};
-   if(file.type==='image/gif'){if(!globalThis.ImageDecoder)throw Error('此浏览器不能解码动态GIF，请使用新版桌面Chrome/Edge');const decoder=new ImageDecoder({data:new Uint8Array(await file.arrayBuffer()),type:'image/gif'});try{await decoder.tracks.ready;const count=decoder.tracks.selectedTrack.frameCount;if(count>300)throw Error('GIF最多300个源帧，请缩短后导入');let elapsed=0,next=0;
-     for(let i=0;i<count&&elapsed<6000;i++){const {image:frame}=await decoder.decode({frameIndex:i});try{const duration=Math.min(6000-elapsed,Math.max(20,Math.min(1000,Math.round((frame.duration||100000)/1000))));if(elapsed>=next&&frames.length<40){capture(frame,0);next=elapsed+100;}if(frames.length)frames[frames.length-1].duration=Math.min(1000,frames[frames.length-1].duration+duration);elapsed+=duration;}finally{frame.close();}}
-    }finally{decoder.close();}}
+   if(file.type==='image/gif'){let elapsed=0,next=0;
+    for await(const {image:frame,duration} of gifFrames(file)){if(elapsed>=next&&frames.length<40){capture(frame,0);next=elapsed+100;}if(frames.length)frames[frames.length-1].duration=Math.min(1000,frames[frames.length-1].duration+duration);elapsed+=duration;}}
    else capture(image,1000);
    // Resample to a bounded number/size; keep the selected framing and duration.
    for(const f of frames)f.duration=Math.max(50,Math.min(1000,f.duration));

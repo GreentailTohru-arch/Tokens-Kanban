@@ -4,6 +4,8 @@
 #include "startup_assets.h"
 #include "lvgl.h"
 #include "src/misc/cache/instance/lv_image_cache.h"
+#include "src/libs/qrcode/qrcodegen.h"
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 LV_FONT_DECLARE(token_font_14);
@@ -364,4 +366,29 @@ void token_ui_diagnostic(int color_index) {
     if(!panel){panel=box(lv_layer_top(),0,0,240,320,colors[color_index],0);label(panel,16,132,208,"屏幕测试",INK);label(panel,16,158,208,"按任意键退出",INK);}
     lv_obj_set_style_bg_color(panel,lv_color_hex(colors[color_index]),0);
     for(unsigned i=0;i<2;++i){lv_obj_t *text=lv_obj_get_child(panel,i);lv_obj_set_style_text_color(text,lv_color_hex(color_index==2||color_index==4?0x17212A:INK),0);lv_obj_set_style_text_align(text,LV_TEXT_ALIGN_CENTER,0);}previous=color_index;
+}
+
+void token_ui_network(bool show,bool setup,const char *data,const char *hint){
+    static lv_obj_t *panel,*qr,*title,*caption;static char previous[160];
+    static uint8_t *pixels;static lv_image_dsc_t image;
+    if(!show){if(panel){lv_obj_delete(panel);panel=NULL;lv_image_cache_drop(&image);free(pixels);pixels=NULL;previous[0]=0;}return;}
+    if(!panel){
+        pixels=calloc(1,8+20*156);if(!pixels)return;
+        image=(lv_image_dsc_t){.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_I1,.w=156,.h=156,.stride=20},.data_size=8+20*156,.data=pixels};
+        const uint8_t palette[]={255,255,255,255,42,33,23,255};memcpy(pixels,palette,8);
+        panel=box(lv_layer_top(),8,8,224,304,BG,16);title=label(panel,12,12,200,"手机管理",INK);
+        qr=lv_image_create(panel);lv_obj_set_pos(qr,34,50);lv_image_set_src(qr,&image);
+        caption=label(panel,12,224,200,"",INK);lv_obj_set_style_text_align(caption,LV_TEXT_ALIGN_CENTER,0);
+        lv_obj_t *help=label(panel,12,264,200,"上下切换 / 确定关闭",MUTED);lv_obj_set_style_text_align(help,LV_TEXT_ALIGN_CENTER,0);
+    }
+    lv_label_set_text(title,setup?"扫码连接配网热点":"扫码打开管理网站");lv_label_set_text(caption,hint);
+    if(strcmp(data,previous)){
+        uint8_t temporary[qrcodegen_BUFFER_LEN_FOR_VERSION(8)],code[qrcodegen_BUFFER_LEN_FOR_VERSION(8)];
+        memset(pixels+8,0,20*156);
+        bool ok=qrcodegen_encodeText(data,temporary,code,qrcodegen_Ecc_MEDIUM,1,8,qrcodegen_Mask_AUTO,true);
+        if(ok){int n=qrcodegen_getSize(code),scale=156/(n+8),margin=(156-n*scale)/2;
+            for(int y=0;y<n;y++)for(int x=0;x<n;x++)if(qrcodegen_getModule(code,x,y))for(int dy=0;dy<scale;dy++)for(int dx=0;dx<scale;dx++){int px=margin+x*scale+dx,py=margin+y*scale+dy;pixels[8+py*20+px/8]|=(uint8_t)(0x80>>(px%8));}
+        }else lv_label_set_text(caption,"二维码不可用，请用电脑连接");
+        lv_image_cache_drop(&image);lv_obj_invalidate(qr);snprintf(previous,sizeof(previous),"%s",data);
+    }
 }

@@ -147,6 +147,9 @@ int main(void) {
     for(unsigned i=0;i<200;++i){token_ui_volume(true,i%101);lv_tick_inc(200);lv_timer_handler();token_ui_volume(false,i%101);lv_tick_inc(200);lv_timer_handler();}
     for(int color=0;color<5;++color){token_ui_diagnostic(color);lv_refr_now(NULL);check_labels(lv_layer_top());}
     token_ui_diagnostic(-1);lv_refr_now(NULL);check_labels(lv_screen_active());
+    token_ui_network(true,false,"http://192.168.1.50/#01010101010101010101010101010101","手机扫码管理设备");lv_refr_now(NULL);check_labels(lv_layer_top());save("network-manage.ppm");
+    token_ui_network(true,true,"WIFI:T:WPA;S:Tokens-Kanban-ABCD;P:0123456789ab;;","Tokens-Kanban-ABCD");lv_refr_now(NULL);check_labels(lv_layer_top());save("network-setup.ppm");
+    token_ui_network(false,false,"","");
     static uint8_t boot_pixels[96*96*2];memset(boot_pixels,0x5a,sizeof(boot_pixels));
     for(unsigned i=0;i<20;++i){token_ui_startup(true);token_ui_startup_frame(boot_pixels,i%2?96:64);lv_refr_now(NULL);check_labels(lv_layer_top());token_ui_startup(false);}
     assert(lv_mem_test()==LV_RESULT_OK);
