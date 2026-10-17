@@ -3,7 +3,7 @@ import {LocalConnection} from './local-connection.js?v=atelier-20';
 import {DraftState} from './draft-state.js?v=atelier-20';
 import {LogoEditor} from './logo-editor.js?v=dialog-close-22';
 import {AboutPanel} from './about.js?v=dialog-close-22';
-import {DeviceInfoPanel} from './device-info.js?v=preview-22';
+import {DeviceInfoPanel} from './device-info.js?v=screen-test-22';
 import {ExperienceSimulator} from './simulator.js?v=preview-22';
 import {MonitorEditor} from './monitor.js?v=device-themes-21';
 import {loadDefaults} from './defaults.js';

@@ -33,7 +33,7 @@ def main():
         if page.locator('#status').is_visible():
             page.locator('#status .notice-close').click();page.clock.run_for(500)
         navigate(page,'deviceNav')
-        page.locator('[data-screen-color="6"]').click();expect(page.locator('#screenPatternPreview')).to_have_attribute('data-pattern','6');assert page.evaluate('window.screenCalls||[]')==[]
+        expect(page.locator('[data-screen-color="6"]')).to_be_disabled();assert page.locator('#screenPatternPreview').count()==0;assert page.evaluate('window.screenCalls||[]')==[]
         assert page.evaluate('window.testCalls||[]')==[]
         page.locator('#usb').click();expect(page.locator('#deviceConnectionState')).to_contain_text('设备实时')
         expect(page.locator('#deviceCpu')).to_have_text('24.5%');expect(page.locator('#deviceFrequency')).to_have_text('160 MHz');expect(page.locator('#deviceFlash')).to_have_text('8 MiB');expect(page.locator('#deviceHeap')).to_have_text('60.0%');expect(page.locator('#deviceVoltage')).to_have_text('4.050 V');expect(page.locator('#deviceCapacity')).to_contain_text('额定值')
@@ -49,7 +49,7 @@ def main():
         page.evaluate('window.failTest=true');page.locator('#diagMic').click();page.clock.run_for(200);expect(page.locator('#diagMicState')).to_contain_text('测试失败');page.evaluate('window.failTest=false')
         page.get_by_role('button',name='实机红色测试',exact=True).click();expect(page.locator('#diagScreenState')).to_contain_text('15秒');page.get_by_role('button',name='结束测试',exact=True).click();expect(page.locator('#diagScreenState')).to_have_text('已结束屏幕测试');assert page.evaluate('window.screenCalls')==[1,-1]
         for pattern in [5,6]:
-            page.locator(f'[data-screen-color="{pattern}"]').click();expect(page.locator('#screenPatternPreview')).to_have_attribute('data-pattern',str(pattern))
+            page.locator(f'[data-screen-color="{pattern}"]').click();expect(page.locator('#diagScreenState')).to_contain_text('实机显示测试色')
             assert page.evaluate('window.screenCalls')[-1]==pattern
         page.locator('[data-screen-color="-1"]').click()
         page.evaluate('window.keyCounts=[1,0,2]');page.clock.run_for(2200);expect(page.locator('#diagKey0')).to_contain_text('1');expect(page.locator('#diagKey2')).to_contain_text('2')
