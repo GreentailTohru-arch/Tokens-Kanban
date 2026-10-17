@@ -10,7 +10,7 @@ s=ThreadingHTTPServer(('127.0.0.1',0),Handler);threading.Thread(target=s.serve_f
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path=sys.argv[2],headless=True);ctx=b.new_context(viewport={'width':1280,'height':900},color_scheme='light');ctx.route('https://api.github.com/**',lambda r:r.fulfill(status=503,json={}));page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));url=f'http://127.0.0.1:{s.server_port}/';page.goto(url);page.wait_for_timeout(1200)
  if page.locator('#status').is_visible():page.locator('#status .notice-close').click();page.wait_for_timeout(250)
- assert page.locator('.web-mode-copy').inner_text()=='外观'
+ assert page.locator('.web-mode-copy').inner_text()=='外观模式'
  palette=page.evaluate('DeviceTheme.values()')
  page.evaluate('''() => {const original=Element.prototype.animate;Element.prototype.animate=function(keys,options){const a=original.call(this,keys,options);if(options?.pseudoElement==='::view-transition-new(root)'){window.reveal={keys,options};window.revealAnimation=a;if(window.pauseReveal){a.pause();a.currentTime=180;}}return a;};window.pauseReveal=true;}''')
  for width in [1280,390]:
