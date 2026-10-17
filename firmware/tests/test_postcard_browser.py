@@ -14,7 +14,7 @@ import qrcode
 import zxingcpp
 
 MOCK=r'''
-window.usbSignalChanges=0;
+window.usbSignalChanges=[];
 window.testCard={offset:0,data:[],saved:false};
 window.testPages=[15,0,1,2,3];
 window.testMonitor=new Uint8Array(148);window.testMonitor.set([1,0,0,1,1,0,1,0]);window.testMonitor.set(new TextEncoder().encode('↑'),8);window.testMonitor.set(new TextEncoder().encode('↓'),15);[0,1,2,3,4,11].forEach((m,i)=>window.testMonitor.set([m,1],22+i*21));
@@ -22,7 +22,7 @@ window.monitorHash=()=>window.testMonitor.reduce((h,b)=>Math.imul(h^b,16777619)>
 
 window.testConfig={values:[0,1,3,35],state:0,id:0,sounds:[],startup:1};
 Object.defineProperty(navigator,'serial',{value:{requestPort:async()=>{
- let feed,buffer='',id=0,checksum=0;
+ let feed,buffer='',id=0,checksum=0,signalStep=0;
  const card=window.testCard;
  const readable=new ReadableStream({start(c){feed=c;}});
  const writable=new WritableStream({write(bytes){buffer+=new TextDecoder().decode(bytes);
@@ -54,7 +54,7 @@ Object.defineProperty(navigator,'serial',{value:{requestPort:async()=>{
    feed.enqueue(new TextEncoder().encode(reply+'\n'));
   }
  }});
- return {open:async()=>{if(window.portBusy)throw Error("Port busy");},setSignals:async()=>{window.usbSignalChanges++;throw Error("Unexpected USB reset signal change");},close:async()=>{},readable,writable};
+ return {open:async()=>{if(window.portBusy)throw Error("Port busy");},setSignals:async signals=>{const expected=signalStep++===0?{requestToSend:false}:{dataTerminalReady:false};if(JSON.stringify(signals)!==JSON.stringify(expected))throw Error("Unsafe USB reset signal order");window.usbSignalChanges.push(signals);},close:async()=>{},readable,writable};
 }}});
 Object.defineProperty(navigator,'bluetooth',{value:{requestDevice:async options=>{
  if(!options.filters[0].services[0].startsWith('9e7a0001'))throw Error('Wrong BLE filter');

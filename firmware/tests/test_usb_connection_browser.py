@@ -22,12 +22,12 @@ def main():
   page.evaluate('window.portBusy=true');page.locator('#usb').click();expect(page.locator('#status')).to_have_attribute('data-kind','error');expect(page.locator('#connection')).to_have_text('未连接');expect(page.locator('#usb')).to_be_enabled();page.evaluate('window.portBusy=false')
   for i,prefix in enumerate(['e0e2b3b00','137ca20932c9','e0e2b3b002333e36e78f8612c617dd45b9c43704b2fefea1089bf785c3aa0af7']):
    page.evaluate('(p)=>{window.testELFPrefix=p;window.dropHello=1;}',prefix)
-   page.locator('#usb').click();expect(page.locator('#connection')).to_have_text('USB已连接');expect(page.locator('#settingsState')).to_have_text('已读取设备设置');assert page.evaluate('window.usbSignalChanges')==0
+   page.locator('#usb').click();expect(page.locator('#connection')).to_have_text('USB已连接');expect(page.locator('#settingsState')).to_have_text('已读取设备设置');assert page.evaluate('window.usbSignalChanges')==[{'requestToSend':False},{'dataTerminalReady':False}]*(i+1)
    assert page.evaluate('JSON.stringify({pages:testPages,config:testConfig.values,monitor:[...testMonitor]})')==baseline
    page.locator('#disconnect').click();expect(page.locator('#connection')).to_have_text('未连接');expect(page.locator('#usb')).to_be_enabled()
   for invalid in ['abc','not-a-hash','0'*65]:
    page.evaluate('(p)=>window.testELFPrefix=p',invalid);page.locator('#usb').click();expect(page.locator('#status')).to_contain_text('设备芯片信息错误');expect(page.locator('#connection')).to_have_text('未连接')
   assert not errors,errors
-  result={'normalUSBDoesNotChangeResetLines':'PASS','threeConnectDisconnectCycles':'PASS','ELF9And12And64Characters':'PASS','busyPortRetry':'PASS','bootHandshakeRetry':'PASS','settingsPagesMonitorUnchanged':'PASS','hardware':'MOCK ONLY'};(out/'usb-connection-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
+  result={'USBReleasesRTSBeforeDTR':'PASS','threeConnectDisconnectCycles':'PASS','ELF9And12And64Characters':'PASS','busyPortRetry':'PASS','bootHandshakeRetry':'PASS','settingsPagesMonitorUnchanged':'PASS','hardware':'MOCK ONLY'};(out/'usb-connection-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
  server.shutdown()
 if __name__=='__main__':main()

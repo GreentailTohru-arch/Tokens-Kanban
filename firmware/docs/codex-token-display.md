@@ -910,9 +910,9 @@ technology. The top-left menu button toggles the six-page side panel. On phones,
 the panel overlays content and closes after selection, Escape, or tapping outside;
 keyboard focus stays within navigation while open. Opening it does not edit settings.
 
-Normal Web Serial connections preserve the browser's initial DTR/RTS state.
-Clearing both signals after opening ESP32-C3 USB Serial/JTAG can trigger a hardware
-reset and drop the first handshake. Firmware installation retains its separate,
+Normal Web Serial connections release RTS first, then DTR, in separate calls.
+Clearing DTR first (including one combined setSignals call) passes through the
+ESP32-C3 USB Serial/JTAG reset state and can drop the first handshake. Firmware installation retains its separate,
 intentional reset flow. The USB connection fix does not require reflashing.
 
 Device information accepts the actual 9-character ELF prefix emitted by v18,
@@ -923,6 +923,6 @@ are rejected. Displaying a build prefix is not firmware integrity verification.
 On USB, initialization retries timed-out read-only handshakes within a bounded
 startup window. This also handles Windows/browser port close/open behavior that
 can restart the USB Serial/JTAG controller and interleave boot logs with replies.
-Normal connections no longer explicitly toggle reset lines; a platform-triggered
-restart can still briefly show the startup screen. No configuration is written
+The RTS-before-DTR release sequence avoids the observed Windows reset on both
+connect and close; an unrelated platform reset can still show the startup screen. No configuration is written
 during retry (only the volatile clock is synchronized). Bluetooth timing is unchanged.

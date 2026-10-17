@@ -1,8 +1,8 @@
-import {DraftState} from './draft-state.js?v=usb-connect-1';
-import {LogoEditor} from './logo-editor.js?v=usb-connect-1';
-import {AboutPanel} from './about.js?v=usb-connect-1';
-import {DeviceInfoPanel} from './device-info.js?v=usb-connect-1';
-import {ExperienceSimulator} from './simulator.js?v=usb-connect-1';
+import {DraftState} from './draft-state.js?v=usb-connect-2';
+import {LogoEditor} from './logo-editor.js?v=usb-connect-2';
+import {AboutPanel} from './about.js?v=usb-connect-2';
+import {DeviceInfoPanel} from './device-info.js?v=usb-connect-2';
+import {ExperienceSimulator} from './simulator.js?v=usb-connect-2';
 import {MonitorEditor} from './monitor.js';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js';
@@ -125,8 +125,10 @@ class SerialConnection extends Connection{
     if(!navigator.serial)throw new Error('此浏览器不支持 USB 串口，请使用 Windows Chrome / Edge');
     this.port=await navigator.serial.requestPort({filters:[{usbVendorId:0x303a,usbProductId:0x1001}]});
     // ESP32-C3 USB Serial/JTAG uses DTR/RTS edges for reset/download control.
-    // Keep the browser's open state; clearing both here resets the running app.
+    // Release RTS before DTR: the reverse order passes through the reset state.
     await this.port.open({baudRate:115200,bufferSize:4096});
+    await this.port.setSignals({requestToSend:false});
+    await this.port.setSignals({dataTerminalReady:false});
     this.writer=this.port.writable.getWriter();this.reader=this.port.readable.getReader();
     this.readTask=this.readLoop();
   }
