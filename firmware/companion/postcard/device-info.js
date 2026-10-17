@@ -22,7 +22,17 @@ export class DeviceInfoPanel {
     if(!this.supported){this.unavailable('当前固件暂不支持设备检测');$('deviceNameHint').textContent='名称保存与实机检测需升级配套固件';this.controls();return;}
     await this.readName(connection);await this.snapshot(connection);this.controls();
   }
-  async readName(connection){const p=(await connection.rpc('PC_INFO_NAME')).split(' ');if(p.length!==2||p[0]!=='PC_NAME'||!/^(?:[0-9a-f]{2}){1,32}$/.test(p[1]))throw Error('设备名称编码错误');$('deviceName').value=new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(p[1].match(/../g),h=>parseInt(h,16)));this.validateName();$('deviceNameHint').textContent='已读取设备名称 · 不更改蓝牙广播名';}
+  async readName(connection){
+    const p=(await connection.rpc('PC_INFO_NAME')).split(' ');
+    if(p.length!==2||p[0]!=='PC_NAME'||!/^(?:[0-9a-f]{2}){1,32}$/.test(p[1]))throw Error('设备名称编码错误');
+    const name=new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(p[1].match(/../g),h=>parseInt(h,16)));
+    $('deviceName').value=name;this.validateName();
+    this.nameBluetooth=false;
+    try{this.nameBluetooth=(await connection.rpc('PC_NAME_BLE'))==='PC_NAME_BLE 1 29';}catch{}
+    $('deviceNameHint').textContent=this.nameBluetooth
+      ?'已读取设备名称 · 同步蓝牙名称，重新搜索可刷新'+(new TextEncoder().encode(name).length>29?'；长名称在蓝牙列表中缩短显示':'')
+      :'已读取设备名称 · 当前固件仅修改设备名称，蓝牙联动需升级固件';
+  }
   async snapshot(connection){
     const system=numeric(await connection.rpc('PC_INFO_SYSTEM'),'PC_SYSTEM',7),storage=numeric(await connection.rpc('PC_INFO_STORAGE'),'PC_STORAGE',5),battery=numeric(await connection.rpc('PC_INFO_BATTERY'),'PC_BATTERY',3),keys=numeric(await connection.rpc('PC_INFO_KEYS'),'PC_KEYS',6);
     const chip=(await connection.rpc('PC_INFO_CHIP')).split(' ');if(chip.length!==7||chip[0]!=='PC_CHIP'||!/^\d+$/.test(chip[2])||!/^\d+$/.test(chip[3])||!/^[0-9a-f]{12}$/.test(chip[4])||!/^[0-9a-f]{8,64}$/.test(chip[5]))throw Error('设备芯片信息错误');

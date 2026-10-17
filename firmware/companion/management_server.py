@@ -14,9 +14,22 @@ def existing_manager(open_browser=True,path=RUNTIME):
         if open_browser:webbrowser.open(url+'#'+token)
         return True
     except (OSError,ValueError,KeyError,TypeError):return False
+
+def request_stop(path=RUNTIME):
+    if not existing_manager(open_browser=False,path=path):return '电脑同步程序未运行。'
+    try:
+        value=json.loads(path.read_text(encoding='utf-8'))
+        request=urllib.request.Request(f"http://127.0.0.1:{value['port']}/api/stop",data=b'',
+            headers={'Authorization':'Bearer '+value['token']},method='POST')
+        with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request,timeout=5) as response:
+            response.read()
+    except (OSError,ValueError,KeyError,TypeError) as error:
+        raise OSError('未能停止同步；旧版程序请在原窗口按 Ctrl+C，或在任务管理器结束 CodexTokenDisplay.exe。') from error
+    return '已请求停止后台同步；当前传输结束后退出。开机启动设置保持不变。'
+
 class LinkManager:
-    def __init__(self):self.lock=threading.RLock();self.connection=None;self.kind='';self.revision=0
-    def attach(self,connection):self.connection=connection;self.kind='USB' if str(connection.port).startswith('COM') else '蓝牙';self.revision+=1
+    def __init__(self):self.lock=threading.RLock();self.connection=None;self.kind='';self.revision=0;self.last_rpc=float('-inf');self.stop_event=threading.Event()
+    def attach(self,connection):self.connection=connection;self.kind='蓝牙' if str(connection.port).startswith('BLE') else 'USB';self.revision+=1
     def detach(self):self.connection=None;self.kind='';self.revision+=1
     def info(self):return {'app':'TokensKanban','protocol':1,'kind':'电脑同步 · '+self.kind,'connected':self.connection is not None,'revision':self.revision}
 class ManagementServer:
@@ -41,9 +54,13 @@ class ManagementServer:
                 super().do_GET()
             def do_POST(self):
                 if not self.valid_host():return self.answer(403,'Host not allowed')
-                if self.path!='/api/rpc':return self.answer(404,'Not found')
                 if not self.auth():return self.answer(401,'Access token required')
                 if self.headers.get('Origin') and self.headers['Origin'] not in ('http://127.0.0.1:'+str(owner.server.server_port),'http://localhost:'+str(owner.server.server_port)):return self.answer(403,'Origin not allowed')
+                if self.path=='/api/stop':
+                    self.answer(200,'Stopping synchronization')
+                    manager.stop_event.set()
+                    return
+                if self.path!='/api/rpc':return self.answer(404,'Not found')
                 try:
                     self.connection.settimeout(5)
                     size=int(self.headers.get('Content-Length','0'));assert 0<size<=1024
@@ -53,7 +70,12 @@ class ManagementServer:
                     from token_events import rpc
                     with manager.lock:
                         if manager.connection is None:return self.answer(503,'Device not connected')
-                        reply=rpc(manager.connection,data)
+                        try:reply=rpc(manager.connection,data)
+                        finally:
+                            # Periodic device telemetry must not permanently prevent
+                            # promotion to USB; writes and upload status polls defer it.
+                            if not data.split()[0].startswith('PC_INFO'):
+                                manager.last_rpc=time.monotonic()
                     self.answer(200,reply+'\n')
                 except OSError:self.answer(503,'Device unavailable; reconnecting')
         self.server=ThreadingHTTPServer(('127.0.0.1',0),ManagedHandler);self.thread=threading.Thread(target=self.server.serve_forever,daemon=True);self.thread.start()

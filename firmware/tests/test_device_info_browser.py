@@ -18,6 +18,7 @@ def main():
    if(v[0]==='PC_INFO_CHIP')reply=`PC_CHIP ESP32-C3 1 101 98c377f4deb0 ${window.testELFPrefix||'e0e2b3b00'} v17`;
    if(v[0]==='PC_INFO_KEYS')reply='PC_KEYS 3300 '+(window.keyCounts||[0,0,0]).join(' ')+' 0 0';
    if(v[0]==='PC_INFO_NAME')reply='PC_NAME '+Array.from(new TextEncoder().encode(window.deviceName||"You's AI Passport"),b=>b.toString(16).padStart(2,'0')).join('');
+   if(v[0]==='PC_NAME_BLE')reply=window.legacyName?'PC_INFO_INVALID':'PC_NAME_BLE 1 29';
    if(v[0]==='PC_NAME_SET'){window.nameId=+v[1];window.nameState=window.failName?3:2;if(!window.failName)window.deviceName=new TextDecoder().decode(Uint8Array.from(v[2].match(/../g),s=>parseInt(s,16)));reply=`PC_NAME_STATE ${window.nameId} 1`;}
    if(v[0]==='PC_NAME_STATE')reply=`PC_NAME_STATE ${window.nameId} ${window.nameState}`;
    if(v[0]==='PC_TEST'){window.testId=+v[1];window.testKind=+v[2];window.testCalls=(window.testCalls||[]).concat(+v[2]);reply=`PC_TEST_STATE ${v[1]} 1 ${v[2]} -1 -1 0`;}
@@ -38,6 +39,9 @@ def main():
         page.locator('#usb').click();expect(page.locator('#deviceConnectionState')).to_contain_text('设备实时')
         expect(page.locator('#deviceCpu')).to_have_text('24.5%');expect(page.locator('#deviceFrequency')).to_have_text('160 MHz');expect(page.locator('#deviceFlash')).to_have_text('8 MiB');expect(page.locator('#deviceHeap')).to_have_text('60.0%');expect(page.locator('#deviceVoltage')).to_have_text('4.050 V');expect(page.locator('#deviceCapacity')).to_contain_text('额定值')
         page.locator('#deviceName').fill('我的 AI Passport');page.locator('#deviceNameSave').click();expect(page.locator('#deviceNameHint')).to_contain_text('已读取');assert page.evaluate('window.deviceName')=='我的 AI Passport'
+        expect(page.locator('#deviceNameHint')).to_contain_text('同步蓝牙名称')
+        page.locator('#deviceName').fill('一二三四五六七八九十');page.locator('#deviceNameSave').click();expect(page.locator('#deviceNameHint')).to_contain_text('缩短显示')
+        page.evaluate('window.legacyName=true');page.locator('#deviceName').fill('我的 AI Passport');page.locator('#deviceNameSave').click();expect(page.locator('#deviceNameHint')).to_contain_text('当前固件仅修改设备名称');page.evaluate('window.legacyName=false')
         page.evaluate('window.failName=true');page.locator('#deviceName').fill('失败的名称');page.locator('#deviceNameSave').click();expect(page.locator('#deviceNameHint')).to_contain_text('保存未确认');assert page.evaluate('window.deviceName')=='我的 AI Passport';page.evaluate('window.failName=false')
         page.locator('#deviceName').fill('一'*11);expect(page.locator('#deviceNameError')).to_contain_text('32');assert not page.locator('#deviceName').evaluate('(e)=>e.checkValidity()')
         page.locator('#deviceName').fill('我的 AI Passport')

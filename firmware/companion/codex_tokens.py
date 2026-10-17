@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import threading
 import time
+import sys
 from token_pricing import PRICE_DATE, request_nano_usd
 from token_analytics import summarize
 from token_events import CompletionTracker,supports_events
@@ -195,6 +196,8 @@ def find_codex():
     executable = shutil.which('codex')
     if executable:
         return executable
+    if sys.platform != 'win32':
+        return None
     root = Path(os.environ.get('LOCALAPPDATA','')) / 'OpenAI/Codex/bin'
     found = list(root.glob('*/codex.exe'))
     return str(max(found,key=lambda p:p.stat().st_mtime)) if found else None
@@ -363,7 +366,7 @@ def send_snapshot(connection, frame, sequence):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--port',help='Explicit Passport COM port; otherwise only Espressif 303A:1001')
+    parser.add_argument('--port',help='Explicit Passport serial port; otherwise only Espressif 303A:1001')
     parser.add_argument('--transport',choices=('auto','usb','ble'),default='auto',help='Auto prefers USB, then BLE')
     parser.add_argument('--no-browser',action='store_true',help='Disable opening the management page on connection')
     parser.add_argument('--ble-address',help='BLE address from --list-ble (required for multiple devices)')
@@ -374,7 +377,38 @@ def main():
     parser.add_argument('--postcard-editor',action='store_true',help='Open the local browser postcard editor')
     parser.add_argument('--editor-no-browser',action='store_true',help='Serve the editor without opening a browser (automation)')
     parser.add_argument('--list-ble',action='store_true',help='Discover matching BLE service; do not connect')
+    startup=parser.add_mutually_exclusive_group()
+    startup.add_argument('--enable-startup',action='store_true',help='Enable current-user login startup')
+    startup.add_argument('--disable-startup',action='store_true',help='Disable current-user login startup')
+    parser.add_argument('--launcher',action='store_true',help='Show the unified launcher menu')
+    parser.add_argument('--background',action='store_true',help='Log to the per-user folder without opening a browser')
+    parser.add_argument('--stop-sync',action='store_true',help='Stop the running sender through its authenticated local API')
     args=parser.parse_args()
+    if args.launcher:
+        print('\nTokens Kanban\n1. 启动同步（默认）\n2. 开启开机启动\n3. 关闭开机启动\n4. 停止后台同步\n0. 退出')
+        while True:
+            choice=input('请选择 [1/2/3/4/0，回车启动]：').strip() or '1'
+            if choice in ('0','1','2','3','4'):break
+        if choice=='0':return
+        args.enable_startup=choice=='2';args.disable_startup=choice=='3';args.stop_sync=choice=='4'
+    if args.enable_startup or args.disable_startup:
+        try:
+            if sys.platform == 'darwin':
+                from macos_startup import configure
+                configure(args.enable_startup,sys.executable,Path(__file__))
+            else:
+                from windows_startup import configure
+                if not getattr(sys,'frozen',False):raise OSError('请从已解压的 Windows 程序包设置开机启动。')
+                configure(args.enable_startup,sys.executable)
+            print('已开启：下次登录后后台同步，不自动弹出网页。请保留程序所在文件夹。' if args.enable_startup else '已关闭开机启动。当前已运行的同步程序不会被停止。',flush=True)
+        except OSError as error:print(str(error),flush=True);raise SystemExit(1)
+        return
+    if args.stop_sync:
+        from management_server import request_stop
+        try:print(request_stop(),flush=True)
+        except OSError as error:print(str(error),flush=True);raise SystemExit(1)
+        return
+    if args.background:args.no_browser=True
     if args.postcard_editor:
         from management_server import existing_manager
         if not args.editor_no_browser and existing_manager():return
@@ -402,10 +436,29 @@ def main():
     from management_server import existing_manager
     if not args.dry_run and existing_manager(open_browser=not args.no_browser):
         print('Tokens Kanban is already running; reusing its management page.',flush=True);return
+    if args.dry_run:
+        return run_sync(args)
+    from sync_instance import SyncInstance
+    with SyncInstance() as instance:
+        if not instance.acquired:
+            existing_manager(open_browser=not args.no_browser)
+            print('Tokens Kanban is already starting or running; no second sender started.',flush=True)
+            return
+        if args.background:
+            from windows_startup import background_output
+            background_output()
+        return run_sync(args)
+
+def run_sync(args):
+    from connection_router import ConnectionRouter
+    def open_ble(address):
+        from token_ble import BLEConnection
+        return BLEConnection.open(address)
+    router=ConnectionRouter(args.transport,candidates,open_passport,open_ble,args.port,args.ble_address)
     monitor=SystemPoller()
     index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False; can_monitor=False
     management=None
-    print('Tokens Kanban v22 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
+    print('Tokens Kanban v23 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)
@@ -416,21 +469,16 @@ def main():
                 'frame':encode_frame(1,totals,values,index.activity(),index.costs(),index.analytics()).decode().strip()},ensure_ascii=True)); return
         from management_server import LinkManager,ManagementServer
         manager=LinkManager();management=ManagementServer(manager)
-        last_status=''
-        while True:
+        last_status='';opened_browser=False
+        while not manager.stop_event.is_set():
             index.refresh(); events.observe(index.completions()); sequence+=1
             now=dt.datetime.now().astimezone()
             frame=encode_frame(sequence,index.totals(now),quota.values(),index.activity(),index.costs(now),index.analytics(now))
             try:
                 with manager.lock:
-                    if connection is None:
-                        ports=candidates(args.port) if args.transport in ('auto','usb') else []
-                        if len(ports)>1:raise OSError('Multiple USB devices; select --port COMx')
-                        if ports:connection=open_passport(ports[0])
-                        elif args.transport=='usb' or args.port:raise OSError('Connect Passport via USB')
-                        else:
-                            from token_ble import BLEConnection
-                            connection=BLEConnection.open(args.ble_address)
+                    previous=connection
+                    connection=router.ensure(connection,allow_upgrade=time.monotonic()-manager.last_rpc>=5)
+                    if connection is not previous:
                         manager.attach(connection)
                         can_notify=supports_events(connection)
                         from token_events import rpc as device_rpc
@@ -446,14 +494,15 @@ def main():
                     if can_notify:events.send(connection)
                     else:events.pending=None
                     status='Connected: '+connection.port+' | syncing every 5 seconds'
-                if not args.no_browser and status!=last_status:management.open()
+                if not args.no_browser and status!=last_status and not opened_browser:
+                    management.open();opened_browser=True
             except OSError as error:
                 with manager.lock:
                     manager.detach()
-                    if connection:connection.close();connection=None
+                    router.failed(connection);connection=None
                 status=str(error)
             if status!=last_status: print(status,flush=True); last_status=status
-            time.sleep(5)
+            manager.stop_event.wait(5)
     except KeyboardInterrupt:
         pass
     finally:

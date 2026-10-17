@@ -5,6 +5,8 @@
 static diagnostic_request_t jobs[2];static unsigned jobs_count,writes,audio_requests;static bool fail_commit,have_name;
 static char stored_name[33],staged_name[33];static uint64_t clock_us=1000000,idle_us=100000;
 static jmp_buf yielded;
+static unsigned name_refreshes;
+void token_ble_name_changed(void){name_refreshes++;}
 int64_t esp_timer_get_time(void){return (int64_t)clock_us;}
 uint64_t ulTaskGetIdleRunTimeCounter(void){return idle_us;}
 uint32_t esp_rom_get_cpu_ticks_per_us(void){return 160;}
@@ -38,10 +40,13 @@ int main(void){
     line("PC_INFO_SYSTEM","PC_SYSTEM 2000 400 160 200000 80000 60000 40000\n");
     line("PC_INFO_STORAGE","PC_STORAGE 8388608 7798784 524288 12 500\n");line("PC_INFO_BATTERY","PC_BATTERY 86 4050 500\n");
     line("PC_INFO_NAME","PC_NAME 596f7527732041492050617373706f7274\n");
+    line("PC_NAME_BLE","PC_NAME_BLE 1 29\n");assert(name_refreshes==0);
     line("PC_NAME_SET 1 4d792050617373706f7274","PC_NAME_STATE 1 1\n");line("PC_NAME_SET 1 4d792050617373706f7274","PC_NAME_STATE 1 1\n");assert(jobs_count==1);
     line("PC_NAME_SET 2 4149","PC_NAME_BUSY\n");run();assert(writes==1);line("PC_INFO_NAME","PC_NAME 4d792050617373706f7274\n");
-    fail_commit=true;line("PC_NAME_SET 3 4149","PC_NAME_STATE 3 1\n");run();line("PC_NAME_STATE","PC_NAME_STATE 3 3\n");line("PC_INFO_NAME","PC_NAME 4d792050617373706f7274\n");fail_commit=false;
+    assert(name_refreshes==1);char advertised[33];device_diagnostics_name(advertised,sizeof(advertised));assert(!strcmp(advertised,"My Passport"));
+    fail_commit=true;line("PC_NAME_SET 3 4149","PC_NAME_STATE 3 1\n");run();line("PC_NAME_STATE","PC_NAME_STATE 3 3\n");line("PC_INFO_NAME","PC_NAME 4d792050617373706f7274\n");fail_commit=false;assert(name_refreshes==1);
     strcpy(device_name,DEVICE_DEFAULT_NAME);assert(device_diagnostics_start(true,true));assert(!strcmp(device_name,"My Passport"));
+    device_diagnostics_name(advertised,sizeof(advertised));assert(!strcmp(advertised,"My Passport"));
     line("PC_NAME_SET -1 4149","PC_NAME_INVALID\n");line("PC_NAME_SET 5 00","PC_NAME_INVALID\n");line("PC_NAME_SET 5 e4b8","PC_NAME_INVALID\n");
     line("PC_TEST 20 2","PC_TEST_STATE 20 1 2 -1 -1 0\n");line("PC_TEST 20 2","PC_TEST_STATE 20 1 2 -1 -1 0\n");assert(audio_requests==1);
     line("PC_TEST 21 3","PC_TEST_BUSY\n");device_diagnostics_test_complete(999,true,1,1,6400);assert(test_state==1);device_diagnostics_test_complete(20,true,123,45,6400);line("PC_TEST_STATE","PC_TEST_STATE 20 2 2 123 45 6400\n");

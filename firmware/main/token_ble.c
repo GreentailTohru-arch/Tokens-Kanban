@@ -1,5 +1,7 @@
 #include "token_ble.h"
 #include "token_model.h"
+#include "device_diagnostics.h"
+#include "diagnostic_model.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "nvs_flash.h"
@@ -14,6 +16,7 @@
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 #include <string.h>
+#include <stdatomic.h>
 
 /* 9e7a0001-4b51-4a4c-9b50-2f53f077c301, RX=0002, TX=0003. */
 #define UUID(n) BLE_UUID128_INIT(0x01,0xc3,0x77,0xf0,0x53,0x2f,0x50,0x9b,0x4c,0x4a,0x51,0x4b,n,0x00,0x7a,0x9e)
@@ -24,7 +27,28 @@ static token_stream_t stream;
 static int64_t last_write;
 static token_ble_receive_t receiver;
 static const char *TAG="token_ble";
+static struct ble_npl_event name_event;
+static atomic_bool host_started;
 static int gap_event(struct ble_gap_event *event,void *arg);
+
+static int refresh_name(void) {
+    char name[DEVICE_NAME_BYTES+1];device_diagnostics_name(name,sizeof(name));
+    int rc=ble_svc_gap_device_name_set(name);if(rc)return rc;
+    struct ble_hs_adv_fields scan={0};
+    scan.name=(const uint8_t *)name;
+    scan.name_len=diagnostic_name_advertised_length(name);
+    scan.name_is_complete=scan.name_len==strlen(name);
+    return ble_gap_adv_rsp_set_fields(&scan);
+}
+static void name_changed_event(struct ble_npl_event *event) {
+    (void)event;
+    if(!ble_hs_synced())return; /* on_sync reloads the latest committed name. */
+    int rc=refresh_name();
+    if(rc)ESP_LOGW(TAG,"Name refresh deferred until advertising restarts: %d",rc);
+}
+void token_ble_name_changed(void) {
+    if(atomic_load(&host_started))ble_npl_eventq_put(nimble_port_get_dflt_eventq(),&name_event);
+}
 
 static void reply_notify(uint16_t connection,const char *data,size_t len) {
     size_t limit=ble_att_mtu(connection)-3;
@@ -72,9 +96,7 @@ static int advertise(void) {
     fields.flags=BLE_HS_ADV_F_DISC_GEN|BLE_HS_ADV_F_BREDR_UNSUP;
     fields.uuids128=(ble_uuid128_t *)&service_uuid; fields.num_uuids128=1; fields.uuids128_is_complete=1;
     int rc=ble_gap_adv_set_fields(&fields); if(rc) return rc;
-    struct ble_hs_adv_fields scan={0};
-    scan.name=(const uint8_t *)"Codex Passport";scan.name_len=strlen((const char *)scan.name);scan.name_is_complete=1;
-    rc=ble_gap_adv_rsp_set_fields(&scan); if(rc) return rc;
+    rc=refresh_name();if(rc)return rc;
     struct ble_gap_adv_params params={0};
     params.conn_mode=BLE_GAP_CONN_MODE_UND;params.disc_mode=BLE_GAP_DISC_MODE_GEN;
     return ble_gap_adv_start(address_type,NULL,BLE_HS_FOREVER,&params,gap_event,NULL);
@@ -94,7 +116,7 @@ static void on_sync(void) {
     if(!rc) rc=ble_hs_id_infer_auto(0,&address_type);
     if(!rc) rc=advertise();
     if(rc) ESP_LOGE(TAG,"BLE sync failed: %d",rc);
-    else ESP_LOGI(TAG,"Codex Passport advertising");
+    else ESP_LOGI(TAG,"Passport advertising with saved device name");
 }
 static void on_reset(int reason) {
     memset(&stream,0,sizeof(stream));last_write=0;
@@ -109,13 +131,15 @@ esp_err_t token_ble_start(token_ble_receive_t receive) {
     if(err!=ESP_OK) return err; /* Never erase saved data to repair NVS. */
     err=nimble_port_init();if(err!=ESP_OK) return err;
     receiver=receive;
+    ble_npl_event_init(&name_event,name_changed_event,NULL);
     ble_svc_gap_init();ble_svc_gatt_init();
-    int rc=ble_svc_gap_device_name_set("Codex Passport");
+    char name[DEVICE_NAME_BYTES+1];device_diagnostics_name(name,sizeof(name));
+    int rc=ble_svc_gap_device_name_set(name);
     if(!rc) rc=ble_gatts_count_cfg(services);
     if(!rc) rc=ble_gatts_add_svcs(services);
     ble_hs_cfg.reset_cb=on_reset;ble_hs_cfg.sync_cb=on_sync;
     if(!rc && xTaskCreatePinnedToCore(host_task,"token_ble",NIMBLE_HS_STACK_SIZE,NULL,
-            configMAX_PRIORITIES-4,NULL,NIMBLE_CORE)==pdPASS) return ESP_OK;
+            configMAX_PRIORITIES-4,NULL,NIMBLE_CORE)==pdPASS) {atomic_store(&host_started,true);return ESP_OK;}
     ESP_LOGE(TAG,"BLE startup failed: %d",rc);
     esp_err_t cleanup=nimble_port_deinit();
     if(cleanup!=ESP_OK) ESP_LOGE(TAG,"BLE cleanup failed: %s",esp_err_to_name(cleanup));

@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 bool device_diagnostics_start(bool battery_ready,bool buttons_ready);
+void device_diagnostics_name(char *out,size_t capacity);
 size_t device_diagnostics_line(const char *line,char *reply,size_t capacity);
 /* Bounded callback bookkeeping only; no I2C, audio, NVS or LVGL access. */
 void device_diagnostics_key(unsigned key,unsigned event);

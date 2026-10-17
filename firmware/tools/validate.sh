@@ -58,6 +58,9 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_bridge.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_analytics.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_ble.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_connection_router.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_windows_startup.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_macos_companion.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_token_font_coverage.py
 
     actionlint_bin="${ACTIONLINT_BIN:-}"

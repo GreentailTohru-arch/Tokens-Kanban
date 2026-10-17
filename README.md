@@ -2,27 +2,33 @@
 
 # Tokens Kanban
 
-[Device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/) · [Tokens Kanban v22](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v22)
+[Device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/) · [Tokens Kanban v23](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v23)
 
 View local Codex token usage, quota, model/activity trends, TrafficMonitor system metrics and a personal postcard on AI Passport. Costs are API-price estimates, not subscription bills; usage covers readable local history.
 
 ## Start and update
 
-1. Extract the v22 Windows package and run `start-auto.cmd` for USB or Bluetooth sync. No Wi-Fi setup is needed; Wi-Fi was removed in v20.
+1. Extract the v23 Windows package and run `start.cmd` for USB or Bluetooth sync. No Wi-Fi setup is needed; Wi-Fi was removed in v20.
 2. Double-press OK to cycle enabled pages. Short Up/Down changes periods on Home/Analytics. Single OK reveals Home details or postcard contacts. Hold Up/Down for volume; OK dismisses the overlay.
 3. Manage pages, metric cards, postcard, brightness, screen timeout, supplied recordings and boot logo on the website. Device themes and the interactive real-photo preview are independent from the website day/night appearance.
-4. To update, use desktop Chrome/Edge, stop the companion with `stop-sync.cmd`, then open the online manager → About → Check updates → Install update. If automatic download is blocked, follow the dialog's application BIN link and select that file. Select USB and install. Reconnect to confirm v22, then restart sync.
+4. To update, use desktop Chrome/Edge, stop the companion with `start.cmd → 4`, then open the online manager → About → Check updates → Install update. If automatic download is blocked, follow the dialog's application BIN link and select that file. Select USB and install. Reconnect to confirm v23, then restart sync.
 
-The updater verifies chip, partition, size and SHA256, writes `Tokens-Kanban-v22-app.bin` to the application partition and verifies readback without erasing settings, postcard or boot logo. `Tokens-Kanban-v22-full.bin` is a merged image for first installation at **0x0**, not the application BIN requested by the update dialog.
+The updater verifies chip, partition, size and SHA256, writes `Tokens-Kanban-v23-app.bin` to the application partition and verifies readback without erasing settings, postcard or boot logo. `Tokens-Kanban-v23-full.bin` is a merged image for first installation at **0x0**, not the application BIN requested by the update dialog.
 
 ## Features and validation
 
 - Default, Obsidian, Porcelain and green ASCII device palettes with advanced colors. All page thumbnails and postcard background/text follow the palette; photos and QR codes retain their colors.
 - Reorder/enable pages with at least one enabled. Up to six metric cards use verified data or `--`; previews are labeled examples.
-- Five solid screen colors, color bars and 16-step grayscale previews. v22 supports device pattern tests, ending on a keypress or after about 15 seconds.
+- Five solid screen colors, color bars and 16-step grayscale previews. v23 supports device pattern tests, ending on a keypress or after about 15 seconds.
 - Supplied Codex/OpenCode/Antigravity and startup recordings only. Sound-bank names do not imply usage integrations.
 - TrafficMonitor bridge targets **1.86 x64** only; no plugin restart is needed for this release. See System Monitor for downloads and installation.
 
-Build and host tests pass, including merged-image/archive checks, four palettes, unchanged photo/QR pixels, diagnostics, simulator controls and desktop/mobile layouts. Packaged resources were verified; real USB sync with the existing v20 device retained settings without a reset. **v22 has not been flashed to a device.** Physical theme rendering, refresh perception, new test patterns, Bluetooth saves and long-term runtime remain unverified. No community submission was made.
+Build and host tests pass, including merged-image/archive checks, Bluetooth-name UTF-8 boundaries, save failures and persistence models, website compatibility, desktop/mobile layouts and verification of the actual application image by the web updater. Windows packaging and its executable entry point were checked. **v23 has not been flashed to a device.** Real Bluetooth renaming, client name caches, uninterrupted sync during renaming and reboot persistence remain unverified. macOS connection and login startup require testing on a Mac. No community submission was made.
 
 [Connection guide](firmware/docs/tokens-connections.md) · [Changelog](CHANGELOG.md) · [Source](firmware/) · BSP: [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport)
+
+## v23 sync packages
+
+Windows: start.cmd menu 1 starts, 2 enables login startup, 3 disables it, 4 stops sync. macOS: Python 3.10+ and start.command; real-Mac operation is unverified and system metrics are unavailable. The plugin is a separate download.
+
+Saved device names also update Bluetooth; long advertisements preserve UTF-8 boundaries. See [name linking](firmware/docs/bluetooth-device-name.md).

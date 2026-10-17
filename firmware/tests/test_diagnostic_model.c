@@ -17,5 +17,11 @@ int main(void) {
     for(unsigned i=0;i<sizeof(bad)/sizeof(*bad);++i)assert(!diagnostic_name_valid(bad[i]));
     const char *badhex[]={"00","ff","0","zz","c280","61ff","e4b8","e4b88000"};
     for(unsigned i=0;i<sizeof(badhex)/sizeof(*badhex);++i)assert(!diagnostic_name_decode(badhex[i],text));
+    assert(diagnostic_name_advertised_length(DEVICE_DEFAULT_NAME)==strlen(DEVICE_DEFAULT_NAME));
+    assert(diagnostic_name_advertised_length("12345678901234567890123456789012")==29);
+    assert(diagnostic_name_advertised_length("一二三四五六七八九十")==27);
+    assert(diagnostic_name_advertised_length("1234567890123456789012345678😊")==28);
+    assert(diagnostic_name_advertised_length("1234567890123456789012345😊")==29);
+    assert(diagnostic_name_advertised_length("")==0);
     puts("Device CPU interval/unknown/64-bit counters and UTF-8 persistent name validation: PASS");return 0;
 }

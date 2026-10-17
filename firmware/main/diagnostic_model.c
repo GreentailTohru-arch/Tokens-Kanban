@@ -20,6 +20,13 @@ bool diagnostic_name_valid(const char *text) {
     return true;
 }
 static int digit(char c){return c>='0'&&c<='9'?c-'0':c>='a'&&c<='f'?c-'a'+10:-1;}
+size_t diagnostic_name_advertised_length(const char *text) {
+    if(!diagnostic_name_valid(text))return 0;
+    size_t n=strlen(text);if(n<=DEVICE_BLE_NAME_BYTES)return n;
+    n=DEVICE_BLE_NAME_BYTES;
+    while(n&&((unsigned char)text[n]&0xC0)==0x80)--n;
+    return n;
+}
 bool diagnostic_name_decode(const char *hex,char out[DEVICE_NAME_BYTES+1]) {
     size_t n=strlen(hex);if(!n||n%2||n>DEVICE_NAME_BYTES*2)return false;
     char next[DEVICE_NAME_BYTES+1];

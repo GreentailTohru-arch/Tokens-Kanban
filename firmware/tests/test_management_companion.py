@@ -4,7 +4,7 @@ from pathlib import Path
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'companion'))
-from management_server import LinkManager,ManagementServer,existing_manager
+from management_server import LinkManager,ManagementServer,existing_manager,request_stop
 TOKEN='01'*16;IDENTITY='123456789abc'
 class Fake:
     port='COM-MOCK'
@@ -24,6 +24,12 @@ class Tests(unittest.TestCase):
             fake=Fake()
             with manager.lock:manager.attach(fake)
             with request('api/rpc',b'PC_HELLO') as response:self.assertEqual(response.read(),b'PC_READY 1\n')
+            recent = manager.last_rpc
+            self.assertGreater(recent, 0)
+            with request('api/rpc',b'PC_INFO_SYSTEM') as response:response.read()
+            self.assertEqual(manager.last_rpc, recent)
+            with request('api/rpc',b'PC_LOGO_STATUS 1') as response:response.read()
+            self.assertGreaterEqual(manager.last_rpc, recent)
             for invalid in [b'CT_HELLO 4',b'PC_HELLO\nPC_VERSION',b'PC_'+b'x'*1024]:
                 with self.assertRaises(urllib.error.HTTPError):request('api/rpc',invalid)
             with self.assertRaises(urllib.error.HTTPError):request('api/rpc',b'PC_HELLO',{'Origin':'https://attacker.example'})
@@ -32,5 +38,13 @@ class Tests(unittest.TestCase):
                 self.assertTrue(existing_manager(path=runtime));self.assertEqual(opened.call_count,3)
             with manager.lock:manager.detach();manager.attach(Fake())
             with request('api/info') as response:self.assertTrue(json.load(response)['connected'])
+            self.assertFalse(manager.stop_event.is_set())
+            with self.assertRaises(urllib.error.HTTPError):
+                urllib.request.urlopen(urllib.request.Request(url+'api/stop',data=b''))
+            with self.assertRaises(urllib.error.HTTPError):
+                request('api/stop',b'',{'Origin':'https://attacker.example'})
+            self.assertFalse(manager.stop_event.is_set())
+            self.assertIn('已请求停止',request_stop(path=runtime))
+            self.assertTrue(manager.stop_event.is_set())
         finally:server.close();self.assertFalse(runtime.exists());temporary.cleanup()
 if __name__=='__main__':unittest.main()

@@ -32,7 +32,7 @@ static volatile bool s_input_ready;
 static atomic_bool input_overflow;
 static size_t accept_unlocked(const char *line,char *reply,size_t capacity,unsigned transport) {
     if(!strcmp(line,"PC_INFO_STACK"))return snprintf(reply,capacity,"PC_STACK %u %u\n",(unsigned)CONFIG_ESP_MAIN_TASK_STACK_SIZE,(unsigned)uxTaskGetStackHighWaterMark(main_task_handle));
-    if(!strcmp(line,"PC_VERSION"))return snprintf(reply,capacity,"PC_VERSION v22\n");
+    if(!strcmp(line,"PC_VERSION"))return snprintf(reply,capacity,"PC_VERSION v23\n");
     size_t logo=boot_logo_line(line,reply,capacity);if(logo)return logo;
     size_t diagnostic=device_diagnostics_line(line,reply,capacity);if(diagnostic)return diagnostic;
     if(!strcmp(line,"PC_SYS_HELLO2"))return snprintf(reply,capacity,"PC_SYS_READY 2\n");

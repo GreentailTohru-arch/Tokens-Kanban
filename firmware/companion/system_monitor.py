@@ -5,6 +5,7 @@ from pathlib import Path
 import struct
 import threading
 import time
+import sys
 
 SLOT = r"\\.\mailslot\TokensKanban-TrafficMonitor-v1"
 HEADER = struct.Struct('<8sIIIIQ7qI')
@@ -109,6 +110,10 @@ class SystemPoller:
     def _run(self):
         reader = None
         try:
+            if sys.platform != 'win32':
+                self.error = 'TrafficMonitor bridge is Windows-only; macOS system metrics are unavailable.'
+                self.ready.set()
+                return
             reader = MailslotReader()
             self.ready.set()
             while not self.stop.is_set():
