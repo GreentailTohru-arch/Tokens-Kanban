@@ -364,8 +364,7 @@ def send_snapshot(connection, frame, sequence):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port',help='Explicit Passport COM port; otherwise only Espressif 303A:1001')
-    parser.add_argument('--transport',choices=('auto','usb','wifi','ble'),default='auto',help='Auto prefers USB, then paired Wi-Fi, then BLE')
-    parser.add_argument('--wifi-host',help='Paired device IPv4 address')
+    parser.add_argument('--transport',choices=('auto','usb','ble'),default='auto',help='Auto prefers USB, then BLE')
     parser.add_argument('--no-browser',action='store_true',help='Disable opening the management page on connection')
     parser.add_argument('--ble-address',help='BLE address from --list-ble (required for multiple devices)')
     parser.add_argument('--codex-home',type=Path,default=Path(os.environ.get('CODEX_HOME',Path.home()/'.codex')))
@@ -406,7 +405,7 @@ def main():
     monitor=SystemPoller()
     index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False; can_monitor=False
     management=None
-    print('Tokens Kanban v19 | USB + Wi-Fi + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
+    print('Tokens Kanban v22 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)
@@ -416,8 +415,7 @@ def main():
                 'analytics':index.analytics(),'system':monitor.values(),
                 'frame':encode_frame(1,totals,values,index.activity(),index.costs(),index.analytics()).decode().strip()},ensure_ascii=True)); return
         from management_server import LinkManager,ManagementServer
-        from token_wifi import WiFiConnection,remember
-        manager=LinkManager();management=ManagementServer(manager);last_pair=0
+        manager=LinkManager();management=ManagementServer(manager)
         last_status=''
         while True:
             index.refresh(); events.observe(index.completions()); sequence+=1
@@ -431,20 +429,14 @@ def main():
                         if ports:connection=open_passport(ports[0])
                         elif args.transport=='usb' or args.port:raise OSError('Connect Passport via USB')
                         else:
-                            if args.transport in ('auto','wifi'):
-                                try:connection=WiFiConnection.open(args.wifi_host)
-                                except OSError:
-                                    if args.transport=='wifi':raise
-                            if connection is None:
-                                from token_ble import BLEConnection
-                                connection=BLEConnection.open(args.ble_address)
+                            from token_ble import BLEConnection
+                            connection=BLEConnection.open(args.ble_address)
                         manager.attach(connection)
                         can_notify=supports_events(connection)
                         from token_events import rpc as device_rpc
                         capability=device_rpc(connection,'PC_SYS_HELLO2')
                         system_version=2 if capability=='PC_SYS_READY 2' else 1
                         can_monitor=system_version==2 or device_rpc(connection,'PC_SYS_HELLO')=='PC_SYS_READY 1'
-                        last_pair=0
                     send_snapshot(connection,frame,sequence)
                     from token_events import rpc as device_rpc
                     device_rpc(connection,f'PC_CLOCK {int(now.replace(tzinfo=dt.timezone.utc).timestamp())}')
@@ -453,10 +445,6 @@ def main():
                         if reply!=f'PC_SYS_ACK {sequence%0xffffffff or 1}':raise OSError('System snapshot not acknowledged')
                     if can_notify:events.send(connection)
                     else:events.pending=None
-                    if time.monotonic()-last_pair>=30:
-                        try:remember(connection)
-                        except OSError:print('Wi-Fi pairing cache unavailable; current data connection continues.',flush=True)
-                        last_pair=time.monotonic()
                     status='Connected: '+connection.port+' | syncing every 5 seconds'
                 if not args.no_browser and status!=last_status:management.open()
             except OSError as error:

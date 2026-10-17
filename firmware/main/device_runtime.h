@@ -1,5 +1,7 @@
 #pragma once
 #include "device_model.h"
+#include "theme_model.h"
+theme_config_t device_runtime_theme(void);
 #include "page_model.h"
 #include "monitor_model.h"
 monitor_config_t device_runtime_monitor(void);

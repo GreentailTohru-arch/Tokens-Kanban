@@ -78,7 +78,7 @@ size_t device_diagnostics_line(const char *line,char *reply,size_t cap) {
     if(!strcmp(line,"PC_INFO_BATTERY"))return snprintf(reply,cap,"PC_BATTERY %d %d 500\n",s.soc,s.mv);
     if(!strcmp(line,"PC_INFO_NAME")){char hex[DEVICE_NAME_BYTES*2+1];diagnostic_name_encode(name,hex);return snprintf(reply,cap,"PC_NAME %s\n",hex);}
     if(!strcmp(line,"PC_INFO_KEYS"))return snprintf(reply,cap,"PC_KEYS %d %u %u %u %u %u\n",s.adc,atomic_load(&key_count[0]),atomic_load(&key_count[1]),atomic_load(&key_count[2]),atomic_load(&last_key),atomic_load(&last_event));
-    if(!strcmp(line,"PC_INFO_CHIP")){uint8_t mac[6];esp_chip_info_t chip;esp_chip_info(&chip);if(esp_read_mac(mac,ESP_MAC_BASE)!=ESP_OK)memset(mac,0,sizeof(mac));char elf[65];esp_app_get_elf_sha256(elf,sizeof(elf));return snprintf(reply,cap,"PC_CHIP ESP32-C3 %u %u %02x%02x%02x%02x%02x%02x %.12s v19\n",chip.cores,chip.revision,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],elf);}
+    if(!strcmp(line,"PC_INFO_CHIP")){uint8_t mac[6];esp_chip_info_t chip;esp_chip_info(&chip);if(esp_read_mac(mac,ESP_MAC_BASE)!=ESP_OK)memset(mac,0,sizeof(mac));char elf[65];esp_app_get_elf_sha256(elf,sizeof(elf));return snprintf(reply,cap,"PC_CHIP ESP32-C3 %u %u %02x%02x%02x%02x%02x%02x %.12s v22\n",chip.cores,chip.revision,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],elf);}
     if(!strcmp(line,"PC_NAME_STATE"))return snprintf(reply,cap,"PC_NAME_STATE %u %u\n",ni,ns);
     if(!strcmp(line,"PC_TEST_STATE"))return snprintf(reply,cap,"PC_TEST_STATE %u %u %u %d %d %u\n",ti,ts,tk,tp,ta,tc);
     if(!strncmp(line,"PC_NAME_SET ",12)){
@@ -99,7 +99,7 @@ size_t device_diagnostics_line(const char *line,char *reply,size_t cap) {
         if(!accepted)device_diagnostics_test_complete(id,false,-1,-1,0);
         return snprintf(reply,cap,"PC_TEST_STATE %u %u %u -1 -1 0\n",id,accepted?1:3,kind);
     }
-    if(!strncmp(line,"PC_SCREEN ",10)){const char *p=line+10;int value=-1;if(strcmp(p,"-1")){unsigned n;if(!number(&p,&n)||*p||n>4)return snprintf(reply,cap,"PC_SCREEN_INVALID\n");value=(int)n;}
+    if(!strncmp(line,"PC_SCREEN ",10)){const char *p=line+10;int value=-1;if(strcmp(p,"-1")){unsigned n;if(!number(&p,&n)||*p||n>6)return snprintf(reply,cap,"PC_SCREEN_INVALID\n");value=(int)n;}
         portENTER_CRITICAL(&diagnostic_mutex);screen_index=value;screen_until=(uint64_t)esp_timer_get_time()/1000+15000;portEXIT_CRITICAL(&diagnostic_mutex);return snprintf(reply,cap,"PC_SCREEN_OK\n");}
     return snprintf(reply,cap,"PC_INFO_INVALID\n");
 }

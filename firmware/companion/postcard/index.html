@@ -4,8 +4,11 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="AI Passport 明信片与设备管理">
   <title>Tokens Kanban · 设备管理</title>
-  <link rel="icon" href="default-avatar.png"><link rel="stylesheet" href="style.css?v=wifi-19">
-<link rel="stylesheet" href="manage.css?v=wifi-19">
+  <script src="theme.js?v=preview-22"></script>
+  <link id="brandFavicon" rel="icon" type="image/svg+xml" href="brand-dark.svg"><link rel="stylesheet" href="style.css?v=atelier-20">
+<link rel="stylesheet" href="manage.css?v=atelier-20">
+<link rel="stylesheet" href="atelier.css?v=preview-22">
+<link rel="stylesheet" href="themes.css?v=preview-22">
 </head>
 <body>
 <header class="topbar">
@@ -13,26 +16,25 @@
   <nav class="toolbar" aria-label="设备连接与保存">
     <button id="ble" type="button" class="secondary" aria-label="搜索蓝牙设备" title="搜索蓝牙设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></svg><span class="button-label">搜索蓝牙设备</span></button>
     <button id="usb" type="button" class="secondary" aria-label="连接 USB" title="连接 USB"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V3m-3 3 3-3 3 3M12 15l-5-4V7m5 11 5-4v-4"/><circle cx="7" cy="6" r="1"/><path d="M16 7h2v2h-2z"/></svg><span class="button-label">连接 USB</span></button>
-    <button id="wifi" type="button" class="secondary" aria-label="Wi-Fi 连接" title="Wi-Fi 连接"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a15 15 0 0 1 18 0M6 12a10 10 0 0 1 12 0m-9 4a5 5 0 0 1 6 0"/><circle cx="12" cy="20" r="1"/></svg><span class="button-label">Wi-Fi 连接</span></button>
     <button id="disconnect" type="button" class="secondary" disabled aria-label="断开" title="断开"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 12 12M4 8l12 12M3 3l18 18M6 11l-2 2a4 4 0 0 0 6 6l2-2M12 7l2-2a4 4 0 0 1 6 6l-2 2"/></svg><span class="button-label">断开</span></button>
     <button id="upload" form="form" type="submit" disabled aria-label="保存到设备" title="保存到设备"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg><span class="button-label">保存到设备</span></button>
   </nav>
+  <button id="versionStatus" type="button" class="version-status" aria-label="正在检查版本" title="正在检查版本"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m-4 4 4-4 4 4M5 15v5h14v-5"/></svg><span id="versionLabel">检查版本…</span></button>
   <span id="connection" class="connection" role="status">未连接</span>
   <progress id="progress" max="100" value="0" hidden aria-label="保存进度"></progress>
 <p id="status" class="toast" role="status" hidden></p><div id="draftNotice" class="draft-notice" hidden><span id="draftSummary"></span><button id="saveAll" type="button" class="secondary" aria-label="保存全部修改" title="保存全部修改"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm3 0v6h8V4M8 20v-6h8v6"/></svg><span class="button-label">保存修改</span></button></div>
 </header>
 <div class="app-shell">
-<button id="sidebarBackdrop" type="button" class="sidebar-backdrop" aria-label="关闭页面导航" tabindex="-1" hidden></button><aside id="pageSidebar" class="sidebar" inert><nav aria-label="管理页面"><button id="experienceNav" class="nav-item" type="button" aria-controls="experiencePage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="4"/><path d="m10 8 5 4-5 4Z"/></svg>体验模拟</button><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="monitorNav" class="nav-item" type="button" aria-controls="monitorPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 11h3l2-4 3 7 2-3h2"/></svg>系统检测</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button><button id="aboutNav" class="nav-item" type="button" aria-controls="aboutPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v2"/></svg>关于</button></nav></aside><div id="pageContent">
+<button id="sidebarBackdrop" type="button" class="sidebar-backdrop" aria-label="关闭页面导航" tabindex="-1" hidden></button><aside id="pageSidebar" class="sidebar" inert><div class="sidebar-brand" aria-hidden="true"><span class="brand-symbol"><img class="brand-image brand-light" src="brand-light.svg" alt="Tokens Kanban"><img class="brand-image brand-dark" src="brand-dark.svg" alt="Tokens Kanban"></span><span>Tokens Kanban<small>AI PASSPORT</small></span></div><nav aria-label="管理页面"><button id="experienceNav" class="nav-item" type="button" aria-controls="experiencePage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="4"/><path d="m10 8 5 4-5 4Z"/></svg>体验模拟</button><button id="pagesNav" class="nav-item selected" type="button" aria-controls="pagesPage" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>页面管理</button><button id="monitorNav" class="nav-item" type="button" aria-controls="monitorPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4M6 11h3l2-4 3 7 2-3h2"/></svg>系统检测</button><button id="postcardNav" class="nav-item" type="button" aria-controls="postcardPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 10h4m-4 4h7m3-5v6"/></svg>明信片</button><button id="settingsNav" class="nav-item" type="button" aria-controls="settingsPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>设置</button><button id="themeNav" class="nav-item" type="button" aria-controls="themePage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1-4c-1-1 0-3 2-3h2c4 0 4-11-6-11Z"/><circle cx="7" cy="10" r="1"/><circle cx="10" cy="6" r="1"/><circle cx="16" cy="7" r="1"/></svg>主题</button><button id="aboutNav" class="nav-item" type="button" aria-controls="aboutPage" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v2"/></svg>关于</button></nav><div class="web-mode" role="group" aria-label="管理网页外观"><button type="button" class="secondary" data-web-mode-option="light" aria-pressed="false"><span aria-hidden="true">☀</span> 日间</button><button type="button" class="secondary" data-web-mode-option="dark" aria-pressed="true"><span aria-hidden="true">☾</span> 夜间</button></div></aside><div id="pageContent">
 <section id="experiencePage" class="experience-page" aria-label="体验模拟">
  <div class="experience-heading settings-heading"><div><h1>体验模拟</h1><p>先按一按，再带在身边。</p></div><button id="simReset" type="button" class="secondary">重新体验</button></div>
  <div class="experience-layout">
-  <div class="sim-stage">
-   <div id="simDevice" class="sim-device" tabindex="0" role="group" aria-label="AI Passport 模拟设备，支持方向键与回车">
-    <div class="sim-lanyard" aria-hidden="true"></div>
+  <div class="sim-stage" id="experienceStage">
+   <div id="simDevice" class="sim-device photo-device" tabindex="0" role="group" aria-label="AI Passport 模拟设备，支持方向键与回车">
+    <img class="sim-hardware" src="passport-front.png" width="605" height="931" alt="AI Passport 实机外观" draggable="false">
     <button id="simPower" class="sim-key sim-power" type="button" aria-label="模拟电源键" title="电源 · 单击熄屏或唤醒，按住约2秒关机，0.5秒开机"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M7 5.5a8 8 0 1 0 10 0"/></svg></button>
     <div class="sim-display"><canvas id="simScreen" width="240" height="320" aria-label="当前网页设置的模拟屏幕"></canvas><div id="simVolumeBar" class="sim-volume" role="progressbar" aria-label="模拟音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="35" hidden><i></i></div></div>
     <div class="sim-side-keys"><button id="simUp" class="sim-key" type="button" aria-label="模拟上键" title="上键 · 按住调高音量">↑</button><button id="simDown" class="sim-key" type="button" aria-label="模拟下键" title="下键 · 按住调低音量">↓</button><button id="simOk" class="sim-key" type="button" aria-label="模拟确定键" title="确定 · 单击或双击"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/></svg></button></div>
-    <div class="sim-grille" aria-hidden="true"></div><span class="sim-brand" aria-hidden="true">AI PASSPORT</span>
    </div>
    <p id="simState" class="sim-state" role="status">用量首页 · 今日 · 音量 35%</p>
    <p class="sim-disclaimer">示例数据 · 使用当前网页草稿 · 操作不写入设备</p>
@@ -61,8 +63,9 @@
   <article class="edit-panel"><h3>麦克风</h3><p class="setting-help">短暂采样并返回电平，不保存或上传录音。</p><button id="diagMic" type="button" class="secondary">检测麦克风</button><p id="diagMicState" class="diag-result" role="status">等待检测</p></article>
   <article class="edit-panel"><h3>实体按键</h3><p class="setting-help">按下实物按键，指示灯会亮起，原有操作仍会生效。</p><button id="diagKeys" type="button" class="secondary">开始观察按键</button><div class="diag-key-row"><span id="diagKey0" class="diag-key-indicator">↑ 上键 · --</span><span id="diagKey1" class="diag-key-indicator">↓ 下键 · --</span><span id="diagKey2" class="diag-key-indicator">✓ 确定 · --</span></div><p id="diagKeysState" class="diag-result" role="status">等待按键事件</p></article>
   <article class="edit-panel"><h3>扬声器</h3><p class="setting-help">播放当前录音；提示音关闭时使用提供的 Codex 录音。</p><button id="diagSpeaker" type="button" class="secondary">实机试听</button><p id="diagSpeakerState" class="diag-result" role="status">等待试听</p></article>
-  <article class="edit-panel screen-test-card"><h3>屏幕</h3><p class="setting-help">在实机显示纯色检查。按任意键退出，约 15 秒自动恢复。</p><div class="diag-color-row"><button type="button" data-screen-color="0" aria-label="实机黑色测试">黑</button><button type="button" data-screen-color="1" aria-label="实机红色测试">红</button><button type="button" data-screen-color="2" aria-label="实机绿色测试">绿</button><button type="button" data-screen-color="3" aria-label="实机蓝色测试">蓝</button><button type="button" data-screen-color="4" aria-label="实机白色测试">白</button><button type="button" data-screen-color="-1" class="secondary">结束测试</button></div><p id="diagScreenState" class="diag-result" role="status">等待测试</p></article>
- </div></fieldset></section>
+ </div></fieldset>
+  <article class="edit-panel screen-test-card"><h3>屏幕</h3><p class="setting-help">未连接时仅预览；连接后点击会在实机显示。按任意键退出，约 15 秒自动恢复。</p><div class="diag-color-row"><button type="button" data-screen-color="0" aria-label="实机黑色测试">黑</button><button type="button" data-screen-color="1" aria-label="实机红色测试">红</button><button type="button" data-screen-color="2" aria-label="实机绿色测试">绿</button><button type="button" data-screen-color="3" aria-label="实机蓝色测试">蓝</button><button type="button" data-screen-color="4" aria-label="实机白色测试">白</button><button type="button" data-screen-color="5" aria-label="实机彩条测试">彩条</button><button type="button" data-screen-color="6" aria-label="实机灰度测试">灰度</button><button type="button" data-screen-color="-1" class="secondary">结束测试</button></div><canvas id="screenPatternPreview" class="screen-pattern-preview" width="360" height="130" aria-label="屏幕测试图案预览"></canvas><p class="setting-help" id="screenPatternLabel">彩条 · 本地示意预览</p><p id="diagScreenState" class="diag-result" role="status">等待测试</p></article>
+ </section>
 </section>
 <section id="pagesPage" class="pages-page" hidden aria-label="页面管理">
   <div class="settings-heading"><h1>页面管理</h1><p>开启常用页面，按你的习惯排列。</p></div>
@@ -102,16 +105,19 @@
     </fieldset>
   </form>
 </main>
+<form id="themeForm"></form>
+<section id="themePage" class="theme-page" hidden aria-label="设备主题">
+ <div class="settings-heading"><h1>主题</h1><p>选择一种氛围，或调成自己的颜色。</p></div>
+ <div class="theme-layout"><div class="theme-controls">
+  <fieldset id="themeOptions" class="theme-options" aria-label="选择设备主题"></fieldset>
+  <details class="edit-panel theme-advanced"><summary>高级自定义</summary><div id="themeColors" class="theme-colors"></div><div class="theme-advanced-footer"><p id="themeContrast" class="theme-contrast" role="status" hidden>文字与背景的对比度偏低，建议调整颜色。</p><button id="themeResetAll" type="button" class="secondary">恢复当前主题配色</button></div></details>
+  <p id="themeStorage" class="theme-storage" role="status">连接设备后可读取与保存配色</p>
+ </div><aside class="theme-preview" aria-label="主题配色预览"><div class="theme-preview-heading"><strong>配色预览</strong><span id="themeCurrent">默认</span></div><div id="themeMachineHost"></div><p id="themeSimState"></p><p>示例数据 · 支持单击、双击与长按<br>预览操作不会改变设备设置。</p></aside></div>
+</section>
 <section id="settingsPage" class="settings-page" hidden aria-label="设备设置">
   <div class="settings-heading"><h1>设备设置</h1><p id="settingsState">连接设备后读取设置</p></div>
 
-  <section class="edit-panel network-panel"><div class="section-row"><h2>Wi-Fi 与手机管理</h2><button id="wifiRefresh" type="button" class="secondary" disabled>刷新</button></div><p id="wifiState" role="status">连接设备后读取网络状态</p><p id="wifiSavedSSID" class="setting-help">尚未读取网络</p>
-   <form id="wifiForm"><div class="field"><label for="wifiSSID">2.4 GHz 网络名称</label><input id="wifiSSID" maxlength="32" autocomplete="off" placeholder="输入 Wi-Fi 名称" disabled></div><div class="field"><label for="wifiPassword">密码</label><input id="wifiPassword" type="password" maxlength="63" autocomplete="new-password" placeholder="开放网络留空" disabled></div><button id="wifiSave" type="submit" disabled>保存并自动连接</button></form>
-   <div class="network-actions"><button id="wifiToggle" type="button" class="secondary" disabled>开启 Wi-Fi</button><button id="wifiSetup" type="button" class="secondary" disabled>开启配网热点</button><button id="wifiForget" type="button" class="secondary" disabled>忘记网络</button></div>
-   <div id="wifiAPInfo" class="network-share" hidden><canvas id="wifiJoinQR" width="240" height="240" aria-label="扫码连接配网热点"></canvas><div><h3>先扫码连接热点</h3><p id="wifiAPName"></p><p>密码：<span id="wifiAPPassword"></span></p><p class="setting-help">有效10分钟；若手机未弹出页面，浏览器打开 192.168.4.1。</p></div></div>
-   <div id="wifiShare" class="network-share" hidden><canvas id="wifiQR" width="240" height="240" aria-label="手机管理入口二维码"></canvas><div><h3>扫码进入管理页</h3><a id="wifiURL" href="#" target="_blank" rel="noreferrer">打开设备管理页</a><p class="setting-help">与设备处于同一 Wi-Fi。二维码包含管理权限，请勿公开分享。</p></div></div>
-   <p class="setting-help">通过 USB 保存网络，或开启热点后用手机填写。蓝牙不传输 Wi-Fi 密码。长按设备确定键可显示入口，上下键切换配网二维码；配网热点尝试自动弹出页面。</p><p class="setting-help">电脑运行同步程序后，USB／蓝牙／Wi-Fi 均自动打开管理页并持续同步 Codex 与 TrafficMonitor 数据。手机管理网页不采集电脑数据。</p>
-  </section>
+
   <form id="settingsForm"><fieldset id="settingsFields" disabled>
     <section class="edit-panel"><h2>显示</h2><div class="field"><label for="brightness">屏幕亮度 <output id="brightnessValue">75%</output></label><input id="brightness" type="range" min="5" max="100" step="1" value="75" disabled><p id="brightnessHint" class="setting-help">连接配套固件后读取亮度。</p></div><div class="field"><label for="idleTime">自动熄屏</label><select id="idleTime"><option value="30">30 秒</option><option value="60">1 分钟</option><option value="120">2 分钟</option><option value="300">5 分钟</option><option value="600">10 分钟</option><option value="1800">30 分钟</option><option value="3600">1 小时</option><option value="0" selected>保持常亮（不建议）</option></select><p class="setting-help">熄屏后继续同步，按任意键唤醒。</p></div></section>
 
@@ -132,5 +138,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=wifi-19"></script>
+<script type="module" src="editor.js?v=preview-22"></script>
 </body></html>

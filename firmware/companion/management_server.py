@@ -16,7 +16,7 @@ def existing_manager(open_browser=True,path=RUNTIME):
     except (OSError,ValueError,KeyError,TypeError):return False
 class LinkManager:
     def __init__(self):self.lock=threading.RLock();self.connection=None;self.kind='';self.revision=0
-    def attach(self,connection):self.connection=connection;self.kind='USB' if str(connection.port).startswith('COM') else 'Wi-Fi' if str(connection.port).startswith('Wi-Fi') else '蓝牙';self.revision+=1
+    def attach(self,connection):self.connection=connection;self.kind='USB' if str(connection.port).startswith('COM') else '蓝牙';self.revision+=1
     def detach(self):self.connection=None;self.kind='';self.revision+=1
     def info(self):return {'app':'TokensKanban','protocol':1,'kind':'电脑同步 · '+self.kind,'connected':self.connection is not None,'revision':self.revision}
 class ManagementServer:

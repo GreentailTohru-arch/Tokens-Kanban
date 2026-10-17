@@ -50,6 +50,6 @@ int main(void){
     has_battery=false;sample();line("PC_INFO_BATTERY","PC_BATTERY -1 -1 500\n");line("PC_TEST 23 1","PC_TEST_STATE 23 1 1 -1 -1 0\n");run();line("PC_TEST_STATE","PC_TEST_STATE 23 3 1 -1 -1 0\n");
     device_diagnostics_key(0,BSP_BTN_PRESS);device_diagnostics_key(0,BSP_BTN_RELEASE);line("PC_INFO_KEYS","PC_KEYS 3300 1 0 0 0 4\n");
     line("PC_SCREEN 3","PC_SCREEN_OK\n");assert(device_diagnostics_screen(2000)==3);assert(device_diagnostics_screen_stop());assert(device_diagnostics_screen(2001)==-1);
-    line("PC_SCREEN 4","PC_SCREEN_OK\n");assert(device_diagnostics_screen(17000)==-1);line("PC_SCREEN 5","PC_SCREEN_INVALID\n");line("PC_SCREEN -1","PC_SCREEN_OK\n");
+    line("PC_SCREEN 4","PC_SCREEN_OK\n");assert(device_diagnostics_screen(17000)==-1);line("PC_SCREEN 5","PC_SCREEN_OK\n");assert(device_diagnostics_screen(2000)==5);line("PC_SCREEN 6","PC_SCREEN_OK\n");assert(device_diagnostics_screen(2000)==6);line("PC_SCREEN 7","PC_SCREEN_INVALID\n");line("PC_SCREEN -1","PC_SCREEN_OK\n");
     puts("Actual diagnostics worker: name persistence/failure/dedup, telemetry, missing battery, test serialization, key counters and screen expiry PASS");return 0;
 }

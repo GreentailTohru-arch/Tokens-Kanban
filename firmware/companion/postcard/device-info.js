@@ -9,11 +9,12 @@ export class DeviceInfoPanel {
     for(const [id,kind] of [['diagBattery',1],['diagMic',2],['diagSpeaker',3]])$(id).onclick=()=>this.test(kind);
     $('diagKeys').onclick=()=>{this.keyCounts=null;$('diagKeysState').textContent='请按实物的上／下／确定键，收到按下事件后会亮起';this.poll();};
     for(const b of document.querySelectorAll('[data-screen-color]'))b.onclick=()=>this.screen(+b.dataset.screenColor);
+    this.drawScreenPattern(5);
     this.interval=setInterval(()=>{if(!this.active||document.hidden)return;if(this.freshAt&&performance.now()-this.freshAt>6500)this.unavailable('数据已过期');this.poll();},2000);this.unavailable('未连接设备');
   }
   setActive(active){this.active=active;if(active)this.poll();}
   canUse(){return !!this.getLink()&&this.supported;}
-  controls(){const disabled=!this.canUse()||this.isBusy()||this.testBusy;$('deviceName').disabled=this.isBusy()||this.testBusy;$('deviceNameSave').disabled=disabled||!this.validateName();$('diagFields').disabled=disabled;}
+  controls(){const disabled=!this.canUse()||this.isBusy()||this.testBusy;$('deviceName').disabled=this.isBusy()||this.testBusy;$('deviceNameSave').disabled=disabled||!this.validateName();$('diagFields').disabled=disabled;for(const b of document.querySelectorAll('[data-screen-color]'))b.disabled=this.isBusy()||this.testBusy||(+b.dataset.screenColor<0&&!this.canUse());}
   validateName(){const value=$('deviceName').value.trim();let error='';if(!value)error='请输入设备名称';else if(new TextEncoder().encode(value).length>32)error='设备名称最多 32 个 UTF-8 字节（中文通常每字 3 字节）';else if(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/u.test(value))error='名称不能包含换行或控制字符';$('deviceName').setCustomValidity(error);$('deviceNameError').textContent=error;$('deviceNameError').hidden=!error;return !error;}
   unavailable(text){for(const f of fields)$('device'+f).textContent='--';$('deviceConnectionState').textContent=text;$('deviceConnectionState').classList.remove('live');for(const el of document.querySelectorAll('.diag-key-indicator'))el.classList.remove('active');}
   lost(){this.supported=false;this.freshAt=0;this.lastUptime=-1;this.keyCounts=null;this.unavailable('未连接设备');for(const id of ['diagBatteryState','diagMicState','diagSpeakerState','diagKeysState','diagScreenState'])$(id).textContent='未连接，等待检测';this.controls();}
@@ -44,5 +45,11 @@ export class DeviceInfoPanel {
     if(!this.canUse()||this.isBusy()||this.testBusy)return;this.testBusy=true;this.controls();const id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1,connection=this.getLink(),target=$(kind===1?'diagBatteryState':kind===2?'diagMicState':'diagSpeakerState');target.textContent=kind===2?'正在采样约 0.4 秒…':'正在检测…';
     try{let reply=await connection.rpc(`PC_TEST ${id} ${kind}`),done=false;for(let i=0;i<200;i++){const p=numeric(reply,'PC_TEST_STATE',6);if(p[0]!==id||p[2]!==kind)throw Error('测试被其他请求占用');if(p[1]===3)throw Error(kind===3?'未能播放，请检查设备音量或稍后重试':'传感器未响应或测试失败');if(p[1]===2){done=true;target.textContent=kind===2?`采样完成 · 峰值 ${p[3]} / 32768 · 平均幅度 ${p[4]} · ${p[5]} 采样`:kind===3?'播放完成，请以实机听感确认':'电量计读取成功';break;}await new Promise(r=>setTimeout(r,100));reply=await connection.rpc('PC_TEST_STATE');}if(!done)throw Error('测试超时，请稍后重试');await this.snapshot(connection);}catch(e){target.textContent=e.message;this.status(e.message,'error');}finally{this.testBusy=false;this.controls();}
   }
-  async screen(color){if(!this.canUse()||this.isBusy()||this.testBusy)return;this.testBusy=true;this.controls();try{const reply=await this.getLink().rpc('PC_SCREEN '+color);if(reply!=='PC_SCREEN_OK')throw Error('设备暂未接受屏幕测试');$('diagScreenState').textContent=color<0?'已结束屏幕测试':'实机显示测试色，按任意键退出，或约15秒自动恢复';}catch(e){$('diagScreenState').textContent=e.message;this.status(e.message,'error');}finally{this.testBusy=false;this.controls();}}
+  drawScreenPattern(color){
+    if(color<0)return;const c=$('screenPatternPreview'),x=c.getContext('2d'),solid=['#000','#f00','#0f0','#00f','#fff'];
+    const colors=color===5?['#fff','#ff0','#0ff','#0f0','#f0f','#f00','#00f']:color===6?Array.from({length:16},(_,i)=>`rgb(${i*17} ${i*17} ${i*17})`):[solid[color]];
+    colors.forEach((v,i)=>{x.fillStyle=v;x.fillRect(Math.floor(i*c.width/colors.length),0,Math.ceil(c.width/colors.length),c.height);});
+    c.dataset.pattern=color;$('screenPatternLabel').textContent=['黑色','红色','绿色','蓝色','白色','彩条','灰度'][color]+' · 本地示意预览';
+  }
+  async screen(color){this.drawScreenPattern(color);if(!this.canUse()){$('diagScreenState').textContent='未连接设备，仅显示本地预览';return;}if(this.isBusy()||this.testBusy)return;this.testBusy=true;this.controls();try{const reply=await this.getLink().rpc('PC_SCREEN '+color);if(reply!=='PC_SCREEN_OK')throw Error(color>4?'彩条与灰度实机测试需 v22 固件；已显示本地预览':'设备暂未接受屏幕测试');$('diagScreenState').textContent=color<0?'已结束屏幕测试':'实机显示测试色，按任意键退出，或约15秒自动恢复';}catch(e){$('diagScreenState').textContent=e.message;this.status(e.message,'error');}finally{this.testBusy=false;this.controls();}}
 }

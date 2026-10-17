@@ -21,9 +21,8 @@ run_static_checks() {
     esac
 
     python3 tools/check_repo.py
-    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain tests/test_network_model.c main/network_model.c -o "${TMPDIR:-/tmp}/passport-network-model-test"
-    "${TMPDIR:-/tmp}/passport-network-model-test"
-    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_network_companion.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_management_companion.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_no_wifi.py
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
         tests/test_token_model.c main/token_model.c -o "${TMPDIR:-/tmp}/passport-token-model-test"
     "${TMPDIR:-/tmp}/passport-token-model-test"
@@ -34,7 +33,7 @@ run_static_checks() {
         tests/test_device_model.c main/device_model.c -o "${TMPDIR:-/tmp}/passport-device-model-test"
     "${TMPDIR:-/tmp}/passport-device-model-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/postcard_stubs -Icomponents/bsp/include -Imain \
-        tests/test_device_runtime.c main/device_model.c main/page_model.c main/monitor_model.c assets/fonts/token_text_coverage.c assets/music/codex_sounds.c assets/images/startup_assets.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
+        tests/test_device_runtime.c main/device_model.c main/page_model.c main/theme_model.c main/monitor_model.c assets/fonts/token_text_coverage.c assets/music/codex_sounds.c assets/images/startup_assets.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
     "${TMPDIR:-/tmp}/passport-device-runtime-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
         tests/test_page_system.c main/page_model.c main/system_model.c main/token_model.c -o "${TMPDIR:-/tmp}/passport-page-system-test"
@@ -43,7 +42,7 @@ run_static_checks() {
         tests/test_volume_model.c main/volume_model.c -o "${TMPDIR:-/tmp}/passport-volume-model-test"
     "${TMPDIR:-/tmp}/passport-volume-model-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
-        tests/test_monitor_model.c main/monitor_model.c assets/fonts/token_text_coverage.c -o "${TMPDIR:-/tmp}/passport-monitor-model-test"
+        tests/test_monitor_model.c main/theme_model.c main/monitor_model.c assets/fonts/token_text_coverage.c -o "${TMPDIR:-/tmp}/passport-monitor-model-test"
     "${TMPDIR:-/tmp}/passport-monitor-model-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain tests/test_diagnostic_model.c main/diagnostic_model.c -o "${TMPDIR:-/tmp}/passport-diagnostic-model-test"
     "${TMPDIR:-/tmp}/passport-diagnostic-model-test"
@@ -102,6 +101,11 @@ run_static_checks() {
         tests/test_bsp_lvgl_init.c components/bsp/src/bsp_display_rounding.c \
         -o "${test_dir}/test_bsp_lvgl_init"
     "${test_dir}/test_bsp_lvgl_init"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -DCONFIG_BSP_LVGL_DRAW_BUFFER_LINES=4 \
+        -Itests/bsp_stubs -Icomponents/bsp/include \
+        tests/test_bsp_lvgl_init.c components/bsp/src/bsp_display_rounding.c \
+        -o "${test_dir}/test_bsp_lvgl_small_buffer"
+    "${test_dir}/test_bsp_lvgl_small_buffer"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror \
         -Itests/audio_stubs -Icomponents/bsp/include -Icomponents/bsp/src \
         tests/test_bsp_audio_recovery.c components/bsp/src/bsp_es8311_sleep_check.c \

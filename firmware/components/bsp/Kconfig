@@ -1,0 +1,9 @@
+menu "AI Passport BSP"
+    config BSP_LVGL_DRAW_BUFFER_LINES
+        int "LVGL partial draw buffer lines"
+        range 4 80
+        default 40
+        help
+            A single internal DMA buffer uses width * lines * 2 bytes.
+            Memory-constrained applications may trade flush submissions for RAM.
+endmenu

@@ -26,13 +26,14 @@ def main():
     mock=mock.replace("   if(v[0]==='PC_HELLO')",injected+"   if(v[0]==='PC_HELLO')")
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler);threading.Thread(target=server.serve_forever,daemon=True).start()
     with sync_playwright() as p:
-        browser=p.chromium.launch(executable_path=sys.argv[2],headless=True);page=browser.new_page(viewport={'width':1280,'height':980});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock);page.clock.install();page.goto(f'http://127.0.0.1:{server.server_port}/')
+        browser=p.chromium.launch(executable_path=sys.argv[2],headless=True);page=browser.new_page(viewport={'width':1280,'height':980});page.route('https://api.github.com/**',lambda r:r.fulfill(status=200,json={'tag_name':'v22','name':'Tokens Kanban v22','assets':[],'html_url':'https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v22'}));errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock);page.clock.install();page.goto(f'http://127.0.0.1:{server.server_port}/')
         expect(page.locator('#fields')).to_be_enabled();expect(page.locator('#deviceName')).to_have_value("You's AI Passport");expect(page.locator('#deviceCpu')).to_have_text('--');expect(page.locator('#diagFields')).to_have_attribute('disabled','')
+        page.locator('[data-screen-color="6"]').click();expect(page.locator('#screenPatternPreview')).to_have_attribute('data-pattern','6');assert page.evaluate('window.screenCalls||[]')==[]
         assert page.evaluate('window.testCalls||[]')==[]
         page.locator('#usb').click();expect(page.locator('#deviceConnectionState')).to_contain_text('设备实时')
         expect(page.locator('#deviceCpu')).to_have_text('24.5%');expect(page.locator('#deviceFrequency')).to_have_text('160 MHz');expect(page.locator('#deviceFlash')).to_have_text('8 MiB');expect(page.locator('#deviceHeap')).to_have_text('60.0%');expect(page.locator('#deviceVoltage')).to_have_text('4.050 V');expect(page.locator('#deviceCapacity')).to_contain_text('额定值')
         page.locator('#deviceName').fill('我的 AI Passport');page.locator('#deviceNameSave').click();expect(page.locator('#deviceNameHint')).to_contain_text('已读取');assert page.evaluate('window.deviceName')=='我的 AI Passport'
-        page.evaluate('window.failName=true');page.locator('#deviceName').fill('失败的名称');page.locator('#deviceNameSave').click();expect(page.locator('#status')).to_contain_text('原名称仍保留');assert page.evaluate('window.deviceName')=='我的 AI Passport';page.evaluate('window.failName=false')
+        page.evaluate('window.failName=true');page.locator('#deviceName').fill('失败的名称');page.locator('#deviceNameSave').click();expect(page.locator('#deviceNameHint')).to_contain_text('保存未确认');assert page.evaluate('window.deviceName')=='我的 AI Passport';page.evaluate('window.failName=false')
         page.locator('#deviceName').fill('一'*11);expect(page.locator('#deviceNameError')).to_contain_text('32');assert not page.locator('#deviceName').evaluate('(e)=>e.checkValidity()')
         page.locator('#deviceName').fill('我的 AI Passport')
         # Periodic polls and a user command run concurrently through the actual RPC queue.
@@ -42,6 +43,10 @@ def main():
         assert page.evaluate('window.testCalls')==[1,2,3]
         page.evaluate('window.failTest=true');page.locator('#diagMic').click();page.clock.run_for(200);expect(page.locator('#diagMicState')).to_contain_text('测试失败');page.evaluate('window.failTest=false')
         page.get_by_role('button',name='实机红色测试',exact=True).click();expect(page.locator('#diagScreenState')).to_contain_text('15秒');page.get_by_role('button',name='结束测试',exact=True).click();expect(page.locator('#diagScreenState')).to_have_text('已结束屏幕测试');assert page.evaluate('window.screenCalls')==[1,-1]
+        for pattern in [5,6]:
+            page.locator(f'[data-screen-color="{pattern}"]').click();expect(page.locator('#screenPatternPreview')).to_have_attribute('data-pattern',str(pattern))
+            assert page.evaluate('window.screenCalls')[-1]==pattern
+        page.locator('[data-screen-color="-1"]').click()
         page.evaluate('window.keyCounts=[1,0,2]');page.clock.run_for(2200);expect(page.locator('#diagKey0')).to_contain_text('1');expect(page.locator('#diagKey2')).to_contain_text('2')
         page.evaluate('window.noBattery=true');page.clock.run_for(2200);expect(page.locator('#deviceBattery')).to_have_text('--');expect(page.locator('#deviceVoltage')).to_have_text('--');page.evaluate('window.noBattery=false')
         page.evaluate('window.freezeDevice=true');page.clock.run_for(11000);expect(page.locator('#deviceConnectionState')).to_have_text('数据已过期');expect(page.locator('#deviceCpu')).to_have_text('--')
@@ -49,7 +54,8 @@ def main():
         page.locator('#deviceConnectionState').scroll_into_view_if_needed();page.screenshot(path=str(out/'device-info-desktop.png'),full_page=True)
         page.locator('#disconnect').click();expect(page.locator('#deviceCpu')).to_have_text('--');expect(page.locator('#diagFields')).to_have_attribute('disabled','');page.locator('#ble').click();expect(page.locator('#deviceName')).to_have_value('我的 AI Passport');expect(page.locator('#deviceConnectionState')).to_contain_text('蓝牙')
         page.set_viewport_size({'width':390,'height':844});page.clock.run_for(200);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');page.locator('.device-overview').screenshot(path=str(out/'device-info-mobile.png'));page.locator('.device-tests').screenshot(path=str(out/'device-tests-mobile.png'))
-        page.locator('#disconnect').click();page.evaluate('window.noDiagnostics=true');page.locator('#usb').click();expect(page.locator('#deviceConnectionState')).to_contain_text('暂不支持');expect(page.locator('#deviceCpu')).to_have_text('--');expect(page.locator('#deviceNameSave')).to_be_disabled()
+        page.mouse.move(0,0);page.clock.run_for(5000)
+        page.locator('#disconnect').click();expect(page.locator('#status')).to_contain_text('连接已断开');page.locator('.notice-close').click();page.clock.run_for(500);expect(page.locator('#status')).to_be_hidden();page.evaluate('window.noDiagnostics=true');page.locator('#usb').click();expect(page.locator('#deviceConnectionState')).to_contain_text('暂不支持');expect(page.locator('#deviceCpu')).to_have_text('--');expect(page.locator('#deviceNameSave')).to_be_disabled()
         assert not errors,errors;result={'actualFirmware':'NOT RUN - mock peripheral','USBBLEProtocolAndReconnect':'PASS','defaultAndSavedName':'PASS','nameByteLimitAndSaveFailure':'PASS','runtimeFields':'PASS','missingSensorAndStale':'PASS','explicitOnlySensorTests':'PASS','screenTestCommands':'PASS','oldFirmwareGating':'PASS','mobile':'PASS'};(out/'device-info-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
     server.shutdown()
 if __name__=='__main__':main()

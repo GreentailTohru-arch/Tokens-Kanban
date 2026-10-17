@@ -34,6 +34,7 @@ void lvgl_port_unlock(void) {
     }
 }
 lv_display_t *lvgl_port_add_disp(const lvgl_port_display_cfg_t *cfg) {
+    assert(cfg->buffer_size==BSP_LCD_W*BSP_LVGL_DRAW_BUFFER_LINES && !cfg->double_buffer);
     assert(lock_depth > 0 && cfg->panel_handle == &panel_token && !display_live);
     assert(lvgl_port_lock(0)); // Real port takes and releases a recursive lock.
     if (!fail_display) display_live = 1;

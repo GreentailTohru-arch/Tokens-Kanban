@@ -126,3 +126,5 @@ companion/postcard/sim-audio/ and the checked startup preview as sim-startup.png
 Original sources and conversion manifests stay here; no new synthesized audio.
 
 The v18 editor includes the Apache-2.0 esptool-js 0.7.0 browser bundle and license under companion/postcard/vendor. User-selected startup images remain local/device data and are never added to the source repository.
+
+The v22 brand-light.svg / brand-dark.svg in companion/postcard wrap the two user-supplied TK PNGs unchanged (embedded original bytes), with a square viewport and neutral backdrop. They serve the favicon, sidebar and About; no generated replacement or boot-logo change.

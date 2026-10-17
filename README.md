@@ -2,33 +2,27 @@
 
 # Tokens Kanban
 
-[Device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/?v=wifi-19) · [Published v18 downloads](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v18) · [Wi-Fi guide](firmware/docs/tokens-network.md)
+[Device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/) · [Tokens Kanban v22](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v22)
 
-Keep Codex usage, quota and activity on AI Passport, arrange up to six computer-monitoring cards, and carry a personal postcard. Cost is an API-price estimate, not a subscription charge. Monitoring uses TrafficMonitor's existing data and selected adapters; unavailable values show --.
+View local Codex token usage, quota, model/activity trends, TrafficMonitor system metrics and a personal postcard on AI Passport. Costs are API-price estimates, not subscription bills; usage covers readable local history.
 
-## Current development: v19
+## Start and update
 
-The latest source and management website add saved Wi-Fi auto-reconnect, a ten-minute setup hotspot and phone QR entry. The new computer program shares a physical connection between synchronization and its automatically opened management page, avoiding competing BLE connections. Reopening the program reuses its management page. **The published firmware/Windows release is still v18. v19 has been built locally and awaits Wi-Fi hardware testing; this website explicitly disables Wi-Fi settings on older firmware.**
+1. Extract the v22 Windows package and run `start-auto.cmd` for USB or Bluetooth sync. No Wi-Fi setup is needed; Wi-Fi was removed in v20.
+2. Double-press OK to cycle enabled pages. Short Up/Down changes periods on Home/Analytics. Single OK reveals Home details or postcard contacts. Hold Up/Down for volume; OK dismisses the overlay.
+3. Manage pages, metric cards, postcard, brightness, screen timeout, supplied recordings and boot logo on the website. Device themes and the interactive real-photo preview are independent from the website day/night appearance.
+4. To update, use desktop Chrome/Edge, stop the companion with `stop-sync.cmd`, then open the online manager → About → Check updates → Install update. If automatic download is blocked, follow the dialog's application BIN link and select that file. Select USB and install. Reconnect to confirm v22, then restart sync.
 
-1. Extract the matching Windows package. Run `start-auto.cmd`, keep it running for Codex/TrafficMonitor data, and wait for Connected. v19 automatically opens the shared local manager; v18 uses separate synchronization and direct browser sessions, so stop its sync program before directly opening its port from the public website.
-2. For v19 Wi-Fi, first connect USB. Settings → Wi-Fi → enter the 2.4 GHz network and password → Save and connect. Keep USB/BLE through another synchronization cycle to pair the computer, then unplug USB for automatic LAN discovery. `start-wifi.cmd` selects paired Wi-Fi only. Details and failure recovery are in the guide.
-3. On v19, hold device OK for its management QR; Up/Down selects setup and starts a protected hotspot. Phone: scan to join, use the captive window or `http://192.168.4.1/`, then fill network settings. After changing networks, join the same LAN and rescan the device. QR codes contain private management access; do not publish them. NFC can hold the public website address after writing the passive tag with a phone; firmware cannot write that tag.
-4. Double OK cycles enabled pages. Short Up/Down changes the period on Home/Analytics; single OK toggles Home details/cost or postcard contact. Hold Up/Down for volume; OK closes the bar. The management QR is a temporary overlay, not an extra page. Existing settings/postcard/recordings/logo partitions remain unchanged.
+The updater verifies chip, partition, size and SHA256, writes `Tokens-Kanban-v22-app.bin` to the application partition and verifies readback without erasing settings, postcard or boot logo. `Tokens-Kanban-v22-full.bin` is a merged image for first installation at **0x0**, not the application BIN requested by the update dialog.
 
-## Manage and customize
+## Features and validation
 
-Six consistent website sections: Experience → Pages → System Monitor → Postcard → Settings → About. At least one device page stays enabled; up to six monitoring cards may be selected/reordered, or all cards may be off. Preview data is explicitly illustrative. Phone navigation uses a drawer; the toolbar remains one row. Errors are red and other notices green. Closing prompts only for unsaved drafts.
+- Default, Obsidian, Porcelain and green ASCII device palettes with advanced colors. All page thumbnails and postcard background/text follow the palette; photos and QR codes retain their colors.
+- Reorder/enable pages with at least one enabled. Up to six metric cards use verified data or `--`; previews are labeled examples.
+- Five solid screen colors, color bars and 16-step grayscale previews. v22 supports device pattern tests, ending on a keypress or after about 15 seconds.
+- Supplied Codex/OpenCode/Antigravity and startup recordings only. Sound-bank names do not imply usage integrations.
+- TrafficMonitor bridge targets **1.86 x64** only; no plugin restart is needed for this release. See System Monitor for downloads and installation.
 
-Use small crop dialogs for postcard images, QR images and boot logos. GIF logos include a bundled local decoder; restore default retains the original logo. Brightness, screen timeout, shared volume, supplied Codex/OpenCode/Antigravity recordings and startup-sound switch remain available. Unsupported custom glyphs block saving. The simulator's power button supports short-click screen-off/wake and hold-to-power-off; the physical power switch's short event is not exposed by the BSP.
+Build and host tests pass, including merged-image/archive checks, four palettes, unchanged photo/QR pixels, diagnostics, simulator controls and desktop/mobile layouts. Packaged resources were verified; real USB sync with the existing v20 device retained settings without a reset. **v22 has not been flashed to a device.** Physical theme rendering, refresh perception, new test patterns, Bluetooth saves and long-term runtime remain unverified. No community submission was made.
 
-Only TrafficMonitor **1.86 x64** has been adapted and validated. The unchanged bridge DLL goes in its `plugins` folder on the computer; the website cannot install it. Already installed users need no TrafficMonitor restart for v19. RAM exposes real percent only; today's traffic is not lifetime traffic. [Bridge installation](firmware/companion/trafficmonitor/README.md).
-
-About checks GitHub's public release and offers matching downloads/USB installation with chip, partition and SHA256 checks. Desktop Web Serial installation requires a secure/loopback browser context and USB; phone Wi-Fi management does not provide wireless firmware installation. A 0x0 merged flash can reset stored data; use a checked compatible application update to preserve data, without full-chip erase.
-
-## Verification
-
-v19: ESP-IDF full build, merged-image/archive, C/Python host tests, actual LVGL rendering/font checks and QR decoding, GIF import, browser management/regression and 320/390-pixel layouts passed. Final Windows EXE resources were checked byte-for-byte. Its shared USB manager was tested against the real v18 device while synchronization continued; settings/page/card/name/logo readbacks stayed identical and uptime continued without reset.
-
-**v19 device tests: NOT RUN.** Physical Wi-Fi joining/boot reconnect, captive pop-ups, BLE/Wi-Fi coexistence, sustained memory, phone scanning and NFC writing remain unverified. Earlier user acceptance of v18 display/sound/controls and unchanged-DLL TrafficMonitor results do not validate these new radio features. TrafficMonitor was not restarted, and no new community review was submitted.
-
-[Source](firmware/) · [application history](firmware/docs/codex-token-display.md) · BSP: [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport). Existing licenses and user-provided recordings are retained; sound names do not imply usage tracking for those additional tools.
+[Connection guide](firmware/docs/tokens-connections.md) · [Changelog](CHANGELOG.md) · [Source](firmware/) · BSP: [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport)

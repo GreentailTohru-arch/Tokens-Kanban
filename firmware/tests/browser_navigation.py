@@ -1,5 +1,8 @@
 """Navigate through the real sidebar toggle, including collapsed mobile drawers."""
 def navigate(page, target):
+    if page.locator('#status').is_visible():
+        page.locator('#status .notice-close').click()
+        page.locator('#status').wait_for(state='hidden')
     page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
     if page.locator('#menuToggle').get_attribute('aria-expanded') != 'true':
         page.locator('#menuToggle').click()

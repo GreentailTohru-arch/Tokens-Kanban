@@ -16,7 +16,7 @@ def main():
  mock="window.unpack=hex=>{const b=hex.match(/../g).map(s=>parseInt(s,16)),o=[];for(let i=0;i<b.length;){const t=b[i++],n=(t&127)+1;if(t&128){const a=b[i++],c=b[i++];for(let j=0;j<n;j++)o.push(a,c);}else{o.push(...b.slice(i,i+n*2));i+=n*2;}}return o;};\n"+mock
  server=ThreadingHTTPServer(('127.0.0.1',0),Handler);threading.Thread(target=server.serve_forever,daemon=True).start()
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path=sys.argv[2],headless=True);page=browser.new_page(viewport={'width':1280,'height':960});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock);url=f'http://127.0.0.1:{server.server_port}/';page.goto(url)
+  browser=p.chromium.launch(executable_path=sys.argv[2],headless=True);page=browser.new_page(viewport={'width':1280,'height':960});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(mock);url=f'http://127.0.0.1:{server.server_port}/';page.route('https://api.github.com/**',lambda r:r.fulfill(status=503,json={}));page.goto(url);expect(page.locator('#versionStatus')).to_have_attribute('data-state','error');page.locator('#status .notice-close').click();page.locator('#status').wait_for(state='hidden')
   guarded=lambda:page.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented;})()")
   expect(page.locator('#fields')).to_be_enabled()
   def guarded():return page.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});dispatchEvent(e);return e.defaultPrevented;})()")
@@ -35,12 +35,12 @@ def main():
    assert page.locator('#ble').get_attribute('aria-label')=='搜索蓝牙设备'
    page.locator('#menuToggle').click();expect(page.locator('#sidebarBackdrop')).to_be_visible();assert page.locator('#pageContent').evaluate('(e)=>e.inert')
    assert page.locator('.sidebar nav').evaluate('(e)=>getComputedStyle(e).flexDirection')=='column'
-   assert page.locator('.sidebar nav button').count()==6
-   expect(page.locator('#aboutNav')).to_be_visible();page.locator('#aboutNav').focus();page.keyboard.press('Tab');assert page.locator('#menuToggle').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML');page.keyboard.press('Shift+Tab');assert page.locator('#aboutNav').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML')
+   assert page.locator('.sidebar nav button').count()==7
+   expect(page.locator('#aboutNav')).to_be_visible();page.locator('[data-web-mode-option=dark]').focus();page.keyboard.press('Tab');assert page.locator('#menuToggle').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML');page.keyboard.press('Shift+Tab');assert page.locator('[data-web-mode-option=dark]').evaluate('(e)=>e===document.activeElement'),page.evaluate('document.activeElement.outerHTML')
    page.evaluate('() => Promise.all(document.querySelector(".sidebar").getAnimations().map(a=>a.finished))');page.screenshot(path=str(out/f'side-panel-{width}.png'))
    page.keyboard.press('Escape');expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false');assert not page.locator('#pageContent').evaluate('(e)=>e.inert')
    page.locator('#menuToggle').click();page.locator('#sidebarBackdrop').click(position={'x':width-4,'y':200});expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false')
-   for target in ['experience','pages','monitor','postcard','settings','about']:
+   for target in ['experience','pages','monitor','postcard','settings','theme','about']:
     navigate(page,target+'Nav');expect(page.locator('#'+target+'Page')).to_be_visible();expect(page.locator('#menuToggle')).to_have_attribute('aria-expanded','false');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
    page.evaluate('() => Promise.all(document.querySelector(".sidebar").getAnimations().map(a=>a.finished))');page.evaluate('scrollTo(0,0)');page.screenshot(path=str(out/f'single-toolbar-{width}.png'));assert not guarded()
   page.locator('#usb').click();navigate(page,'settingsNav');page.locator('#soundVolume').fill('70');expect(page.locator('#draftNotice')).to_be_visible()

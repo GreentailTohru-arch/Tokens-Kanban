@@ -65,9 +65,9 @@ def main():
   navigate(page,'settingsNav');page.evaluate('scrollTo(0,0)');page.wait_for_timeout(200);page.screenshot(path=str(out/'settings-desktop.png'),full_page=True)
   for width in [390,320]:
    page.set_viewport_size({'width':width,'height':844})
-   for tab in ['experience','pages','monitor','postcard','settings','about']:
+   for tab in ['experience','pages','monitor','postcard','settings','theme','about']:
     navigate(page,tab+'Nav');assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),(width,tab)
    page.evaluate('scrollTo(0,0)');page.wait_for_timeout(200);page.screenshot(path=str(out/f'about-mobile-{width}.png'))
-  assert not errors,errors;result={'brightnessSaveReconnect':'PASS','neverScreenOff':'PASS','bridgeDialogAndLinks':'PASS','actualGIFDecodeCropEncode':'PASS','logoUploadDefaultCancel':'PASS','aboutVersionAndGitHubCheck':'PASS','downloadCORSFallbackAndFileValidation':'PASS','mobileSixPages':'PASS','flasherSimulation':checks,'physicalUSBInstall':'NOT RUN'};(out/'management-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
+  assert not errors,errors;result={'brightnessSaveReconnect':'PASS','neverScreenOff':'PASS','bridgeDialogAndLinks':'PASS','actualGIFDecodeCropEncode':'PASS','logoUploadDefaultCancel':'PASS','aboutVersionAndGitHubCheck':'PASS','downloadCORSFallbackAndFileValidation':'PASS','mobileSevenPages':'PASS','flasherSimulation':checks,'physicalUSBInstall':'NOT RUN'};(out/'management-verification.json').write_text(json.dumps(result,indent=2),encoding='utf-8');print(json.dumps(result));browser.close()
  server.shutdown()
 if __name__=='__main__':main()

@@ -14,7 +14,7 @@ enum { T_SEQ, T_DAY_IN, T_DAY_CACHE, T_DAY_OUT, T_WEEK_IN, T_WEEK_CACHE,
        T_HEAT_MONTH0, T_HEAT_MONTH1, T_HEAT_MONTH2,
        T_TREND_DATE0, T_TREND_DATE1, T_TREND_DATE2, T_PEAK, T_ANALYTICS };
 enum { TOKEN_UNKNOWN, TOKEN_IDLE, TOKEN_BUSY, TOKEN_LIMITED };
-enum { TOKEN_USB, TOKEN_BLE, TOKEN_WIFI };
+enum { TOKEN_USB, TOKEN_BLE };
 typedef struct { int64_t v[TOKEN_FIELDS]; uint8_t heat[TOKEN_HEAT_DAYS];
                  uint16_t trend[TOKEN_TREND_DAYS]; unsigned transport; } token_snapshot_t;
 typedef struct { unsigned page, period; bool show_cost, contact; } token_nav_t;

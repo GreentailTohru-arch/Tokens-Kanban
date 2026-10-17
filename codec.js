@@ -30,18 +30,19 @@ export function cropRect(width,height,crop={},contain=false){
   const cy=size>=height?height/2:Math.max(size/2,Math.min(height-size/2,(crop.y??.5)*height));
   return {x:cx-size/2,y:cy-size/2,size,cx:cx/width,cy:cy/height,zoom};
 }
-export function renderFace(canvas,content,back=false){
-  const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#2f3a49';ctx.fillRect(0,0,WIDTH,HEIGHT);
+export function renderFace(canvas,content,back=false,themed=false){
+  const color=value=>themed?(window.DeviceTheme?.map(value)||value):value;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle=color('#2f3a49');ctx.fillRect(0,0,WIDTH,HEIGHT);
   ctx.textBaseline='top';ctx.textAlign='left';ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   if(back){
     if(content.qr){ctx.fillStyle='#fff';ctx.fillRect(26,8,188,188);const im=content.qr,r=cropRect(im.width,im.height,content.qrCrop,true);ctx.imageSmoothingEnabled=false;ctx.drawImage(im,r.x,r.y,r.size,r.size,38,20,164,164);}
-    ctx.fillStyle='#f1f7f4';const name=fitText(ctx,content.name,22,204,14);ctx.textAlign='center';ctx.fillText(name,120,222);
+    ctx.fillStyle=color('#f1f7f4');const name=fitText(ctx,content.name,22,204,14);ctx.textAlign='center';ctx.fillText(name,120,222);
   }else{
     const top=6;
     if(content.photo){const im=content.photo,r=cropRect(im.width,im.height,content.crop);ctx.save();ctx.beginPath();ctx.roundRect(33,top,174,174,16);ctx.clip();ctx.drawImage(im,r.x,r.y,r.size,r.size,33,top,174,174);ctx.restore();}
     ctx.textAlign='center';
-    ctx.fillStyle='#f1f7f4';const title=fitText(ctx,content.title,24,212,15);ctx.fillText(title,120,190+top);
-    ctx.fillStyle='#adb8c3';ctx.font='13px "Microsoft YaHei UI", "PingFang SC", sans-serif';
+    ctx.fillStyle=color('#f1f7f4');const title=fitText(ctx,content.title,24,212,15);ctx.fillText(title,120,190+top);
+    ctx.fillStyle=color('#adb8c3');ctx.font='13px "Microsoft YaHei UI", "PingFang SC", sans-serif';
     const chars=Array.from(content.subtitle.replace(/\s+/g,' '));let line='';let row=0;
     while(chars.length&&row<2){const ch=chars.shift();if(ctx.measureText(line+ch).width>212){ctx.fillText(line,120,226+top+row*18);row++;line=ch;}else line+=ch;}
     if(row<2)ctx.fillText(line,120,226+top+row*18);

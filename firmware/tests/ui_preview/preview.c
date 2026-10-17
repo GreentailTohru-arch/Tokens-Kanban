@@ -2,15 +2,17 @@
 #include "lvgl.h"
 #include "token_ui.h"
 #include "postcard_codec.h"
+#include "postcard_defaults.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 LV_FONT_DECLARE(token_font_14);
 static unsigned char framebuffer[240*320*3];
-static uint16_t buffer[240*32];
+static uint16_t buffer[240*20];
+static unsigned flush_count;
 static void flush(lv_display_t *display,const lv_area_t *area,uint8_t *pixels) {
-    uint16_t *p=(uint16_t *)pixels;
+    ++flush_count;uint16_t *p=(uint16_t *)pixels;
     for(int y=area->y1;y<=area->y2;++y) for(int x=area->x1;x<=area->x2;++x) {
         uint16_t c=*p++;size_t i=(y*240+x)*3;
         framebuffer[i]=((c>>11)&31)*255/31;framebuffer[i+1]=((c>>5)&63)*255/63;framebuffer[i+2]=(c&31)*255/31;
@@ -46,13 +48,14 @@ static unsigned count_visible_text(lv_obj_t *obj,const char *text) {
     return n;
 }
 int main(void) {
+    setvbuf(stdout,NULL,_IONBF,0);puts("LVGL preview init");
     lv_init();lv_display_t *display=lv_display_create(240,320);
     lv_display_set_color_format(display,LV_COLOR_FORMAT_RGB565);
     lv_display_set_buffers(display,buffer,NULL,sizeof(buffer),LV_DISPLAY_RENDER_MODE_PARTIAL);
     lv_display_set_flush_cb(display,flush);
     lv_font_glyph_dsc_t d={0};assert(lv_font_get_glyph_dsc(&token_font_14,&d,0x4ECA,0)&&!d.is_placeholder);
     assert(!lv_font_get_glyph_dsc(&token_font_14,&d,0x9F98,0)||d.is_placeholder);
-    token_ui_create();page_config_t pages=page_config_default();token_ui_pages(&pages,0);
+    puts("Creating UI");token_ui_create();puts("UI created");page_config_t pages=page_config_default();token_ui_pages(&pages,0);
     token_ui_startup(true);save("startup.ppm");check_labels(lv_layer_top());
     token_ui_startup(false);token_ui_startup(false);
     token_snapshot_t s={.v={1,18800000,15000000,15200,215584794,209747072,506820,640773677,623715584,1746255,13,10080,530000,-1,-1,-1,1,3,0}};
@@ -138,20 +141,46 @@ int main(void) {
     save("system-configurable.ppm");
     for(unsigned page=0;page<PAGE_COUNT;++page) {
         token_ui_pages(&pages,page);token_ui_update(&s,0,false,true,0,86,page);
-        lv_refr_now(NULL);unsigned char underlay[sizeof(framebuffer)];memcpy(underlay,framebuffer,sizeof(underlay));
-        token_ui_volume(true,page==0?0:page==1?100:35);lv_tick_inc(200);lv_timer_handler();lv_refr_now(NULL);
+        lv_refr_now(NULL);assert(lv_anim_count_running()==0);unsigned char underlay[sizeof(framebuffer)];memcpy(underlay,framebuffer,sizeof(underlay));
+        token_ui_volume(true,page==0?0:page==1?100:35);assert(lv_anim_count_running()==1);lv_tick_inc(200);lv_timer_handler();lv_refr_now(NULL);
         check_labels(lv_layer_top());char name[40];snprintf(name,sizeof(name),"volume-page-%u.ppm",page);save(name);
-        token_ui_volume(false,35);lv_tick_inc(200);lv_timer_handler();lv_refr_now(NULL);
+        token_ui_volume(false,35);lv_tick_inc(200);lv_timer_handler();lv_refr_now(NULL);assert(lv_anim_count_running()==0);
         assert(!memcmp(underlay,framebuffer,sizeof(underlay)));
     }
     for(unsigned i=0;i<200;++i){token_ui_volume(true,i%101);lv_tick_inc(200);lv_timer_handler();token_ui_volume(false,i%101);lv_tick_inc(200);lv_timer_handler();}
-    for(int color=0;color<5;++color){token_ui_diagnostic(color);lv_refr_now(NULL);check_labels(lv_layer_top());}
+    for(int color=0;color<7;++color){token_ui_diagnostic(color);lv_refr_now(NULL);check_labels(lv_layer_top());}
     token_ui_diagnostic(-1);lv_refr_now(NULL);check_labels(lv_screen_active());
-    token_ui_network(true,false,"http://192.168.1.50/#01010101010101010101010101010101","手机扫码管理设备");lv_refr_now(NULL);check_labels(lv_layer_top());save("network-manage.ppm");
-    token_ui_network(true,true,"WIFI:T:WPA;S:Tokens-Kanban-ABCD;P:0123456789ab;;","Tokens-Kanban-ABCD");lv_refr_now(NULL);check_labels(lv_layer_top());save("network-setup.ppm");
-    token_ui_network(false,false,"","");
     static uint8_t boot_pixels[96*96*2];memset(boot_pixels,0x5a,sizeof(boot_pixels));
     for(unsigned i=0;i<20;++i){token_ui_startup(true);token_ui_startup_frame(boot_pixels,i%2?96:64);lv_refr_now(NULL);check_labels(lv_layer_top());token_ui_startup(false);}
+    /* Exercise the real LVGL tree through every palette, including deleted overlays. */
+    theme_config_t themes[]={theme_default(),{1,0xD6D9DE,0x6AB9F0,0x0D0F11,0xECEEF1,0x9CA3AD},{2,0x2761A8,0x2F8EC8,0xE9EDF1,0x242A32,0x586777},{3,0x45FF7B,0x6EFF92,0x030703,0xA3FFB7,0x63BF7D}};
+    token_ui_postcard_image(postcard_default_pixels);
+    for(unsigned t=0;t<4;++t){
+        token_ui_theme(&themes[t]);token_ui_pages(&pages,PAGE_POSTCARD);token_ui_update(&s,0,false,true,0,86,PAGE_POSTCARD);
+        for(unsigned back=0;back<2;++back){token_ui_postcard_clock(1792143660ULL,true,back);lv_refr_now(NULL);
+            uint32_t color=themes[t].background;assert(framebuffer[(40*240)*3]==((color>>19)&31)*255/31);
+            assert(framebuffer[(40*240)*3+1]==((color>>10)&63)*255/63);
+            char name[64];snprintf(name,sizeof(name),"postcard-theme-%u-%u.ppm",t,back);save(name);
+        }
+        for(unsigned value=0;value<65536;value+=113){assert(theme_postcard_pixel(&themes[t],value,80,80,false)==value);assert(theme_postcard_pixel(&themes[t],value,80,80,true)==value);assert(theme_postcard_pixel(&themes[0],value,10,240,false)==value);}
+        for(int mode=0;mode<7;++mode){token_ui_diagnostic(mode);lv_refr_now(NULL);if(t==2){char name[40];snprintf(name,sizeof(name),"diagnostic-%d.ppm",mode);save(name);}}
+        token_ui_diagnostic(-1);
+    }
+    puts("Postcard decoder: all palettes and both faces; photo/QR pixels and canonical data preserved PASS");
+    token_ui_pages(&pages,0);token_ui_update(&s,0,false,true,0,86,0);token_ui_theme(&themes[0]);lv_refr_now(NULL);
+    static unsigned char original_theme[sizeof(framebuffer)];memcpy(original_theme,framebuffer,sizeof(framebuffer));
+    lv_mem_monitor_t before_theme;lv_mem_monitor(&before_theme);
+    for(unsigned pass=0;pass<40;++pass){
+        unsigned t=pass%4;token_ui_theme(&themes[t]);
+        for(unsigned page=0;page<4;++page){token_ui_pages(&pages,page);token_ui_update(&s,0,false,true,0,86,page);lv_refr_now(NULL);check_labels(lv_screen_active());if(pass<4){char filename[48];snprintf(filename,sizeof(filename),"theme-%u-page-%u.ppm",t,page);save(filename);}}
+        token_ui_diagnostic(0);token_ui_diagnostic(-1);token_ui_startup(true);token_ui_startup(false);
+    }
+    token_ui_theme(&themes[0]);token_ui_pages(&pages,0);token_ui_update(&s,0,false,true,0,86,0);lv_refr_now(NULL);
+    assert(!memcmp(original_theme,framebuffer,sizeof(framebuffer)));
+    lv_mem_monitor_t after_theme;lv_mem_monitor(&after_theme);assert(after_theme.free_size==before_theme.free_size);
+    puts("Four device themes: all pages/glyphs, 40 switches, deletion safety, exact default restore and no heap loss PASS");
+    assert(lv_anim_count_running()==0);
+    flush_count=0;lv_obj_invalidate(lv_screen_active());lv_refr_now(NULL);assert(flush_count==16);puts("Full-screen refresh: 16 strips (20 lines), no page animations PASS");
     assert(lv_mem_test()==LV_RESULT_OK);
     lv_mem_monitor_t memory;lv_mem_monitor(&memory);
     printf("LVGL 48KB pool: free=%zu largest=%zu max_used=%zu after 1000 updates\n",memory.free_size,memory.free_biggest_size,memory.max_used);

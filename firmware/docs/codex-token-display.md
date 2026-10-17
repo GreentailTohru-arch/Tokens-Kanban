@@ -772,7 +772,7 @@ skipped. Zero cancels queued volume previews and mutes an active volume preview 
 the next PCM chunk. The single audio worker prevents overlapping playback and
 never blocks LVGL/button callbacks. Native checks cover gestures, wake, boundaries,
 preview rate/coalescing/mute, delayed persistence, failed writes and concurrent
-browser edits; actual button timing, sound level and animation require the board.
+browser edits; actual button timing, sound level and display require the board.
 
 ## v15 configurable System Monitor
 
@@ -891,7 +891,7 @@ loader, and physical migration/playback/brightness require fresh device approval
 
 Desktop notifications share one toolbar row with connection buttons and status;
 long messages are ellipsized with their full text available on hover. Mobile
-notifications slide down from the screen top without moving toolbar controls.
+notifications appear at the screen top without moving toolbar controls.
 Normal/success messages are green and errors red, with matching modal notices. A draft summary and
 Save Changes action cover display/sounds, page order, monitoring, postcard, device
 name and startup logo. Comparing saved snapshots avoids warnings for unchanged or
@@ -928,4 +928,4 @@ connect and close; an unrelated platform reset can still show the startup screen
 during retry (only the volatile clock is synchronized). Bluetooth timing is unchanged.
 
 
-Wi-Fi / shared computer management: see [v19 connection steps](tokens-network.md).
+USB/BLE shared computer management: see [v20 connection steps](tokens-connections.md).

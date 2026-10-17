@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'companion'))
 from token_ble import BLEConnection,SERVICE,TX,discover
+import token_ble
 
 class Client:
     def __init__(self,device,timeout=10,winrt=None):
@@ -58,6 +59,23 @@ class BLETests(unittest.TestCase):
     def test_unknown_address_never_connects(self):
         with self.fake():
             with self.assertRaisesRegex(OSError,'No matching'):BLEConnection.open('BB')
+    def test_windows_refresh_timeout_releases_then_retries_cached(self):
+        attempts=[]
+        class Stalled(Client):
+            def __init__(self,device,timeout=10,winrt=None):
+                self.cached=winrt['use_cached_services']
+                super().__init__(device,timeout,{'use_cached_services':False})
+                attempts.append(self)
+            async def connect(self):
+                if not self.cached:raise asyncio.TimeoutError()
+                await super().connect()
+        with self.fake(),patch('bleak.BleakClient',Stalled),patch.object(token_ble.sys,'platform','win32'):
+            c=BLEConnection.open('AA')
+            try:
+                self.assertEqual([x.cached for x in attempts],[False,True])
+                self.assertFalse(attempts[0].is_connected)
+                self.assertTrue(c.client.is_connected)
+            finally:c.close()
     def test_multiple_devices_are_not_guessed(self):
         async def multi(**kwargs):
             found=await scan(**kwargs);found['two']=(SimpleNamespace(address='BB'),SimpleNamespace(service_uuids=[SERVICE]));return found

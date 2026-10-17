@@ -14,11 +14,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdatomic.h>
-typedef struct { unsigned command,id,tone,volume,volume_revision; device_config_t config; page_config_t pages; monitor_config_t monitor; } request_t;
+typedef struct { unsigned command,id,tone,volume,volume_revision; device_config_t config; page_config_t pages; monitor_config_t monitor; theme_config_t theme; } request_t;
 static QueueHandle_t queue;
 static device_config_t config,requested;
 static page_config_t pages,requested_pages;
 static unsigned save_kind;
+static theme_config_t theme,requested_theme;
 static monitor_config_t monitor,requested_monitor;
 static unsigned volume_revision;
 static bool volume_unsaved,volume_save_pending,preview_requested,preview_pending;
@@ -71,7 +72,11 @@ static void worker(void *arg) {
     (void)arg;request_t request;
     for(;;) {
         if(xQueueReceive(queue,&request,portMAX_DELAY)!=pdTRUE) continue;
-        if(request.command==11) {
+        if(request.command==12) {
+            nvs_handle_t handle;esp_err_t error=nvs_open("tokens_ui",NVS_READWRITE,&handle);
+            if(error==ESP_OK){error=nvs_set_blob(handle,"theme1",&request.theme,sizeof(request.theme));if(error==ESP_OK)error=nvs_commit(handle);nvs_close(handle);}
+            portENTER_CRITICAL(&mutex);if(error==ESP_OK){theme=request.theme;save_state=2;atomic_store(&wake_requested,true);}else save_state=3;portEXIT_CRITICAL(&mutex);
+        } else if(request.command==11) {
             nvs_handle_t handle;esp_err_t error=nvs_open("tokens_ui",NVS_READWRITE,&handle);
             if(error==ESP_OK){error=nvs_set_blob(handle,"display1",&request.volume,sizeof(request.volume));if(error==ESP_OK)error=nvs_commit(handle);nvs_close(handle);}
             portENTER_CRITICAL(&mutex);if(error==ESP_OK){brightness=request.volume;save_state=2;atomic_store(&wake_requested,true);}else save_state=3;portEXIT_CRITICAL(&mutex);
@@ -156,11 +161,13 @@ bool device_runtime_start(void) {
     atomic_store(&boot_finished,false);
     volume_revision=0;volume_unsaved=volume_save_pending=preview_requested=preview_pending=false;
     volume_changed_at=volume_save_after=preview_next=0;atomic_store(&preview_playback,false);
-    config=device_config_default();pages=page_config_default();monitor=monitor_default();brightness=75;config_dirty=false;behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
+    theme=theme_default();config=device_config_default();pages=page_config_default();monitor=monitor_default();brightness=75;config_dirty=false;behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
     nvs_ready=nvs_flash_init()==ESP_OK;
     if(nvs_ready) {
         nvs_handle_t handle;
         if(nvs_open("tokens_ui",NVS_READONLY,&handle)==ESP_OK) {
+            theme_config_t saved_theme;size_t theme_size=sizeof(saved_theme);
+            if(nvs_get_blob(handle,"theme1",&saved_theme,&theme_size)==ESP_OK && theme_size==sizeof(saved_theme) && theme_valid(&saved_theme))theme=saved_theme;
             unsigned saved_brightness;size_t display_size=sizeof(saved_brightness);
             if(nvs_get_blob(handle,"display1",&saved_brightness,&display_size)==ESP_OK&&display_size==sizeof(saved_brightness)&&saved_brightness>=5&&saved_brightness<=100)brightness=saved_brightness;
             device_config_t stored;size_t size=sizeof(stored);
@@ -205,6 +212,7 @@ void device_runtime_volume_set(unsigned value,uint64_t now) {
     }
     portEXIT_CRITICAL(&mutex);
 }
+theme_config_t device_runtime_theme(void){portENTER_CRITICAL(&mutex);theme_config_t current=theme;portEXIT_CRITICAL(&mutex);return current;}
 monitor_config_t device_runtime_monitor(void){portENTER_CRITICAL(&mutex);monitor_config_t current=monitor;portEXIT_CRITICAL(&mutex);return current;}
 page_config_t device_runtime_pages(void) {
     portENTER_CRITICAL(&mutex);page_config_t current=pages;portEXIT_CRITICAL(&mutex);return current;
@@ -250,7 +258,7 @@ static bool numbers(const char *line,const char *prefix,unsigned *out,unsigned c
     return !*p;
 }
 size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
-    if(strncmp(line,"PC_DISPLAY",10) && strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6) && strncmp(line,"PC_PAGES",8) && strncmp(line,"PC_MON",6))return 0;
+    if(strncmp(line,"PC_THEME",8) && strncmp(line,"PC_DISPLAY",10) && strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6) && strncmp(line,"PC_PAGES",8) && strncmp(line,"PC_MON",6))return 0;
     if(!queue)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
     if(!strcmp(line,"PC_SOUND_BANKS"))return snprintf(reply,capacity,"PC_SOUND_BANKS 3\n");
     if(!strcmp(line,"PC_CFG_GET2")) {
@@ -298,7 +306,23 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         if(accept && xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);save_id=old_id;save_kind=old_kind;save_state=state;requested_monitor=previous;portEXIT_CRITICAL(&mutex);return snprintf(reply,capacity,"PC_CFG_RETRY\n");}
         return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",request.id,duplicate?state:1);
     }
-    unsigned values[6];
+    unsigned values[7];
+    if(!strcmp(line,"PC_THEME_GET")) {
+        theme_config_t c=device_runtime_theme();
+        return snprintf(reply,capacity,"PC_THEME 1 %lu %lu %lu %lu %lu %lu\n",(unsigned long)c.preset,(unsigned long)c.accent,(unsigned long)c.chart,(unsigned long)c.background,(unsigned long)c.text,(unsigned long)c.muted);
+    }
+    if(numbers(line,"PC_THEME_SET",values,7)) {
+        request_t request={.command=12,.id=values[0],.theme={values[1],values[2],values[3],values[4],values[5],values[6]}};
+        if(!request.id || !theme_valid(&request.theme))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+        if(!nvs_ready)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
+        portENTER_CRITICAL(&mutex);unsigned state=save_state,old_id=save_id,old_kind=save_kind;theme_config_t previous=requested_theme;
+        bool duplicate=save_kind==12 && request.id==save_id && !memcmp(&requested_theme,&request.theme,sizeof(request.theme));
+        bool accept=!duplicate && state!=1 && request.id!=save_id;
+        if(accept){save_kind=12;save_id=request.id;save_state=1;requested_theme=request.theme;}portEXIT_CRITICAL(&mutex);
+        if(!accept && !duplicate)return snprintf(reply,capacity,"PC_CFG_BUSY\n");
+        if(accept && xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);save_id=old_id;save_kind=old_kind;save_state=state;requested_theme=previous;portEXIT_CRITICAL(&mutex);return snprintf(reply,capacity,"PC_CFG_RETRY\n");}
+        return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",request.id,duplicate?state:1);
+    }
     if(!strcmp(line,"PC_DISPLAY_GET"))return snprintf(reply,capacity,"PC_DISPLAY 1 %u\n",device_runtime_brightness());
     if(numbers(line,"PC_DISPLAY_SET",values,2)) {
         unsigned id=values[0],value=values[1];if(!id||value<5||value>100)return snprintf(reply,capacity,"PC_CFG_INVALID\n");

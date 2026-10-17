@@ -24,27 +24,27 @@
  #draftSummary{display:none}
  .draft-notice button{padding:7px 9px}
 }
-@keyframes notice-from-top{from{opacity:0;transform:translateY(calc(-100% - 20px))}to{opacity:1;transform:translateY(0)}}
+
 @media(max-width:760px){
  .topbar{flex-wrap:nowrap;gap:8px;padding:12px}
  .topbar .toolbar{flex:0 0 auto;flex-wrap:nowrap;gap:5px}
  .draft-notice{flex:0 0 auto;font-size:11px;margin-left:auto}
  #draftSummary{display:none}
  .draft-notice button{font-size:11px;padding:6px 9px}
- #status{position:fixed;inset:calc(env(safe-area-inset-top,0px) + 10px) 12px auto;z-index:20;flex:none;width:auto;max-height:calc(100dvh - 32px);padding:12px 16px;font-size:12px;white-space:normal;overflow:auto;box-shadow:0 8px 28px #0005;pointer-events:none;animation:notice-from-top .24s cubic-bezier(.2,.8,.2,1) both}
+ #status{position:fixed;inset:calc(env(safe-area-inset-top,0px) + 10px) 12px auto;z-index:20;flex:none;width:auto;max-height:calc(100dvh - 32px);padding:12px 16px;font-size:12px;white-space:normal;overflow:auto;box-shadow:0 8px 28px #0005;pointer-events:none;}
  .preview-panel{position:static}
 }
-@media(prefers-reduced-motion:reduce){#status{animation:none}}
+@media(prefers-reduced-motion:reduce){#status{}}
 
 .menu-toggle{order:-1;flex:0 0 40px;width:40px;height:40px;padding:10px;display:grid;place-items:center}
 .menu-toggle svg,.draft-notice svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .draft-notice button{display:flex;align-items:center;gap:7px}
 .draft-notice svg{display:none}
-.app-shell{display:block;padding-left:0;transition:padding-left .2s ease}
+.app-shell{display:block;padding-left:0;}
 .app-shell.sidebar-open{padding-left:176px}
 #pageContent{min-width:0}
-.sidebar{position:fixed;top:var(--topbar-height,76px);bottom:0;left:0;z-index:15;width:176px;height:calc(100dvh - var(--topbar-height,76px));padding:28px 16px;border-right:1px solid #344650;border-bottom:0;overflow-y:auto;visibility:hidden;transform:translateX(-100%);transition:transform .2s ease,visibility .2s}
-.sidebar-open .sidebar{visibility:visible;transform:translateX(0);transition:transform .2s ease}
+.sidebar{position:fixed;top:var(--topbar-height,76px);bottom:0;left:0;z-index:15;width:176px;height:calc(100dvh - var(--topbar-height,76px));padding:28px 16px;border-right:1px solid #344650;border-bottom:0;overflow-y:auto;visibility:hidden;transform:translateX(-100%);}
+.sidebar-open .sidebar{visibility:visible;transform:translateX(0);}
 .sidebar nav{display:flex;flex-direction:column;gap:8px}
 .sidebar .nav-item{flex:none;justify-content:flex-start;width:100%;padding:13px 16px;font-size:13px;gap:12px}
 .sidebar .nav-item svg{width:18px;height:18px;flex-shrink:0}
@@ -60,11 +60,9 @@
  .topbar .toolbar button{width:36px;height:36px;padding:9px}
  .topbar .connection{margin-left:auto;font-size:11px;gap:6px}
  .draft-notice button{padding:9px;font-size:11px}
- .app-shell,.app-shell.sidebar-open{padding-left:0;transition:none}
+ .app-shell,.app-shell.sidebar-open{padding-left:0;}
  .sidebar{width:min(280px,82vw);padding:20px 16px;box-shadow:16px 0 40px #0004}
  body.drawer-open{overflow:hidden}
 }
 @media(max-width:480px){.topbar .connection{font-size:0;gap:0;min-width:7px}.topbar .connection::before{width:7px;height:7px}}
 
-.network-panel{margin-bottom:24px}.network-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.network-share{display:flex;align-items:center;gap:22px;margin-top:24px}.network-share canvas{width:144px;height:144px;flex:none;border-radius:8px;image-rendering:pixelated}.network-share div{min-width:0;overflow-wrap:anywhere}.network-panel h3{font-size:15px}.network-panel input{width:100%}.network-panel #wifiState{color:var(--teal,#68c4cb)}
-@media(max-width:480px){.network-share{align-items:flex-start;flex-direction:column}.network-actions button{flex:1 1 auto}}

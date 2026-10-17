@@ -8,6 +8,7 @@ static unsigned mute_at,inject_volume=UINT32_MAX;
 static int64_t fake_time_us;
 static bool fail_commit,fail_task,have_stored;
 static device_config_t stored,staged;
+static theme_config_t stored_theme,staged_theme;static bool have_theme,theme_write;
 static page_config_t stored_pages,staged_pages;static bool have_pages,pages_write;
 static monitor_config_t stored_monitor,staged_monitor;static bool have_monitor,monitor_write;
 static unsigned stored_brightness=75,staged_brightness;static bool display_write,have_brightness;
@@ -25,14 +26,15 @@ esp_err_t nvs_flash_init(void){return ESP_OK;}
 esp_err_t nvs_open(const char *name,int mode,nvs_handle_t *handle){(void)mode;assert(!strcmp(name,"tokens_ui"));*handle=1;return ESP_OK;}
 esp_err_t nvs_get_blob(nvs_handle_t handle,const char *key,void *data,size_t *size){
     (void)handle;
+    if(!strcmp(key,"theme1")){assert(*size==sizeof(stored_theme));if(!have_theme)return ESP_FAIL;memcpy(data,&stored_theme,*size);return ESP_OK;}
     if(!strcmp(key,"display1")){assert(*size==4);if(!have_brightness)return ESP_FAIL;memcpy(data,&stored_brightness,4);return ESP_OK;}
     if(!strcmp(key,"mon1")){assert(*size==sizeof(stored_monitor));if(!have_monitor)return ESP_FAIL;memcpy(data,&stored_monitor,*size);return ESP_OK;}
     if(!strcmp(key,"pages1")){assert(*size==sizeof(stored_pages));if(!have_pages)return ESP_FAIL;memcpy(data,&stored_pages,*size);return ESP_OK;}
     if(!strcmp(key,"cfg2")){assert(*size==sizeof(stored));if(!have_stored)return ESP_FAIL;memcpy(data,&stored,*size);return ESP_OK;}
     assert(!strcmp(key,"cfg1")&&*size==sizeof(legacy));if(!have_legacy)return ESP_FAIL;memcpy(data,legacy,*size);return ESP_OK;
 }
-esp_err_t nvs_set_blob(nvs_handle_t handle,const char *key,const void *data,size_t size){(void)handle;display_write=!strcmp(key,"display1");if(display_write){assert(size==4);memcpy(&staged_brightness,data,4);writes++;return ESP_OK;}monitor_write=!strcmp(key,"mon1");pages_write=!strcmp(key,"pages1");if(monitor_write){assert(size==sizeof(staged_monitor));memcpy(&staged_monitor,data,size);}else if(pages_write){assert(size==sizeof(staged_pages));memcpy(&staged_pages,data,size);}else{assert(!strcmp(key,"cfg2")&&size==sizeof(stored));memcpy(&staged,data,size);}writes++;return ESP_OK;}
-esp_err_t nvs_commit(nvs_handle_t handle){(void)handle;commits++;if(fail_commit)return ESP_FAIL;if(display_write){stored_brightness=staged_brightness;have_brightness=true;}else if(monitor_write){stored_monitor=staged_monitor;have_monitor=true;}else if(pages_write){stored_pages=staged_pages;have_pages=true;}else{stored=staged;have_stored=true;}if(inject_volume!=UINT32_MAX){unsigned next=inject_volume;inject_volume=UINT32_MAX;device_runtime_volume_set(next,(uint64_t)fake_time_us/1000);}return ESP_OK;}
+esp_err_t nvs_set_blob(nvs_handle_t handle,const char *key,const void *data,size_t size){(void)handle;theme_write=!strcmp(key,"theme1");if(theme_write){assert(size==sizeof(staged_theme));memcpy(&staged_theme,data,size);writes++;return ESP_OK;}display_write=!strcmp(key,"display1");if(display_write){assert(size==4);memcpy(&staged_brightness,data,4);writes++;return ESP_OK;}monitor_write=!strcmp(key,"mon1");pages_write=!strcmp(key,"pages1");if(monitor_write){assert(size==sizeof(staged_monitor));memcpy(&staged_monitor,data,size);}else if(pages_write){assert(size==sizeof(staged_pages));memcpy(&staged_pages,data,size);}else{assert(!strcmp(key,"cfg2")&&size==sizeof(stored));memcpy(&staged,data,size);}writes++;return ESP_OK;}
+esp_err_t nvs_commit(nvs_handle_t handle){(void)handle;commits++;if(fail_commit)return ESP_FAIL;if(theme_write){stored_theme=staged_theme;have_theme=true;}else if(display_write){stored_brightness=staged_brightness;have_brightness=true;}else if(monitor_write){stored_monitor=staged_monitor;have_monitor=true;}else if(pages_write){stored_pages=staged_pages;have_pages=true;}else{stored=staged;have_stored=true;}if(inject_volume!=UINT32_MAX){unsigned next=inject_volume;inject_volume=UINT32_MAX;device_runtime_volume_set(next,(uint64_t)fake_time_us/1000);}return ESP_OK;}
 void nvs_close(nvs_handle_t handle){(void)handle;}
 esp_err_t bsp_audio_init(void){return ESP_OK;}
 esp_err_t bsp_audio_wake(void){return ESP_OK;}
@@ -54,6 +56,16 @@ static char reply[384];
 static void line(const char *s,const char *expected){assert(device_runtime_line(s,reply,sizeof(reply))>0);assert(!strcmp(reply,expected));}
 static void reboot(void){count=save_id=save_state=event_host=event_sequence=0;event_seen=event_pending=false;behavior=(device_behavior_t){0};atomic_store(&wake_requested,false);assert(device_runtime_start());assert(device_runtime_booting());run();assert(!device_runtime_booting());}
 int main(void){
+    reboot();theme_config_t original=theme_default();assert(!memcmp(&theme,&original,sizeof(theme)));
+    assert(theme_valid(&original)&&!theme_valid(NULL));
+    assert(theme_color(&original,0x2F3A49)==0x2F3A49&&theme_color(&original,0x70BFFF)==0x70BFFF);
+    theme_config_t black={3,0,0,0,0,0};assert(theme_valid(&black));assert(theme_color(&black,0x2F3A49)==0&&theme_color(&black,0xFF626C)==0xFF626C);
+    line("PC_THEME_GET","PC_THEME 1 0 6866123 7389183 3095113 15857652 11385027\n");
+    line("PC_THEME_SET 900 3 4587387 7274386 198403 10747831 6537085","PC_CFG_STATE 900 1\n");
+    line("PC_THEME_SET 900 3 4587387 7274386 198403 10747831 6537085","PC_CFG_STATE 900 1\n");assert(count==1);run();assert(theme.preset==3);reboot();assert(theme.preset==3&&theme.background==198403);
+    fail_commit=true;line("PC_THEME_SET 901 0 1 2 3 4 5","PC_CFG_STATE 901 1\n");run();assert(theme.preset==3);line("PC_CFG_STATUS","PC_CFG_STATE 901 3\n");fail_commit=false;
+    line("PC_THEME_SET 902 4 1 2 3 4 5","PC_CFG_INVALID\n");line("PC_THEME_SET 902 0 16777216 2 3 4 5","PC_CFG_INVALID\n");line("PC_THEME_SET 902 0 -1 2 3 4 5","PC_CFG_INVALID\n");line("PC_THEME_SET 902 0 4294967296 2 3 4 5","PC_CFG_INVALID\n");
+    have_theme=false;reboot();assert(!memcmp(&theme,&original,sizeof(theme)));theme_write=false;
     reboot();line("PC_DISPLAY_GET","PC_DISPLAY 1 75\n");
     line("PC_DISPLAY_SET 240 5","PC_CFG_STATE 240 1\n");run();assert(device_runtime_brightness()==5);reboot();assert(device_runtime_brightness()==5);behavior.off=true;assert(device_runtime_key(100));assert(backlight==5);
     fail_commit=true;line("PC_DISPLAY_SET 241 100","PC_CFG_STATE 241 1\n");run();assert(device_runtime_brightness()==5);fail_commit=false;

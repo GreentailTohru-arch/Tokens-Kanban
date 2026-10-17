@@ -3,6 +3,7 @@ import asyncio
 import concurrent.futures
 import queue
 import threading
+import sys
 
 SERVICE='9e7a0001-4b51-4a4c-9b50-2f53f077c301'
 RX='9e7a0002-4b51-4a4c-9b50-2f53f077c301'
@@ -32,7 +33,7 @@ class BLEConnection:
     def open(cls,address=None):
         connection=cls()
         try:
-            connection._run(connection._connect(address),25)
+            connection._run(connection._connect(address),40)
             connection.write(b'CT_HELLO 4\n')
             import time
             deadline=time.monotonic()+3
@@ -49,7 +50,17 @@ class BLEConnection:
         if len(devices)!=1:
             raise OSError('No matching Passport found' if not devices else 'Multiple Passports; use --ble-address')
         self.client=BleakClient(devices[0],timeout=10,winrt={'use_cached_services':False})
-        await self.client.connect()
+        try:
+            await asyncio.wait_for(self.client.connect(),12)
+        except (TimeoutError,asyncio.TimeoutError):
+            # Windows can stall refreshing unchanged GATT services after a flash.
+            # Release this session before one cached retry; the service and
+            # CT_READY handshake below must still validate the actual device.
+            if sys.platform!='win32':raise
+            try:await asyncio.wait_for(self.client.disconnect(),3)
+            except Exception:pass
+            self.client=BleakClient(devices[0],timeout=10,winrt={'use_cached_services':True})
+            await asyncio.wait_for(self.client.connect(),12)
         if not self.client.services.get_service(SERVICE): raise OSError('Missing Passport service')
         await self.client.start_notify(TX,self._notify)
         self.subscribed=True
