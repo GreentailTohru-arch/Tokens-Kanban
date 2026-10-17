@@ -208,3 +208,8 @@ html[data-theme-styled=true] .sidebar-brand small{margin:0;font-size:11px;line-h
 html[data-theme-styled=true] :is(.brand-symbol,.about-mark){border:0;border-radius:0;background:transparent;box-shadow:none;outline:0;overflow:visible;user-select:none}
 .brand-image{border-radius:0;user-select:none;-webkit-user-drag:none;pointer-events:none}
 @media(min-width:761px) and (max-width:1100px){.sidebar-brand{gap:10px}.sidebar-brand strong{font-size:14px}}
+
+/* Update action and the two firmware packages stay together in reading order. */
+.about-actions{display:grid;grid-template-columns:repeat(3,minmax(0,112px));gap:10px}
+.about-actions>button,.about-actions>a{min-width:0;min-height:40px;padding:10px 8px;text-align:center;justify-content:center;font-size:12px;line-height:18px}
+@media(max-width:760px){.about-actions{grid-template-columns:repeat(3,minmax(0,1fr))}}
