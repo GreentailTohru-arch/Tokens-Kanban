@@ -81,7 +81,7 @@
 <section id="petPage" class="settings-page content-settings-page" hidden aria-label="虚拟宠物"><div class="settings-heading"><h1>虚拟宠物</h1><p>让桌边的小伙伴，回应你的每一次操作。</p></div><div class="content-settings-layout"><section id="petKeySettings" class="edit-panel"><h2>按键功能</h2><p class="setting-help">仅在设备宠物页生效。电脑需运行新版同步程序；发送、撤销和继续前，请聚焦 Codex 聊天输入框。</p><form id="petKeysForm"><div id="petKeyRows" class="pet-key-grid"></div><div class="content-actions"><button id="petKeysSave" type="submit" disabled>保存宠物按键</button><button id="petKeysReset" type="button" class="secondary">恢复默认</button></div><p id="petKeysState" class="setting-help" role="status">连接新版固件后可保存 · 当前遥控支持 Windows</p></form></section><aside class="edit-panel content-help"><h2>操作说明</h2><p class="setting-help">双击 OK 切页；长按上下调音量。单击会等待 350 毫秒，以区分双击和三击。</p><p class="setting-help">语音使用电脑麦克风：在 Codex 将“听写快捷键（按住）”设为 <kbd>Ctrl + Alt + F9</kbd>。按住 OK 录音，松开保留文字，不自动发送。首次使用需在电脑允许麦克风。</p><p class="setting-help">“停止／继续”先停止当前任务，再次触发发送“继续”；输入框有草稿时不会覆盖。“窗口截图”触发左右 Alt，同时捕获当前窗口并加入 Codex。</p></aside></div></section>
 <section id="wallpaperPage" class="settings-page content-settings-page" hidden aria-label="全屏壁纸">
  <div class="settings-heading"><h1>全屏壁纸</h1><p>把喜欢的画面，放进口袋里的屏幕。</p></div>
- <form id="wallForm"><div class="wall-layout content-settings-layout"><section id="wallControls" class="edit-panel"><h2>你的画面</h2><label class="check-row"><input id="wallTime" type="checkbox">显示时间和日期</label>
+ <form id="wallForm"><div class="wall-layout content-settings-layout"><section id="wallControls" class="edit-panel"><h2>你的画面</h2><label class="check-row"><input id="wallTime" type="checkbox">显示时间和日期</label><label class="check-row"><input id="wallNav" type="checkbox">显示底部导航条</label>
  <div class="field image-field"><label for="wallFile">上传图片</label><input id="wallFile" type="file" accept="image/png,image/jpeg,image/webp,image/bmp"></div><p class="setting-help">按 3:4 屏幕取景，自动缩小并转换为 240 × 320，最多 150 KiB。透明区域使用当前主题背景；动图使用首帧。</p>
  
  <p class="setting-help">默认关闭。双击确定键可从壁纸切换到下一页。</p><p id="wallState" class="setting-help" role="status">默认使用主题背景 · 连接后可保存</p>
@@ -144,7 +144,7 @@
 
   
   <form id="settingsForm"><fieldset id="settingsFields" disabled>
-    <section id="displaySettings" class="edit-panel"><h2>屏幕</h2><div class="field"><label for="brightness">屏幕亮度 <output id="brightnessValue">75%</output></label><input id="brightness" type="range" min="5" max="100" step="1" value="75" disabled><p id="brightnessHint" class="setting-help">连接配套固件后读取亮度。</p></div><div class="field"><label for="idleTime">自动熄屏</label><select id="idleTime"><option value="30">30 秒</option><option value="60">1 分钟</option><option value="120">2 分钟</option><option value="300">5 分钟</option><option value="600">10 分钟</option><option value="1800">30 分钟</option><option value="3600">1 小时</option><option value="0" selected>保持常亮（不建议）</option></select><p class="setting-help">熄屏后继续同步，按任意键唤醒。</p></div></section>
+    <section id="displaySettings" class="edit-panel"><h2>屏幕</h2><div class="field"><label for="brightness">屏幕亮度 <output id="brightnessValue">75%</output></label><input id="brightness" type="range" min="5" max="100" step="1" value="75" disabled><p id="brightnessHint" class="setting-help">连接配套固件后读取亮度。</p></div><div class="field"><label for="idleTime">自动熄屏</label><select id="idleTime"><option value="15">15 秒</option><option value="30">30 秒</option><option value="60">1 分钟</option><option value="120">2 分钟</option><option value="300">5 分钟</option><option value="600">10 分钟</option><option value="1800">30 分钟</option><option value="3600">1 小时</option><option value="0" selected>保持常亮（不建议）</option></select><p class="setting-help">熄屏后继续同步，按任意键唤醒。</p></div></section>
 
     <section id="soundSettings" class="edit-panel"><h2>声音</h2>
       <div class="field"><label for="soundVolume">音量 <output id="soundVolumeValue" for="soundVolume">35%</output></label><input id="soundVolume" type="range" min="0" max="100" step="5" value="35"></div>
@@ -165,5 +165,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=top-progress-28"></script>
+<script type="module" src="editor.js?v=wall-preview-sync-28"></script>
 </body></html>

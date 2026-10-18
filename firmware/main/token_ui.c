@@ -85,7 +85,7 @@ static lv_result_t card_area(lv_image_decoder_t *decoder,lv_image_decoder_dsc_t 
 static void card_close(lv_image_decoder_t *decoder,lv_image_decoder_dsc_t *dsc){(void)decoder;lv_draw_buf_destroy(dsc->user_data);dsc->user_data=NULL;}
 static void card_decoder_init(void){lv_image_decoder_t *d=lv_image_decoder_create();lv_image_decoder_set_info_cb(d,card_info);lv_image_decoder_set_open_cb(d,card_open);lv_image_decoder_set_get_area_cb(d,card_area);lv_image_decoder_set_close_cb(d,card_close);}
 static void draw_marks(lv_event_t *event){
-    if(shown_page==PAGE_WALLPAPER)return;
+    if(shown_page==PAGE_WALLPAPER && !(wall_flags&8))return;
     int start=(240-(int)(marks_count*28-6))/2;
     for(unsigned i=0;i<marks_count;++i){lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);
         d.bg_color=lv_color_hex(theme_color(&ui_theme,i==marks_position?TEAL:0x52616E));d.bg_opa=LV_OPA_COVER;d.radius=2;
@@ -279,7 +279,8 @@ void token_ui_postcard_image(const uint8_t *data) {
     card_data=data;lv_image_set_src(card_image,&card_faces[card_contact?1:0]);visible(card_image,true);
 }
 void token_ui_wallpaper(const uint8_t *data,unsigned flags){
-    lv_image_cache_drop(&wall_descriptor);wall_flags=(flags&4)|((flags&3)?3:0);
+    lv_image_cache_drop(&wall_descriptor);wall_flags=(flags&12)|((flags&3)?3:0);
+    lv_obj_invalidate(lv_screen_active());
     wall_descriptor=(lv_image_dsc_t){.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=240,.h=320,.stride=480},.data_size=153600,.data=data};
     if(wall_image){if(data)lv_image_set_src(wall_image,&wall_descriptor);visible(wall_image,data!=NULL);}
 }

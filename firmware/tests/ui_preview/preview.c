@@ -204,6 +204,14 @@ int main(void) {
         if(round==0)save("wallpaper-blank.ppm");
         token_ui_update(&s,0,false,true,0,86,PAGE_PET);lv_refr_now(NULL);
     }
+    token_ui_wallpaper(wallpaper_pixels,8);
+    token_ui_update(&s,0,false,true,0,86,PAGE_WALLPAPER);token_ui_pages(&pages,PAGE_WALLPAPER);lv_refr_now(NULL);
+    bool differs=false;
+    for(unsigned x=20;x<220;++x)if(framebuffer[(310*240+x)*3+1]!=0)differs=true;
+    assert(differs);save("wallpaper-navigation.ppm");
+    token_ui_wallpaper(wallpaper_pixels,0);lv_refr_now(NULL);
+    assert(framebuffer[(310*240+120)*3]==255&&framebuffer[(310*240+120)*3+1]==0);
+    puts("Wallpaper navigation overlay: enabled/disabled without page switch PASS");
     token_ui_wallpaper(NULL,0);
     token_ui_update(&s,0,false,true,0,86,PAGE_POSTCARD);token_ui_postcard_clock(1792143660ULL,true,false);lv_refr_now(NULL);
     for(unsigned p=0;p<240*38;++p){unsigned color=themes[0].background;assert(framebuffer[p*3]==((color>>19)&31)*255/31);assert(framebuffer[p*3+1]==((color>>10)&63)*255/63);assert(framebuffer[p*3+2]==((color>>3)&31)*255/31);}

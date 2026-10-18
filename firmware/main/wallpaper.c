@@ -26,7 +26,7 @@ static unsigned state,id,received;
 static int64_t touched;
 static bool valid(unsigned slot,header_t *h){
     memcpy(h,mapped+slot*SLOT,sizeof(*h));
-    return h->magic==MAGIC && (h->length==0||h->length==BYTES) && h->flags<8 &&
+    return h->magic==MAGIC && (h->length==0||h->length==BYTES) && h->flags<16 &&
         h->hash==postcard_hash(2166136261u,mapped+slot*SLOT+START,h->length);
 }
 static void publish(const unsigned char *data,unsigned flags){
@@ -81,7 +81,7 @@ bool wallpaper_start(void){
 size_t wallpaper_line(const char *line,char *reply,size_t cap){
     if(strncmp(line,"PC_WALL",7))return 0;
     if(!queue)return snprintf(reply,cap,"PC_WALL_UNAVAILABLE\n");
-    if(!strcmp(line,"PC_WALL_GET")){portENTER_CRITICAL(&mutex);header_t h=current;portEXIT_CRITICAL(&mutex);return snprintf(reply,cap,"PC_WALL 1 %u %u %u\n",h.length,h.length?h.hash:2166136261u,h.flags);}
+    if(!strcmp(line,"PC_WALL_GET")){portENTER_CRITICAL(&mutex);header_t h=current;portEXIT_CRITICAL(&mutex);return snprintf(reply,cap,"PC_WALL 2 %u %u %u\n",h.length,h.length?h.hash:2166136261u,h.flags);}
     unsigned offset;int end=0;
     if(sscanf(line,"PC_WALL_READ %u%n",&offset,&end)==1&&!line[end]){
         portENTER_CRITICAL(&mutex);
@@ -93,8 +93,8 @@ size_t wallpaper_line(const char *line,char *reply,size_t cap){
         portEXIT_CRITICAL(&mutex);return used+(size_t)snprintf(reply+used,cap-used,"\n");
     }
     request_t r={0};bool status=!strcmp(line,"PC_WALL_STATUS");end=0;
-    if(sscanf(line,"PC_WALL_BEGIN %u %u %u %u%n",&r.id,&r.length,&r.hash,&r.flags,&end)==4&&!line[end]&&r.id&&(r.length==0||r.length==BYTES)&&r.flags<8)r.command=1;
-    else{end=0;if(sscanf(line,"PC_WALL_OPTIONS %u %u%n",&r.id,&r.flags,&end)==2&&!line[end]&&r.id&&r.flags<8)r.command=4;
+    if(sscanf(line,"PC_WALL_BEGIN %u %u %u %u%n",&r.id,&r.length,&r.hash,&r.flags,&end)==4&&!line[end]&&r.id&&(r.length==0||r.length==BYTES)&&r.flags<16)r.command=1;
+    else{end=0;if(sscanf(line,"PC_WALL_OPTIONS %u %u%n",&r.id,&r.flags,&end)==2&&!line[end]&&r.id&&r.flags<16)r.command=4;
       else{end=0;if(sscanf(line,"PC_WALL_DATA %u %u %519s%n",&r.id,&r.offset,r.data,&end)==3&&!line[end])r.command=2;
         else{end=0;if(sscanf(line,"PC_WALL_DONE %u%n",&r.id,&end)==1&&!line[end])r.command=3;}}
     }

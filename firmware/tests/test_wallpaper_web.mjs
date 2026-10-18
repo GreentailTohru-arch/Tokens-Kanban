@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {WallpaperEditor,wallpaperCrop,normalizeWallFlags} from '../companion/postcard/wallpaper.js';
 import {hash} from '../companion/postcard/codec.js';
-assert.deepEqual(Array.from({length:8},(_,n)=>normalizeWallFlags(n)),[0,3,3,3,4,7,7,7]);
+assert.deepEqual(Array.from({length:16},(_,n)=>normalizeWallFlags(n)),[0,3,3,3,4,7,7,7,8,11,11,11,12,15,15,15]);
 let cases=0;
 for(const [w,h] of [[240,320],[4000,1000],[1000,4000],[1,1]])for(const zoom of [1,2,8])for(const x of [-10,.5,10])for(const y of [-10,.5,10]){
  const r=wallpaperCrop(w,h,{x,y,zoom});assert(r.sx>=-.0001&&r.sy>=-.0001&&r.sx+r.w<=w+.0001&&r.sy+r.h<=h+.0001);assert(Math.abs(r.w/r.h-.75)<.0001);cases++;
@@ -17,9 +17,9 @@ const link={async rpc(cmd){const p=cmd.split(' ');switch(p[0]){
  default:throw Error(cmd);
 }}};
 e.api={link:()=>link,locked:()=>false,busy(){},saved(){saves++;},status(message,kind){if(kind==='error')error=message;}};
-Object.assign(e,{supported:true,pending:null,flags:7,bytes:Uint8Array.from({length:153600},(_,i)=>i%255),imageDirty:true});
+Object.assign(e,{supported:true,pending:null,flags:15,bytes:Uint8Array.from({length:153600},(_,i)=>i%255),imageDirty:true});
 await e.save();assert.equal(saves,1);assert.equal(error,'');assert.deepEqual(stored,e.bytes);assert.equal(e.imageDirty,false);
-const prior=stored;e.flags=0;await e.save();assert.equal(saves,2);assert.equal(uploads,1);assert.equal(stored,prior);assert.equal(flags,0);
+const prior=stored;e.flags=8;await e.save();assert.equal(saves,2);assert.equal(uploads,1);assert.equal(stored,prior);assert.equal(flags,8);
 e.imageDirty=true;failReadback=true;await e.save();assert.equal(saves,2);assert(e.imageDirty&&error.includes('不一致'));
 failReadback=false;e.bytes=null;e.flags=4;await e.save();assert.equal(stored.length,0);assert.equal(saves,3);
 console.log(`Wallpaper web: ${cases} crop bounds, full compressed upload/hash, flags-only preservation, failed readback, clear PASS`);

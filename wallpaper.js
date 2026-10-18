@@ -1,6 +1,6 @@
 import {rgb565,hash,pack} from './codec.js?v=preview-22';
 const $=id=>document.getElementById(id),wait=ms=>new Promise(r=>setTimeout(r,ms));
-export function normalizeWallFlags(flags){return (flags&4)|((flags&3)?3:0);}
+export function normalizeWallFlags(flags){return (flags&12)|((flags&3)?3:0);}
 export function wallpaperCrop(width,height,{x=.5,y=.5,zoom=1}={}){
   zoom=Math.max(1,Math.min(8,Number(zoom)||1));
   const w=Math.min(width,height*.75)/zoom,h=w/.75;
@@ -14,7 +14,7 @@ export class WallpaperEditor{
   $('wallFile').onchange=()=>this.choose($('wallFile').files[0]);
   
   $('wallClear').onclick=()=>{this.bytes=null;this.image=null;this.original?.close?.();this.original=null;this.savedLength=0;this.imageDirty=true;this.revision++;this.changed();};
-  $('wallTime').onchange=$('postcardDate').onchange=()=>{this.flags=($('wallTime').checked?3:0)|($('postcardDate').checked?4:0);this.changed();};
+  $('wallNav').onchange=$('wallTime').onchange=$('postcardDate').onchange=()=>{this.flags=($('wallTime').checked?3:0)|($('postcardDate').checked?4:0)|($('wallNav').checked?8:0);this.changed();};
   $('wallCropZoom').oninput=()=>{this.pending.crop.zoom=+$('wallCropZoom').value;this.paintCrop();};
   $('wallCropReset').onclick=()=>{this.pending.crop={x:.5,y:.5,zoom:1};this.paintCrop();};
   $('wallCropCancel').onclick=()=>this.cancel();
@@ -29,9 +29,9 @@ export class WallpaperEditor{
  }
  key(){return JSON.stringify([this.flags,this.revision]);}
  changed(){this.render();this.api.changed();}
- controls(){const locked=this.api.locked();$('wallControls').inert=locked;$('wallClear').disabled=locked;$('postcardDate').disabled=locked;$('wallRead').disabled=locked||!this.supported||!this.savedLength;}
+ controls(){const locked=this.api.locked();$('wallControls').inert=locked;$('wallNav').disabled=locked||(!!this.api.link()&&!this.navSupported);$('wallNav').title=this.api.link()&&!this.navSupported?'请更新设备固件以保存导航条设置':'';$('wallClear').disabled=locked;$('postcardDate').disabled=locked;$('wallRead').disabled=locked||!this.supported||!this.savedLength;}
  render(){
-  $('wallTime').checked=!!(this.flags&3);$('postcardDate').checked=!!(this.flags&4);$('date').hidden=$('time').hidden=!(this.flags&4);
+  $('wallNav').checked=!!(this.flags&8);$('wallTime').checked=!!(this.flags&3);$('postcardDate').checked=!!(this.flags&4);$('date').hidden=$('time').hidden=!(this.flags&4);
   this.draw($('wallPreview').getContext('2d'));this.controls();
  }
  draw(ctx){
@@ -41,6 +41,7 @@ export class WallpaperEditor{
   ctx.save();if(this.image){ctx.shadowColor='#000';ctx.shadowBlur=4;ctx.fillStyle='#fff';}
   if(this.flags&1){ctx.textAlign='left';ctx.fillText(`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,14,14);}
   if(this.flags&2){ctx.textAlign='right';ctx.fillText(`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`,226,14);}ctx.restore();
+  if(this.flags&8){const pages=this.api.pages?.()||[0,1,4,2,3,5],start=(240-(pages.length*28-6))/2;pages.forEach((id,i)=>{ctx.fillStyle=window.DeviceTheme?.map(id===5?'#68c4cb':'#52616e')||(id===5?'#68c4cb':'#52616e');ctx.beginPath();ctx.roundRect(start+i*28,309,22,3,2);ctx.fill();});}
  }
  async choose(file){
   if(!file)return;try{if(file.size>30*1024*1024)throw Error('请选择小于 30 MB 的图片');const image=await createImageBitmap(file);if(image.width*image.height>50000000){image.close();throw Error('图片像素过大，请缩小后重试');}this.open(image,{x:.5,y:.5,zoom:1});}catch(e){this.api.status(e.message,'error');}finally{$('wallFile').value='';}
@@ -50,7 +51,7 @@ export class WallpaperEditor{
  cancel(){if(this.pending?.image!==this.original)this.pending?.image.close?.();this.pending=null;this.drag=null;$('wallCropDialog').close();}
  apply(){if(!this.pending)return;this.paintCrop(false);this.original?.close&&this.original!==this.pending.image&&this.original.close();this.original=this.pending.image;this.crop={...this.pending.crop};this.bytes=rgb565($('wallCropCanvas').getContext('2d').getImageData(0,0,240,320).data);this.decode(this.bytes);this.imageDirty=true;this.revision++;this.pending=null;$('wallCropDialog').close();$('wallState').textContent='已裁剪为 240 × 320 · 150 KiB · 保存后应用到设备';this.changed();}
  decode(bytes){const ctx=this.canvas.getContext('2d'),im=ctx.createImageData(240,320);for(let i=0,j=0;i<bytes.length;i+=2,j+=4){const n=bytes[i]|bytes[i+1]<<8;im.data[j]=(n>>11)*255/31;im.data[j+1]=((n>>5)&63)*255/63;im.data[j+2]=(n&31)*255/31;im.data[j+3]=255;}ctx.putImageData(im,0,0);this.image=this.canvas;}
- async read(link){const p=(await link.rpc('PC_WALL_GET')).split(' ');this.supported=p[0]==='PC_WALL'&&p[1]==='1'&&p.length===5;if(this.supported){const [n,h,f]=p.slice(2).map(Number);if(![0,153600].includes(n)||!Number.isInteger(h)||h<0||h>4294967295||!Number.isInteger(f)||f<0||f>7)throw Error('壁纸设置格式错误');this.flags=normalizeWallFlags(f);this.savedLength=n;this.savedHash=h;this.bytes=null;this.image=null;this.imageDirty=false;this.revision++;this.original?.close?.();this.original=null;$('wallState').textContent=n?'设备已有壁纸 · 点击读取图片可预览；修改开关不会替换图片':'设备使用主题背景';}else $('wallState').textContent='当前固件不支持壁纸存储；需安装含壁纸分区的完整固件。可先取景预览。';this.render();}
+ async read(link){const p=(await link.rpc('PC_WALL_GET')).split(' ');this.supported=p[0]==='PC_WALL'&&['1','2'].includes(p[1])&&p.length===5;this.navSupported=this.supported&&p[1]==='2';if(this.supported){const [n,h,f]=p.slice(2).map(Number);if(![0,153600].includes(n)||!Number.isInteger(h)||h<0||h>4294967295||!Number.isInteger(f)||f<0||f>15)throw Error('壁纸设置格式错误');this.flags=normalizeWallFlags(f);this.savedLength=n;this.savedHash=h;this.bytes=null;this.image=null;this.imageDirty=false;this.revision++;this.original?.close?.();this.original=null;$('wallState').textContent=n?'设备已有壁纸 · 点击读取图片可预览；修改开关不会替换图片':'设备使用主题背景';}else $('wallState').textContent='当前固件不支持壁纸存储；需安装含壁纸分区的完整固件。可先取景预览。';this.render();}
  async loadImage(){const link=this.api.link();if(!link||this.api.locked()||!this.savedLength)return;this.api.busy(true);$('progress').value=0;$('progress').hidden=false;try{const bytes=new Uint8Array(this.savedLength);for(let at=0;at<bytes.length;){const p=(await link.rpc(`PC_WALL_READ ${at}`)).split(' ');if(p[0]!=='PC_WALL_DATA'||+p[1]!==at||!p[2]||!/^(?:[0-9a-f]{2}){1,128}$/i.test(p[2]))throw Error('读取壁纸失败');const b=Uint8Array.from(p[2].match(/../g),v=>parseInt(v,16));if(at+b.length>bytes.length)throw Error('壁纸数据长度错误');bytes.set(b,at);at+=b.length;$('progress').value=at/bytes.length*100;}if(hash(bytes)!==this.savedHash)throw Error('壁纸校验失败，请重新连接');this.bytes=bytes;this.decode(bytes);$('wallState').textContent='已读取设备壁纸';this.changed();}catch(e){this.api.status(e.message,'error');}finally{$('progress').hidden=true;this.api.busy(false);}}
  async save(){
   const link=this.api.link();if(!link||this.api.locked())return;if(!this.supported){this.api.status('请先安装含壁纸分区的完整固件','error');return;}if(this.pending){this.api.status('请先确定或取消壁纸取景','error');return;}
@@ -60,7 +61,7 @@ export class WallpaperEditor{
    if(changed){await poll(await link.rpc(`PC_WALL_BEGIN ${id} ${bytes.length} ${hash(bytes)} ${this.flags}`),2,0);for(let at=0;at<bytes.length;at+=256){const b=bytes.subarray(at,at+256);await poll(await link.rpc(`PC_WALL_DATA ${id} ${at} ${pack(b)}`),2,at+b.length);$('progress').value=(at+b.length)/bytes.length*100;}await poll(await link.rpc(`PC_WALL_DONE ${id}`),3,bytes.length);}
    else await poll(await link.rpc(`PC_WALL_OPTIONS ${id} ${this.flags}`),3);
    const p=(await link.rpc('PC_WALL_GET')).split(' '),n=changed?bytes.length:this.savedLength,h=changed?hash(bytes):this.savedHash;
-   if(p[0]!=='PC_WALL'||+p[2]!==n||+p[3]!==h||+p[4]!==this.flags)throw Error('保存读回不一致，请重新连接确认');this.savedLength=n;this.savedHash=h;this.imageDirty=false;this.api.saved();$('wallState').textContent='壁纸与日期开关已保存到设备';this.api.status('壁纸与日期开关已保存');
+   if(p[0]!=='PC_WALL'||+p[2]!==n||+p[3]!==h||+p[4]!==this.flags)throw Error('保存读回不一致，请重新连接确认');this.savedLength=n;this.savedHash=h;this.imageDirty=false;this.api.saved();$('wallState').textContent='壁纸与显示选项已保存到设备';this.api.status('壁纸与显示选项已保存');
   }catch(e){this.api.status(e.message,'error');}finally{$('progress').hidden=true;this.api.busy(false);}
  }
 }

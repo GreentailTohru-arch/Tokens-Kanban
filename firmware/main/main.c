@@ -140,7 +140,7 @@ void app_main(void) {
     for(int i=0;i<TOKEN_FIELDS;++i) current.v[i]=-1;
     current.v[T_PLAN]=0;
     pet_message_t pet={PET_COUNT,0};
-    bool received=false; token_nav_t nav={.page=PAGE_COUNT};
+    bool received=false; unsigned rendered_page=PAGE_COUNT; token_nav_t nav={.page=PAGE_COUNT};
     volume_controls_t volume={0};pet_controls_t pet_keys={0};
     system_snapshot_t metrics;for(unsigned i=0;i<SYS_FIELDS;++i)metrics.v[i]=-1;
     bool metrics_received=false;uint64_t metrics_last=0;
@@ -205,7 +205,16 @@ void app_main(void) {
             token_ui_update(&current,nav.period,nav.show_cost,received,now-last,battery,nav.page);
             token_ui_pet(pet_resolve(token_online(received,now-last,0),token_signal(&current,received,now-last),pet.state,now-pet.at),now,nav.page==PAGE_PET && !boot_visible && !device_runtime_screen_off());
             token_ui_volume(volume.visible,volume.value);
-            postcard_update_ui(nav.contact);int test_screen=device_diagnostics_screen(now);if(test_screen>=0)(void)device_runtime_key(now);token_ui_diagnostic(test_screen);bsp_lvgl_unlock();
+            postcard_update_ui(nav.contact);int test_screen=device_diagnostics_screen(now);if(test_screen>=0)(void)device_runtime_key(now);token_ui_diagnostic(test_screen);
+            if(rendered_page!=nav.page && !boot_visible && !device_runtime_screen_off()){
+                /* Present the complete new page in this update, without waiting
+                 * for the periodic LVGL refresh. No fade, slide or blank frame. */
+                lv_obj_invalidate(lv_screen_active());
+                lv_refr_now(NULL);
+                (void)bsp_display_wait_frame();
+                rendered_page=nav.page;
+            }
+            bsp_lvgl_unlock();
         }
         vTaskDelay(pdMS_TO_TICKS(100));
     }

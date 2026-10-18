@@ -27,6 +27,7 @@ static void line(const char *in){char out[600];assert(wallpaper_line(in,out,size
 int main(void){
     memset(flash,255,sizeof(flash));assert(wallpaper_start());assert(active==-1&&current.flags==4);
     line("PC_WALL_BEGIN 1 1 0 0");assert(!queued);
+    line("PC_WALL_OPTIONS 1 16");assert(!queued);
     line("PC_WALL_OPTIONS 1 3");run();assert(state==3&&shown==NULL&&shown_flags==3);
     static unsigned char pixels[BYTES];for(unsigned i=0;i<BYTES;++i)pixels[i]=(unsigned char)i;
     unsigned h=postcard_hash(2166136261u,pixels,sizeof(pixels));char cmd[620];snprintf(cmd,sizeof(cmd),"PC_WALL_BEGIN 2 %u %u 7",BYTES,h);line(cmd);run();
@@ -34,11 +35,11 @@ int main(void){
     for(unsigned offset=0;offset<BYTES;offset+=256){size_t n=(size_t)snprintf(cmd,sizeof(cmd),"PC_WALL_DATA 2 %u 7f",offset);for(unsigned i=0;i<256;++i)n+=(size_t)snprintf(cmd+n,sizeof(cmd)-n,"%02x",pixels[offset+i]);line(cmd);run();assert(state==2&&received==offset+256);}
     line("PC_WALL_DONE 2");run();assert(state==3&&shown_flags==7&&!memcmp(shown,pixels,BYTES));
     char response[256];size_t reply_length=wallpaper_line("PC_WALL_READ 0",response,sizeof(response));assert(reply_length>0&&reply_length<256&&!strncmp(response,"PC_WALL_DATA 0 ",15));
-    int old=active;line("PC_WALL_OPTIONS 3 4");run();assert(state==3&&active!=old&&shown_flags==4&&!memcmp(shown,pixels,BYTES));
-    old=active;fail_write=true;line("PC_WALL_OPTIONS 4 0");run();assert(state==4&&active==old&&shown_flags==4);fail_write=false;
+    int old=active;line("PC_WALL_OPTIONS 3 12");run();assert(state==3&&active!=old&&shown_flags==12&&!memcmp(shown,pixels,BYTES));
+    old=active;fail_write=true;line("PC_WALL_OPTIONS 4 0");run();assert(state==4&&active==old&&shown_flags==12);fail_write=false;
     /* Incomplete upload and bad hash must never displace the committed image. */
     line("PC_WALL_BEGIN 5 0 0 0");run();line("PC_WALL_DONE 5");run();assert(state==4&&active==old);
-    assert(wallpaper_start());assert(active==old&&shown_flags==4&&!memcmp(shown,pixels,BYTES));
+    assert(wallpaper_start());assert(active==old&&shown_flags==12&&!memcmp(shown,pixels,BYTES));
     line("PC_WALL_BEGIN 6 0 2166136261 0");run();line("PC_WALL_DONE 6");run();assert(state==3&&shown==NULL&&shown_flags==0);
     assert(wallpaper_start());assert(current.length==0&&current.flags==0);
     puts("Wallpaper: image/readback, flags-only copy, interrupted/corrupt writes and reboot persistence PASS");return 0;

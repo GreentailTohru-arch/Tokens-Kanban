@@ -20,6 +20,8 @@ The website reads display options on connection. Reading the stored image is
 optional because it can take time over Bluetooth. Changing only the switches
 copies the committed image on the device, without uploading or replacing it.
 
+The optional bottom navigation indicator is off by default. Enable it in the wallpaper editor and save; it follows enabled pages and their order, without cropping the image. The new firmware reports wallpaper protocol version 2 (flag bit 3); the website still accepts version 1 and disables this option on older firmware. Page changes request an immediate LVGL refresh and wait for queued pixels, with no transition animation. SPI scanning may remain visible and requires physical acceptance.
+
 ## Storage and upgrade
 
 This version adds a 512 KiB wallpaper partition at `0x6C0000` and shortens factory
