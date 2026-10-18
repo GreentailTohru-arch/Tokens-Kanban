@@ -24,14 +24,18 @@ void page_nav_normalize(const page_config_t *c,token_nav_t *nav) {
     if(nav->page<PAGE_COUNT && (c->enabled&(1u<<nav->page)))return;
     for(unsigned i=0;i<PAGE_COUNT;++i)if(c->enabled&(1u<<c->order[i])) {nav->page=c->order[i];return;}
 }
+void page_nav_step(const page_config_t *c,token_nav_t *nav,bool previous) {
+    page_nav_normalize(c,nav);
+    unsigned pos=0;while(pos<PAGE_COUNT && c->order[pos]!=nav->page)++pos;
+    for(unsigned step=1;step<=PAGE_COUNT;++step) {
+        unsigned next=c->order[(pos+(previous?PAGE_COUNT-step:step))%PAGE_COUNT];
+        if(c->enabled&(1u<<next)) {nav->page=next;break;}
+    }
+}
 void page_nav_key(const page_config_t *c,token_nav_t *nav,unsigned key,bool double_click) {
     page_nav_normalize(c,nav);
     if(key==TOKEN_KEY_OK && double_click) {
-        unsigned pos=0;while(pos<PAGE_COUNT && c->order[pos]!=nav->page)++pos;
-        for(unsigned step=1;step<=PAGE_COUNT;++step) {
-            unsigned next=c->order[(pos+step)%PAGE_COUNT];
-            if(c->enabled&(1u<<next)) {nav->page=next;break;}
-        }
+        page_nav_step(c,nav,false);
     } else if(key==TOKEN_KEY_OK) {
         if(nav->page==PAGE_HOME)nav->show_cost=!nav->show_cost;
         if(nav->page==PAGE_POSTCARD)nav->contact=!nav->contact;

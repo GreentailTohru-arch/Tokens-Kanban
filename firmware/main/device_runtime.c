@@ -269,7 +269,7 @@ static bool numbers(const char *line,const char *prefix,unsigned *out,unsigned c
     }
     return !*p;
 }
-pet_bindings_t device_runtime_pet_bindings(void) {portENTER_CRITICAL(&mutex);pet_bindings_t b=bindings;portEXIT_CRITICAL(&mutex);return b;}
+pet_bindings_t device_runtime_pet_bindings(void) {portENTER_CRITICAL(&mutex);pet_bindings_t b=bindings;portEXIT_CRITICAL(&mutex);b.action[7]=PET_ACTION_NONE;return b;}
 size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
     if(strncmp(line,"PC_KEYS",7) && strncmp(line,"PC_THEME",8) && strncmp(line,"PC_DISPLAY",10) && strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6) && strncmp(line,"PC_PAGES",8) && strncmp(line,"PC_MON",6))return 0;
     if(!queue)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
@@ -282,6 +282,7 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         request_t request={.command=13,.id=key_values[0]};
         for(unsigned i=0;i<PET_BINDINGS;++i)request.bindings.action[i]=key_values[i+1];
         if(!request.id || !pet_bindings_valid(&request.bindings))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+        request.bindings.action[7]=PET_ACTION_NONE; /* Reserved for global previous-page navigation. */
         if(!nvs_ready)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
         portENTER_CRITICAL(&mutex);
         unsigned state=save_state,old_id=save_id,old_kind=save_kind;pet_bindings_t previous=requested_bindings;

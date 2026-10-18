@@ -192,10 +192,10 @@ int main(void){
     line("PC_PAGES_SET2 9877 32 4 3 2 1 0","PC_CFG_INVALID\n");
     line("PC_KEYS_GET","PC_KEYS 2 1 2 3 0 4 0 0 0 5\n");
     line("PC_KEYS_SET 9880 2 1 0 4 0 3 1 2 0","PC_CFG_STATE 9880 1\n");run();reboot();
-    line("PC_KEYS_GET","PC_KEYS 2 2 1 0 4 0 3 1 2 0\n");
+    line("PC_KEYS_GET","PC_KEYS 2 2 1 0 4 0 3 1 0 0\n");
     line("PC_KEYS_SET 9881 5 1 0 4 0 3 1 2 0","PC_CFG_INVALID\n");
     fail_commit=true;line("PC_KEYS_SET 9882 1 2 3 0 4 0 0 0 5","PC_CFG_STATE 9882 1\n");run();fail_commit=false;reboot();
-    line("PC_KEYS_GET","PC_KEYS 2 2 1 0 4 0 3 1 2 0\n");
+    line("PC_KEYS_GET","PC_KEYS 2 2 1 0 4 0 3 1 0 0\n");
     nvs_ready=false;line("PC_CFG_SET 30 60 1 3 10","PC_CFG_UNAVAILABLE\n");
     fail_task=true;assert(!device_runtime_start());line("PC_CFG_GET","PC_CFG_UNAVAILABLE\n");
     puts("Settings worker, persistence failures, audio bounds, wake and event deduplication: PASS");

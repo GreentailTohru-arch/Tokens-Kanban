@@ -27,6 +27,11 @@ int main(void){
     pet_controls_cancel(&s);click(&s,&b,0,10000);assert(pet_controls_tick(&s,&b,10400)==16);
     click(&s,&b,1,11000);click(&s,&b,1,11200);assert(pet_controls_tick(&s,&b,11600)==20);
     click(&s,&b,2,12000);click(&s,&b,2,12200);assert(pet_controls_tick(&s,&b,12600)==PET_ACTION_NEXT);
+    /* A legacy custom binding cannot override global OK triple navigation. */
+    click(&s,&b,2,13000);click(&s,&b,2,13200);
+    assert(!pet_controls_event(&s,&b,2,PET_CONTROL_PRESS,13400));
+    assert(pet_controls_event(&s,&b,2,PET_CONTROL_RELEASE,13440)==PET_ACTION_PREVIOUS);
+    assert(!pet_controls_tick(&s,&b,14000));
     b.action[0]=15;assert(!pet_bindings_valid(&b));b.action[0]=24;assert(!pet_bindings_valid(&b));
     pet_remote_line(&r,"PC_CTRL_POLL 789 0",out,sizeof(out),1,20000);
     pet_remote_update(&r,20,false,20100);pet_remote_line(&r,"PC_CTRL_POLL 789 0",out,sizeof(out),1,20200);

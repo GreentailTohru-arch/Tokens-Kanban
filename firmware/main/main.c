@@ -40,7 +40,7 @@ static volatile bool s_input_ready;
 static atomic_bool input_overflow;
 static size_t accept_unlocked(const char *line,char *reply,size_t capacity,unsigned transport) {
     if(!strcmp(line,"PC_INFO_STACK"))return snprintf(reply,capacity,"PC_STACK %u %u\n",(unsigned)CONFIG_ESP_MAIN_TASK_STACK_SIZE,(unsigned)uxTaskGetStackHighWaterMark(main_task_handle));
-    if(!strcmp(line,"PC_VERSION"))return snprintf(reply,capacity,"PC_VERSION v31\n");
+    if(!strcmp(line,"PC_VERSION"))return snprintf(reply,capacity,"PC_VERSION v32\n");
     if(!strcmp(line,"PC_PET_HELLO"))return snprintf(reply,capacity,"PC_PET_READY 1\n");
     if(!strncmp(line,"PC_PET ",7)){
         unsigned seq,state;
@@ -141,7 +141,7 @@ void app_main(void) {
     current.v[T_PLAN]=0;
     pet_message_t pet={PET_COUNT,0};
     bool received=false; unsigned rendered_page=PAGE_COUNT; token_nav_t nav={.page=PAGE_COUNT};
-    volume_controls_t volume={0};pet_controls_t pet_keys={0};
+    volume_controls_t volume={0};pet_controls_t pet_keys={0},ok_keys={0};unsigned input_page=PAGE_COUNT;
     system_snapshot_t metrics;for(unsigned i=0;i<SYS_FIELDS;++i)metrics.v[i]=-1;
     bool metrics_received=false;uint64_t metrics_last=0;
     uint64_t last=0,next_battery=0; int battery=-1;
@@ -155,12 +155,16 @@ void app_main(void) {
         if(xQueueReceive(system_snapshots,&metrics,0)==pdTRUE) {metrics_received=true;metrics_last=now;}
         page_config_t page_config=device_runtime_pages();page_nav_normalize(&page_config,&nav);
         volume.value=device_runtime_volume();unsigned before_volume=volume.value;
-        pet_bindings_t bindings=device_runtime_pet_bindings();unsigned remote_action=0;
+        pet_bindings_t bindings=device_runtime_pet_bindings(),ok_bindings=bindings;unsigned remote_action=0,ok_action=0;
+        /* OK multi-clicks are decoded on every page, before dispatching any single/double. */
+        if(nav.page!=PAGE_PET){ok_bindings.action[6]=PET_ACTION_SEND;ok_bindings.action[8]=PET_ACTION_NONE;}
+        if(input_page!=nav.page || boot_visible || device_runtime_screen_off())pet_controls_cancel(&ok_keys);
+        input_page=nav.page;
         bool pet_active=nav.page==PAGE_PET && !boot_visible && !device_runtime_screen_off();
         portENTER_CRITICAL(&remote_mutex);bool remote_live=remote.session && now-remote.polled<=1500;portEXIT_CRITICAL(&remote_mutex);
-        if(!remote_live && pet_keys.voice)pet_controls_cancel(&pet_keys);
+        if(!remote_live && ok_keys.voice)pet_controls_cancel(&ok_keys);
         if(!pet_active)pet_controls_cancel(&pet_keys);
-        if(atomic_exchange(&input_overflow,false)){volume_controls_cancel(&volume,now);pet_controls_cancel(&pet_keys);}
+        if(atomic_exchange(&input_overflow,false)){volume_controls_cancel(&volume,now);pet_controls_cancel(&pet_keys);pet_controls_cancel(&ok_keys);}
         key_event_t input;
         while(xQueueReceive(keys,&input,0)==pdTRUE) {
             unsigned key=input.key==BSP_BTN_UP?TOKEN_KEY_UP:input.key==BSP_BTN_DOWN?TOKEN_KEY_DOWN:TOKEN_KEY_OK;
@@ -171,6 +175,15 @@ void app_main(void) {
                 input.event==BSP_BTN_DOUBLE?VOLUME_DOUBLE:input.event==BSP_BTN_LONG?VOLUME_LONG:VOLUME_RELEASE;
             bool blocked=volume.visible || volume.waking || now<volume.quiet_until || (key==TOKEN_KEY_OK && now<volume.ok_until);
             bool consumed=volume_controls_key(&volume,key,event,now);
+            if(key==TOKEN_KEY_OK){
+                if(blocked){pet_controls_cancel(&ok_keys);continue;}
+                if(input.event==BSP_BTN_PRESS || input.event==BSP_BTN_RELEASE || input.event==BSP_BTN_LONG){
+                    unsigned ev=input.event==BSP_BTN_PRESS?PET_CONTROL_PRESS:input.event==BSP_BTN_RELEASE?PET_CONTROL_RELEASE:PET_CONTROL_LONG;
+                    unsigned action=pet_controls_event(&ok_keys,&ok_bindings,key,ev,input.at);
+                    if(action)ok_action=action;
+                }
+                continue;
+            }
             if(nav.page==PAGE_PET){
                 if(blocked){pet_controls_cancel(&pet_keys);continue;}
                 if(input.event==BSP_BTN_PRESS || input.event==BSP_BTN_RELEASE || input.event==BSP_BTN_LONG){
@@ -185,10 +198,18 @@ void app_main(void) {
             }
         }
         if(nav.page==PAGE_PET){unsigned action=pet_controls_tick(&pet_keys,&bindings,now);if(action)remote_action=action;}
-        if(remote_action==PET_ACTION_NEXT){page_nav_key(&page_config,&nav,TOKEN_KEY_OK,true);remote_action=0;pet_controls_cancel(&pet_keys);}
+        if(volume.visible || volume.waking || now<volume.quiet_until || now<volume.ok_until)pet_controls_cancel(&ok_keys);
+        unsigned action=pet_controls_tick(&ok_keys,&ok_bindings,now);if(action)ok_action=action;
+        if(ok_action==PET_ACTION_NEXT || ok_action==PET_ACTION_PREVIOUS){
+            page_nav_step(&page_config,&nav,ok_action==PET_ACTION_PREVIOUS);
+            remote_action=0;pet_controls_cancel(&pet_keys);pet_controls_cancel(&ok_keys);
+        }else if(ok_action){
+            if(nav.page==PAGE_PET)remote_action=ok_action;
+            else page_nav_key(&page_config,&nav,TOKEN_KEY_OK,false);
+        }
         portENTER_CRITICAL(&remote_mutex);
         if(nav.page!=PAGE_PET || !pet_active){remote.action=0;remote.voice=false;}
-        else pet_remote_update(&remote,remote_action,pet_keys.voice,now);
+        else pet_remote_update(&remote,remote_action,ok_keys.voice,now);
         portEXIT_CRITICAL(&remote_mutex);
         volume_controls_tick(&volume,now);
         if(volume.down)(void)device_runtime_key(now);

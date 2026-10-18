@@ -13,6 +13,7 @@ static unsigned finish(pet_controls_t *s,const pet_bindings_t *b) {
     unsigned n=s->clicks,key=s->key;s->clicks=0;
     if(!n)return PET_ACTION_NONE;
     if(key==2 && n==2)return PET_ACTION_NEXT;
+    if(key==2 && n==3)return PET_ACTION_PREVIOUS;
     unsigned slot=key<2?key*3+n-1:n==1?6:7;
     return b->action[slot];
 }

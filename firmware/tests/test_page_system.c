@@ -28,6 +28,14 @@ int main(void) {
             nav.page=start;page_nav_normalize(&c,&nav);unsigned first=nav.page,seen=0;
             for(unsigned i=0;i<page_count(&c);++i) {assert(!(seen&(1u<<nav.page)));seen|=1u<<nav.page;page_nav_key(&c,&nav,TOKEN_KEY_OK,true);}
             assert(nav.page==first && seen==mask);
+            seen=0;
+            for(unsigned i=0;i<page_count(&c);++i){
+                unsigned current=nav.page;assert(!(seen&(1u<<current)));seen|=1u<<current;
+                page_nav_step(&c,&nav,true);unsigned previous=nav.page;
+                page_nav_step(&c,&nav,false);assert(nav.page==current);
+                nav.page=previous;
+            }
+            assert(nav.page==first && seen==mask);
         }
     }
     c=page_config_default();c.enabled=0;assert(!page_config_valid(&c));c.enabled=64;assert(!page_config_valid(&c));

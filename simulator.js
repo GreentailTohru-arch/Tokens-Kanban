@@ -1,4 +1,4 @@
-import {renderFace} from './codec.js?v=31';
+import {renderFace} from './codec.js?v=32';
 const $=id=>document.getElementById(id),names=['用量首页','统计分析','系统检测','明信片','虚拟宠物','全屏壁纸'],periods=['今日','本周','累计'];
 const petNames=['未连接','待命中','运行中','额度不足','听写中','操作中'];
 const petKeys=['offline','online','thinking','limited','listening','computer'];
@@ -26,18 +26,16 @@ export class ExperienceModel {
     if(this.petVoice){this.petVoice=false;this.petState=1;this.petAction="语音文字已保留（模拟，不发送）";}
     if(h.consumed){if(!h.long&&!this.overlay)this.quietUntil=now+400;return;}
     if(h.long)return;
-    if(this.page===4){
+    if(this.page===4||key==='ok'){
       const previous=this.petClicks;this.petClicks={key,count:previous?.key===key&&now-previous.at<350?previous.count+1:1,at:now};
       if(this.petClicks.count===3)this.finishPetClicks(now);return;
     }
-    if(key==='ok'){
-      if(this.pendingOK!==null&&now-this.pendingOK<=300){this.pendingOK=null;const pages=this.enabled();this.page=pages[(pages.indexOf(this.page)+1)%pages.length];}
-      else this.pendingOK=now;
-    }else if(this.page<2)this.period=(this.period+(key==='up'?2:1))%3;
+    if(this.page<2)this.period=(this.period+(key==='up'?2:1))%3;
   }
   finishPetClicks(now){
     const p=this.petClicks;this.petClicks=null;if(!p)return;
-    if(p.key==='ok'&&p.count===2){const pages=this.enabled();this.page=pages[(pages.indexOf(this.page)+1)%pages.length];this.petAction='';return;}
+    if(p.key==='ok'&&p.count>=2){const pages=this.enabled();this.page=pages[(pages.indexOf(this.page)+(p.count===3?pages.length-1:1))%pages.length];this.petAction='';return;}
+    if(this.page!==4){if(this.page===0)this.details=!this.details;if(this.page===3)this.contact=!this.contact;return;}
     const slot=p.key==='up'?p.count-1:p.key==='down'?p.count+2:p.count===1?6:7;
     const action=(this.config.petBindings||[1,2,3,0,4,0,0,0,5])[slot];
     this.petAction=action>=16?'自定义快捷键（模拟）':['无操作','发送消息（模拟）','撤销输入（模拟）','停止／继续（模拟）','自定义快捷键（模拟）'][action]||'';
@@ -53,7 +51,6 @@ export class ExperienceModel {
       if(!h.long&&now-h.at>=500){h.long=true;h.next=now+180;}
       if(h.long&&now>=h.next){this.adjust(h.key,now);h.next=now+180;}
     }
-    if(this.pendingOK!==null&&now-this.pendingOK>300){this.pendingOK=null;if(this.page===0)this.details=!this.details;if(this.page===3)this.contact=!this.contact;}
     if(this.overlay&&!this.held&&now-this.lastAction>=3000)this.overlay=false;
     if(this.on&&this.awake&&!this.held&&now>=this.bootUntil&&this.config.idle>0&&now-this.lastAction>=this.config.idle*1000){this.awake=false;this.overlay=false;this.pendingOK=null;}
   }

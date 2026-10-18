@@ -1,16 +1,16 @@
-import {readCardText,readCardPicture,writeCardText,encodeCardText} from './card-storage.js?v=31';
+import {readCardText,readCardPicture,writeCardText,encodeCardText} from './card-storage.js?v=32-card-read';
 import {completeSave,cancelSaveCompletion} from './save-progress.js';
-import {WallpaperEditor} from './wallpaper.js?v=31';
-import {NoticeCenter} from './notices.js?v=31';
-import {LocalConnection} from './local-connection.js?v=31';
-import {DraftState} from './draft-state.js?v=31';
-import {LogoEditor} from './logo-editor.js?v=31';
-import {AboutPanel} from './about.js?v=31';
-import {DeviceInfoPanel} from './device-info.js?v=31';
-import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=31';
-import {MonitorEditor} from './monitor.js?v=31-readback';
+import {WallpaperEditor} from './wallpaper.js?v=32';
+import {NoticeCenter} from './notices.js?v=32';
+import {LocalConnection} from './local-connection.js?v=32';
+import {DraftState} from './draft-state.js?v=32';
+import {LogoEditor} from './logo-editor.js?v=32';
+import {AboutPanel} from './about.js?v=32';
+import {DeviceInfoPanel} from './device-info.js?v=32';
+import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=32';
+import {MonitorEditor} from './monitor.js?v=32-readback';
 import {loadDefaults} from './defaults.js';
-import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=31';
+import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=32';
 const $=id=>document.getElementById(id);
 const drawerMedia=matchMedia('(max-width:760px)');
 function setSidebar(open,restoreFocus=false){
@@ -40,7 +40,7 @@ const notices=new NoticeCenter($('status'));
 function status(text,kind='success'){if(kind==='error')cancelSaveCompletion();else if(text.includes('已保存'))completeSave();notices.show(text,kind);}
 
 function repaint(){renderFace($('preview'),content,back,true);refreshPreviewColors();refreshThumbnails();$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const progress=$('progress');if(!busy)progress.hidden=true;else if(progress.hidden){progress.removeAttribute('value');progress.hidden=false;}wallEditor?.controls();const locked=busy||imageLoading;$("petKeysSave").disabled=locked||!link||!petKeysSupported;$("petKeysReset").disabled=locked;$("petKeyRows").inert=locked;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='postcard'&&!cardInfo?.supported)||(activePage==='pet'&&!petKeysSupported)||(activePage==='wallpaper'&&!wallEditor?.supported)||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
+function controls(){const progress=$('progress');if(!busy)progress.hidden=true;else if(progress.hidden){progress.removeAttribute('value');progress.hidden=false;}wallEditor?.controls();const locked=busy||imageLoading;$('cardRead').disabled=locked||!link||!cardInfo?.supported||!cardInfo?.length;$("petKeysSave").disabled=locked||!link||!petKeysSupported;$("petKeysReset").disabled=locked;$("petKeyRows").inert=locked;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='postcard'&&!cardInfo?.supported)||(activePage==='pet'&&!petKeysSupported)||(activePage==='wallpaper'&&!wallEditor?.supported)||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
 function updateClock(){if(activePage==='wallpaper'||activePage==='pages'){wallEditor?.render();if(activePage==='pages'){const thumbnail=document.querySelector('.page-card[data-page="5"] img');if(thumbnail)thumbnail.src=$('wallPreview').toDataURL();}}const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
@@ -158,9 +158,30 @@ async function readPostcard(connection){
  }
  if(info.supported&&!info.length)Object.assign(content,await loadDefaults());
  for(const field of ['title','subtitle','name'])$(field).value=content[field];
- $('cardReadState').textContent=!info.supported?'请升级固件以自动读取明信片。为保护设备内容，当前不能保存明信片。':info.text?'已读取设备文字；未上传新图片时，保存会保留设备头像和二维码。':info.length?'旧明信片只保存了合成图片，无法读回文字；请重新填写完整文字，头像和二维码会保留。':'设备尚未保存明信片';
+ $('cardReadState').textContent=!info.supported?'请升级固件以自动读取明信片。为保护设备内容，当前不能保存明信片。':info.text?'已读取设备文字；点击“读取设备图片和文字”可载入头像和二维码预览。':info.length?'旧明信片只保存了合成图片，无法读回文字；请重新填写完整文字，头像和二维码会保留。':'设备尚未保存明信片';
  repaint();drafts?.mark('postcard');
 }
+async function readPostcardPictures(){
+ const connection=link;if(!connection||busy||imageLoading||draft||!cardInfo?.supported||!cardInfo.length)return;
+ busy=true;controls();$('progress').hidden=false;$('progress').value=0;
+ $('cardReadState').textContent='正在读取设备图片和文字…';
+ try{
+  const info=await readCardText(connection);if(!info.supported||!info.length)throw Error('设备没有已保存的明信片');
+  const progress=value=>{$('progress').value=value*100;$('cardReadState').textContent=`正在读取设备图片和文字 ${Math.floor(value*100)}%`;};
+  const photo=await readCardPicture(connection,info,false,value=>progress(value*.5));
+  const qr=await readCardPicture(connection,info,true,value=>progress(.5+value*.5));
+  const current=await readCardText(connection);
+  if(connection!==link||current.generation!==info.generation||current.hash!==info.hash)throw Error('读取期间设备内容已改变，请重新读取');
+  for(const [field,image] of [['photo',photo],['qr',qr]]){content[field]?.close?.();content[field]=image;selectedFiles[field]=null;$(field).value='';}
+  content.crop={x:.5,y:.5,zoom:1};content.qrCrop={x:.5,y:.5,zoom:1};
+  if(info.text){for(const field of ['title','subtitle','name']){$(field).value=content[field]=info.text[field];}}
+  cardInfo=info;repaint();if(info.text)drafts?.mark('postcard');refreshDraftNotice();
+  $('cardReadState').textContent=info.text?'已读取设备头像、二维码和文字，可继续编辑。':'已读取头像和二维码。旧明信片没有独立文字记录，当前文字保留，请核对后保存。';
+  status('已读取设备明信片');
+ }catch(error){$('cardReadState').textContent='读取未完成，当前草稿保持不变。';status(error.message,'error');}
+ finally{busy=false;$('progress').hidden=true;controls();}
+}
+$('cardRead').onclick=()=>void readPostcardPictures();
 async function stateFor(id,reply){
   for(let i=0;i<240;i++){
     const parts=reply.split(' ');if(parts[0]!=='PC_STATE')throw new Error('设备拒绝请求：'+reply);
@@ -334,7 +355,7 @@ const bitmapIds=new WeakMap();let nextBitmap=1;
 const bitmapId=image=>{if(!image)return 0;if(!bitmapIds.has(image))bitmapIds.set(image,nextBitmap++);return bitmapIds.get(image);};
 const cardKey=()=>JSON.stringify([content.title,content.subtitle,content.name,bitmapId(content.photo),bitmapId(content.qr),content.crop,content.qrCrop]);
 drafts.add('wallpaper','壁纸显示设置',()=>wallEditor.key());
-drafts.add('petkeys','宠物按键',()=>JSON.stringify(petKeys));
+drafts.add('petkeys','宠物按键',()=>JSON.stringify([petKeys,window.PetShortcuts?.key()||'']));
 drafts.add('theme','设备主题',()=>JSON.stringify(window.DeviceTheme.values()));
 drafts.add('settings','显示与声音',()=>JSON.stringify([settingsValues(),Number($('brightness').value)]));
 drafts.add('pages','页面管理',()=>JSON.stringify([pageEnabled,pageOrder]));drafts.add('monitor','系统检测',()=>JSON.stringify(monitorEditor.config));drafts.add('name','设备名称',()=>$('deviceName').value.trim());drafts.add('postcard','明信片',cardKey);
@@ -436,12 +457,12 @@ async function savePages(event){
 function renderPetKeys(){
  const labels=['上 · 单击','上 · 双击','上 · 三击','下 · 单击','下 · 双击','下 · 三击','OK · 单击','OK · 三击','OK · 长按'];
  const actions=['无','发送消息','撤销输入（Ctrl+Z）','停止／继续思考','自定义快捷键','按住语音输入'];
- $('petKeyRows').replaceChildren(...labels.map((label,i)=>{const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const shortcut=window.PetShortcuts?.get(i)||'';const option=new Option(v===4&&shortcut?'自定义快捷键 · '+shortcut:actions[v],v);select.add(option);}select.value=petKeys[i]>=16?4:petKeys[i];const commit=value=>{petKeys[i]=value;$('petKeysState').textContent='有未保存的宠物按键设置';renderPetKeys();refreshDraftNotice();};
+ $('petKeyRows').replaceChildren(...[0,3,1,4,2,5,6,8].map(i=>{const label=labels[i];const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const shortcut=window.PetShortcuts?.get(i)||'';const option=new Option(v===4&&shortcut?'自定义快捷键 · '+shortcut:actions[v],v);select.add(option);}select.value=petKeys[i]>=16?4:petKeys[i];const commit=value=>{petKeys[i]=value;$('petKeysState').textContent='有未保存的宠物按键设置';renderPetKeys();refreshDraftNotice();};
  if(petKeys[i]===4||petKeys[i]>=16)select.add(new Option('调整快捷键…','edit'));
  select.onchange=()=>{const value=select.value==='edit'?4:Number(select.value);if(value===4){select.value=petKeys[i]>=16?4:petKeys[i];document.dispatchEvent(new CustomEvent('pickpetshortcut',{detail:{slot:i,source:select,confirm:()=>commit(16+i)}}));}else commit(value);};row.append(title,select);
  return row;}));
 }
-document.addEventListener('petshortcutchange',()=>renderPetKeys());
+document.addEventListener('petshortcutchange',event=>{renderPetKeys();if(event.detail?.loaded)drafts?.mark('petkeys');refreshDraftNotice();});
 async function readPetKeys(connection){
  let parts=[];try{parts=(await connection.rpc('PC_KEYS_GET')).split(' ');}catch{}
  petKeysSupported=parts[0]==='PC_KEYS'&&['1','2'].includes(parts[1])&&parts.length===11;
@@ -451,12 +472,13 @@ async function readPetKeys(connection){
 }
 async function savePetKeys(event){
  event.preventDefault();if(!link||busy||!petKeysSupported){status('请先连接支持宠物遥控的固件','error');return;}
- if(petKeysVersion<2&&petKeys.some(v=>v>=16)){status('请升级至 v31 固件以分别设置快捷键','error');return;}
- const desired=petKeys.map((v,i)=>v===4&&petKeysVersion>=2?16+i:v),id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;busy=true;controls();
- try{let reply=await link.rpc(`PC_KEYS_SET ${id} ${desired.join(' ')}`),saved=false;
+ if(petKeysVersion<2&&petKeys.some(v=>v>=16)){status('请升级至 v31 或更新固件以分别设置快捷键','error');return;}
+ const desired=petKeys.map((v,i)=>i===7?0:v===4&&petKeysVersion>=2?16+i:v),id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;busy=true;controls();
+ let shortcutSaved=false;
+ try{shortcutSaved=await window.PetShortcuts?.save();let reply=await link.rpc(`PC_KEYS_SET ${id} ${desired.join(' ')}`),saved=false;
   for(let i=0;i<300;i++){const p=reply.split(' ');if(p[0]!=='PC_CFG_STATE'||Number(p[1])!==id)throw new Error('设备暂忙，请重试');if(p[2]==='3')throw new Error('按键保存失败');if(p[2]==='2'){saved=true;break;}await delay(50);reply=await link.rpc('PC_CFG_STATUS');}
-  if(!saved)throw new Error('保存超时');await readPetKeys(link);if(!petKeysSupported||desired.some((v,i)=>v!==petKeys[i]))throw new Error('按键校验不一致');drafts.mark('petkeys');$('petKeysState').textContent='宠物按键已保存到设备';status('宠物按键已保存到设备');
- }catch(e){petKeys=desired;renderPetKeys();status(e.message,'error');}finally{busy=false;controls();refreshDraftNotice();}
+  if(!saved)throw new Error('保存超时');await readPetKeys(link);if(!petKeysSupported||desired.some((v,i)=>v!==petKeys[i]))throw new Error('按键校验不一致');drafts.mark('petkeys');$('petKeysState').textContent='宠物按键已保存到设备';$('petCustomHelp').textContent='快捷键按手势独立配置，已完成保存。';status('宠物按键已保存到设备');
+ }catch(e){petKeys=desired;renderPetKeys();status((shortcutSaved?'电脑快捷键已保存，设备按键保存未完成：':'')+e.message,'error');}finally{busy=false;controls();refreshDraftNotice();}
 }
 $('petKeysForm').addEventListener('submit',savePetKeys);$('petKeysReset').onclick=()=>{petKeys=[...petKeyDefaults];renderPetKeys();$('petKeysState').textContent='已恢复默认，保存后生效';refreshDraftNotice();};renderPetKeys();
 

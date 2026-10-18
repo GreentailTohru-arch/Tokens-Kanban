@@ -2,6 +2,14 @@
 
 # Changelog
 
+## v32 · 2026-10-18
+
+- Triple-press OK on any page to return to the previous enabled page; double press advances. Triple presses no longer first trigger double navigation.
+- Reserve OK triple for navigation and remove it from pet customization, preserving other bindings. Match navigation in the web simulator.
+- Read postcard images and text from the device while retaining drafts if reading fails.
+- Replace the separate local-shortcut save button with unified pet-button/top-save handling for computer and device settings.
+
+
 ## v31 · 2026-10-18
 
 - Configure independent custom shortcuts for up to eight pet gestures. Editing or clearing one binding leaves the others unchanged.
