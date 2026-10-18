@@ -155,7 +155,7 @@
       <div class="field startup-setting"><label class="toggle-row" for="startupSound"><span>开机音效</span><input id="startupSound" type="checkbox" role="switch" checked disabled></label><p id="startupHint" class="setting-help">开机显示 Logo 时播放，使用本页音量。</p></div>
       <p class="setting-help">提示音在设备上播放；思考结束提示需要新版电脑同步程序。</p>
     </section>
-  </fieldset></form><section id="startupSettings" class="edit-panel logo-settings unified-preview"><h2 class="preview-caption">开机 Logo 预览</h2><div class="device logo-device"><canvas id="logoPreview" width="240" height="320" aria-label="开机 Logo 预览"></canvas></div><p class="setting-help">240 × 320 · 实际屏幕比例</p><p id="logoState" class="setting-help">保留原默认图，可导入静态图或 GIF。</p><div class="logo-actions"><label class="file-button" for="logoFile">导入图片 / GIF</label><input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button id="logoDefault" type="button" class="secondary">恢复默认</button><button id="logoSave" type="button" disabled>保存开机 Logo</button></div><progress id="logoProgress" max="100" value="0" hidden></progress></section><p class="settings-footnote">显示与声音使用顶部“保存到设备”；Logo 单独保存，下次开机显示。</p>
+  </fieldset></form><section id="startupSettings" class="edit-panel logo-settings unified-preview"><h2 class="preview-caption">开机 Logo 预览</h2><div class="device logo-device"><canvas id="logoPreview" width="240" height="320" aria-label="开机 Logo 预览"></canvas></div><p class="setting-help">240 × 320 · 实际屏幕比例</p><p id="logoState" class="setting-help">保留原默认图，可导入静态图或 GIF。</p><div class="logo-actions"><label class="file-button" for="logoFile">导入图片 / GIF</label><input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden><button id="logoDefault" type="button" class="secondary">恢复默认</button><button id="logoSave" type="button" disabled>保存开机 Logo</button></div></section><p class="settings-footnote">显示与声音使用顶部“保存到设备”；Logo 单独保存，下次开机显示。</p>
 </section><section id="aboutPage" class="about-page" hidden aria-label="关于 Tokens Kanban"></section></div></div>
 <dialog id="bridgeDialog" aria-labelledby="bridgeTitle"><div class="crop-heading"><h2 id="bridgeTitle">安装桥接插件</h2><button id="bridgeClose" type="button" class="close-crop" aria-label="关闭安装说明"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><ol class="simple-steps"><li>将插件放入 TrafficMonitor 的 <code>plugins</code> 文件夹。</li><li>退出并重新启动 TrafficMonitor。</li><li>运行电脑同步程序，通过 USB 或蓝牙连接设备。</li></ol><p class="setting-help">插件安装在电脑端；网页不会安装插件或改动网卡设置。</p></dialog>
 
@@ -165,5 +165,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=rtos-badge-28"></script>
+<script type="module" src="editor.js?v=top-progress-28"></script>
 </body></html>

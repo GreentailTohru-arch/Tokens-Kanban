@@ -1,8 +1,8 @@
-import {WallpaperEditor} from './wallpaper.js?v=matching-guides-28';
+import {WallpaperEditor} from './wallpaper.js?v=top-progress-28';
 import {NoticeCenter} from './notices.js?v=atelier-20';
 import {LocalConnection} from './local-connection.js?v=atelier-20';
 import {DraftState} from './draft-state.js?v=atelier-20';
-import {LogoEditor} from './logo-editor.js?v=upload-crop-only-28';
+import {LogoEditor} from './logo-editor.js?v=top-progress-28';
 import {AboutPanel} from './about.js?v=rtos-badge-28';
 import {DeviceInfoPanel} from './device-info.js?v=screen-test-22';
 import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=virtual-pet-28';
@@ -177,7 +177,7 @@ async function upload(event){
     }
     state=await stateFor(id,await link.rpc(`PC_DONE ${id}`));if(state.state!==3)throw new Error('设备尚未确认保存');
     drafts?.mark('postcard');const dated=await syncClock(link);status('已保存到设备'+(dated?'':'，日期显示需要更新设备固件'));
-  }catch(error){status(error.message,'error');}finally{busy=false;controls();}
+  }catch(error){status(error.message,'error');}finally{$('progress').hidden=true;busy=false;controls();}
 }
 function setPage(page){
   const changed=activePage!==page;
