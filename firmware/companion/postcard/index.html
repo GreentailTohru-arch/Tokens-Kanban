@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="manage.css?v=32">
 <link rel="stylesheet" href="atelier.css?v=32">
 <link rel="stylesheet" href="themes.css?v=32">
-<link rel="stylesheet" href="layout.css?v=32">
+<link rel="stylesheet" href="layout.css?v=32-read-only">
 <link rel="stylesheet" href="shortcut-picker.css?v=32-layout2"></head>
 <body>
 <header class="topbar">
@@ -85,7 +85,7 @@
  <div class="field image-field"><label for="wallFile">上传图片</label><input id="wallFile" type="file" accept="image/png,image/jpeg,image/webp,image/bmp"></div><p class="setting-help">按 3:4 屏幕取景，自动缩小并转换为 240 × 320，最多 150 KiB。透明区域使用当前主题背景；动图使用首帧。</p>
  
  <p class="setting-help">默认关闭。双击确定键可从壁纸切换到下一页。</p><p id="wallState" class="setting-help" role="status">默认使用主题背景 · 连接后可保存</p>
- </section><aside class="edit-panel wall-preview-panel unified-preview"><h2 class="preview-caption">全屏壁纸预览</h2><div class="device wall-device"><canvas id="wallPreview" width="240" height="320" aria-label="壁纸屏幕预览"></canvas></div><p class="setting-help">240 × 320 · 实际屏幕比例</p><div class="wall-actions"><button id="wallClear" type="button" class="secondary">恢复主题背景</button><button id="wallRead" type="button" class="secondary" disabled>读取设备图片</button></div></aside></div></form>
+ </section><aside class="edit-panel wall-preview-panel unified-preview"><h2 class="preview-caption">全屏壁纸预览</h2><div class="device wall-device"><canvas id="wallPreview" width="240" height="320" aria-label="壁纸屏幕预览"></canvas></div><p class="setting-help">240 × 320 · 实际屏幕比例</p><div class="wall-actions"><button id="wallRead" type="button" class="secondary" disabled>读取设备图片</button></div></aside></div></form>
  </section>
  <dialog id="wallCropDialog" aria-labelledby="wallCropTitle"><div class="crop-heading"><h2 id="wallCropTitle">壁纸取景</h2><button id="wallCropCancel" type="button" class="close-crop" aria-label="取消壁纸取景"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><p class="setting-help">拖动或按方向键移动画面，缩放调整构图。</p><div class="crop-stage"><div class="wall-crop-guide"><canvas id="wallCropCanvas" width="240" height="320" tabindex="0" aria-label="3比4壁纸取景器"></canvas></div></div><div class="crop-controls"><label for="wallCropZoom">缩放</label><input id="wallCropZoom" type="range" min="1" max="8" step=".01" value="1"></div><div class="crop-actions"><button id="wallCropReset" type="button" class="secondary">重置</button><button id="wallCropApply" type="button">确定取景</button></div></dialog>
  <section id="pagesPage" class="pages-page" hidden aria-label="页面管理">
@@ -165,5 +165,5 @@
   <div class="crop-controls"><label for="zoom">缩放</label><output id="zoomValue" for="zoom">1.00×</output><input id="zoom" type="range" min="1" max="4" step="0.01" value="1"></div>
   <div class="crop-actions"><button id="resetCrop" type="button" class="secondary">重置</button><button id="applyCrop" type="button">确定取景</button></div>
 </dialog>
-<script type="module" src="editor.js?v=32-unified-save"></script>
+<script type="module" src="editor.js?v=32-read-only"></script>
 <script type="module" src="pet-shortcut.js?v=32-unified-save"></script></body></html>

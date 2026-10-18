@@ -1,6 +1,6 @@
 import {readCardText,readCardPicture,writeCardText,encodeCardText} from './card-storage.js?v=32-card-read';
 import {completeSave,cancelSaveCompletion} from './save-progress.js';
-import {WallpaperEditor} from './wallpaper.js?v=32';
+import {WallpaperEditor} from './wallpaper.js?v=32-read-only';
 import {NoticeCenter} from './notices.js?v=32';
 import {LocalConnection} from './local-connection.js?v=32';
 import {DraftState} from './draft-state.js?v=32';

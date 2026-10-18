@@ -268,7 +268,7 @@ html[data-theme-styled=true] :is(.brand-symbol,.about-mark){border:0;border-radi
 }
 
 #pageContent #startupSettings{grid-row:2}
-#pageContent .unified-preview .wall-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:8px;margin:20px 0 0}
+#pageContent .unified-preview .wall-actions{display:grid;grid-template-columns:minmax(0,1fr);width:100%;gap:8px;margin:20px 0 0}
 #pageContent .unified-preview .wall-actions>button{min-width:0;min-height:40px;padding:9px 8px;font-size:12px;white-space:normal}
 #pageContent .unified-preview .wall-actions>button{grid-column:auto}
 @container(max-width:740px){#settingsForm{grid-row:3}}

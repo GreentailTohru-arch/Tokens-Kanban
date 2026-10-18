@@ -13,7 +13,6 @@ export class WallpaperEditor{
   this.canvas=document.createElement('canvas');this.canvas.width=240;this.canvas.height=320;
   $('wallFile').onchange=()=>this.choose($('wallFile').files[0]);
   
-  $('wallClear').onclick=()=>{this.bytes=null;this.image=null;this.original?.close?.();this.original=null;this.savedLength=0;this.imageDirty=true;this.revision++;this.changed();};
   $('wallNav').onchange=$('wallTime').onchange=$('postcardDate').onchange=()=>{this.flags=($('wallTime').checked?3:0)|($('postcardDate').checked?4:0)|($('wallNav').checked?8:0);this.changed();};
   $('wallCropZoom').oninput=()=>{this.pending.crop.zoom=+$('wallCropZoom').value;this.paintCrop();};
   $('wallCropReset').onclick=()=>{this.pending.crop={x:.5,y:.5,zoom:1};this.paintCrop();};
@@ -29,7 +28,7 @@ export class WallpaperEditor{
  }
  key(){return JSON.stringify([this.flags,this.revision]);}
  changed(){this.render();this.api.changed();}
- controls(){const locked=this.api.locked();$('wallControls').inert=locked;$('wallNav').disabled=locked||(!!this.api.link()&&!this.navSupported);$('wallNav').title=this.api.link()&&!this.navSupported?'请更新设备固件以保存导航条设置':'';$('wallClear').disabled=locked;$('postcardDate').disabled=locked;$('wallRead').disabled=locked||!this.supported||!this.savedLength;}
+ controls(){const locked=this.api.locked();$('wallControls').inert=locked;$('wallNav').disabled=locked||(!!this.api.link()&&!this.navSupported);$('wallNav').title=this.api.link()&&!this.navSupported?'请更新设备固件以保存导航条设置':'';$('postcardDate').disabled=locked;$('wallRead').disabled=locked||!this.supported||!this.savedLength;}
  render(){
   $('wallNav').checked=!!(this.flags&8);$('wallTime').checked=!!(this.flags&3);$('postcardDate').checked=!!(this.flags&4);$('date').hidden=$('time').hidden=!(this.flags&4);
   this.draw($('wallPreview').getContext('2d'));this.controls();
