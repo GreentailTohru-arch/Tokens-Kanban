@@ -4,6 +4,8 @@
 
 ## v28 · 2026-10-18
 
+- v28 asset refresh: optional wallpaper navigation, consistent previews, a 15-second idle option, and top progress for all saves.
+- Request immediate device page refresh; visible scanning still requires physical acceptance.
 - Add virtual pet and fullscreen wallpaper pages. New defaults: usage, analytics, virtual pet, system monitor, postcard, wallpaper; saved custom order is retained.
 - Crop and compress wallpapers, use a theme background, and toggle time/date together independently for postcard and wallpaper.
 - Support full-screen boot-logo framing and fix duplicate custom logo playback, boot flashing and power-button screen-off behavior.
