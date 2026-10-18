@@ -22,5 +22,15 @@ int main(void){
     pet_remote_update(&r,1,true,700);pet_remote_line(&r,"PC_CTRL_POLL 456 0",out,sizeof(out),2,800);assert(!r.action&&!r.voice);
     pet_remote_update(&r,1,true,900);pet_remote_line(&r,"PC_CTRL_POLL 456 0",out,sizeof(out),2,3000);assert(!r.action&&!r.voice);
     pet_remote_line(&r,"PC_CTRL_POLL -1 0",out,sizeof(out),2,3001);assert(strstr(out,"INVALID"));
+    b=pet_bindings_default();
+    for(unsigned slot=0;slot<8;slot++){b.action[slot]=PET_ACTION_CUSTOM_FIRST+slot;assert(pet_bindings_valid(&b));}
+    pet_controls_cancel(&s);click(&s,&b,0,10000);assert(pet_controls_tick(&s,&b,10400)==16);
+    click(&s,&b,1,11000);click(&s,&b,1,11200);assert(pet_controls_tick(&s,&b,11600)==20);
+    click(&s,&b,2,12000);click(&s,&b,2,12200);assert(pet_controls_tick(&s,&b,12600)==PET_ACTION_NEXT);
+    b.action[0]=15;assert(!pet_bindings_valid(&b));b.action[0]=24;assert(!pet_bindings_valid(&b));
+    pet_remote_line(&r,"PC_CTRL_POLL 789 0",out,sizeof(out),1,20000);
+    pet_remote_update(&r,20,false,20100);pet_remote_line(&r,"PC_CTRL_POLL 789 0",out,sizeof(out),1,20200);
+    assert(!strcmp(out,"PC_CTRL 1 1 20 0\n"));
+    pet_remote_line(&r,"PC_CTRL_POLL 789 1",out,sizeof(out),1,20300);assert(!r.action);
     puts("Pet controls: gestures, hold, mapping, stale/replayed actions PASS");return 0;
 }

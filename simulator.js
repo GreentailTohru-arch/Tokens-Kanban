@@ -1,4 +1,4 @@
-import {renderFace} from './codec.js?v=30';
+import {renderFace} from './codec.js?v=31';
 const $=id=>document.getElementById(id),names=['用量首页','统计分析','系统检测','明信片','虚拟宠物','全屏壁纸'],periods=['今日','本周','累计'];
 const petNames=['未连接','待命中','运行中','额度不足','听写中','操作中'];
 const petKeys=['offline','online','thinking','limited','listening','computer'];
@@ -40,7 +40,7 @@ export class ExperienceModel {
     if(p.key==='ok'&&p.count===2){const pages=this.enabled();this.page=pages[(pages.indexOf(this.page)+1)%pages.length];this.petAction='';return;}
     const slot=p.key==='up'?p.count-1:p.key==='down'?p.count+2:p.count===1?6:7;
     const action=(this.config.petBindings||[1,2,3,0,4,0,0,0,5])[slot];
-    this.petAction=['无操作','发送消息（模拟）','撤销输入（模拟）','停止／继续（模拟）','自定义快捷键（模拟）'][action]||'';
+    this.petAction=action>=16?'自定义快捷键（模拟）':['无操作','发送消息（模拟）','撤销输入（模拟）','停止／继续（模拟）','自定义快捷键（模拟）'][action]||'';
     if(action===3){this.running=!this.running;this.petState=this.running?2:1;this.petStarted=now;}
   }
   tick(now){

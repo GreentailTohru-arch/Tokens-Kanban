@@ -69,6 +69,22 @@ def custom_shortcut(value=None):
     return data.get('custom_hotkey','')
 
 
+def custom_shortcuts(values=None):
+    """Eight independent gesture bindings; migrate the legacy shared binding lazily."""
+    import json,os
+    path=custom_shortcut_path()
+    data=json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+    current=data.get('custom_hotkeys',[data.get('custom_hotkey','')]*8)
+    if values is not None:current=values
+    if not isinstance(current,list) or len(current)!=8:raise ValueError('需要八组快捷键配置')
+    for value in current:parse_custom_shortcut(value)
+    if values is not None:
+        data['custom_hotkeys']=[v.strip() for v in current]
+        path.parent.mkdir(parents=True,exist_ok=True)
+        temp=path.with_suffix('.tmp');temp.write_text(json.dumps(data,ensure_ascii=False),encoding='utf-8');os.replace(temp,path)
+    return list(current)
+
+
 def screenshot_keys(path=None):
     # Legacy action 4 now invokes the explicitly configured shortcut only.
     return parse_custom_shortcut(custom_shortcut())
@@ -111,7 +127,7 @@ class PetRemote:
         if len(reply) != 5 or reply[:2] != ['PC_CTRL', '1']:
             raise OSError('Invalid pet control response')
         seq, action, voice = map(int, reply[2:])
-        if not 0 <= seq <= 0xffffffff or not 0 <= action <= 4 or voice not in (0, 1):
+        if not 0 <= seq <= 0xffffffff or not (0 <= action <= 4 or 16 <= action <= 23) or voice not in (0, 1):
             raise OSError('Invalid pet control values')
         self.backend.last_poll=time.monotonic()
         if bool(voice) != self.voice:
@@ -250,11 +266,11 @@ class DesktopKeys:
     def action(self, action):
         if not self.supported:
             raise OSError('当前宠物遥控支持 Windows；macOS 数据同步不受影响')
-        if action==4:
+        if action==4 or 16<=action<=23:
             # Explicit user-configured shortcut; an empty setting is a no-op.
             pressed=[]
             try:
-                keys=screenshot_keys()
+                keys=screenshot_keys() if action==4 else parse_custom_shortcut(custom_shortcuts()[action-16])
                 for index,key in enumerate(keys):
                     self.key(key,True);pressed.append(key)
                     # Hold left Alt first, then press right Alt while it stays down.

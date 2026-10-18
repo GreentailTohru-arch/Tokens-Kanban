@@ -1,16 +1,16 @@
-import {readCardText,readCardPicture,writeCardText,encodeCardText} from './card-storage.js?v=30';
+import {readCardText,readCardPicture,writeCardText,encodeCardText} from './card-storage.js?v=31';
 import {completeSave,cancelSaveCompletion} from './save-progress.js';
-import {WallpaperEditor} from './wallpaper.js?v=30';
-import {NoticeCenter} from './notices.js?v=30';
-import {LocalConnection} from './local-connection.js?v=30';
-import {DraftState} from './draft-state.js?v=30';
-import {LogoEditor} from './logo-editor.js?v=30';
-import {AboutPanel} from './about.js?v=30';
-import {DeviceInfoPanel} from './device-info.js?v=30';
-import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=30';
-import {MonitorEditor} from './monitor.js?v=30-readback';
+import {WallpaperEditor} from './wallpaper.js?v=31';
+import {NoticeCenter} from './notices.js?v=31';
+import {LocalConnection} from './local-connection.js?v=31';
+import {DraftState} from './draft-state.js?v=31';
+import {LogoEditor} from './logo-editor.js?v=31';
+import {AboutPanel} from './about.js?v=31';
+import {DeviceInfoPanel} from './device-info.js?v=31';
+import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=31';
+import {MonitorEditor} from './monitor.js?v=31-readback';
 import {loadDefaults} from './defaults.js';
-import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=30';
+import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=31';
 const $=id=>document.getElementById(id);
 const drawerMedia=matchMedia('(max-width:760px)');
 function setSidebar(open,restoreFocus=false){
@@ -30,7 +30,7 @@ const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,z
 let back=false,link=null,busy=false,imageLoading=true,activePage='experience',settingsSupported=false,startupSupported=false,brightnessSupported=false,autoLocalEnabled=true;
 let themeSupported=false,cardInfo=null;
 const petKeyDefaults=[1,2,3,0,4,0,0,0,5];
-let petKeys=[...petKeyDefaults],petKeysSupported=false;
+let petKeys=[...petKeyDefaults],petKeysSupported=false,petKeysVersion=0;
 let pagesSupported=false,pagesVersion=3,pageEnabled=63,pageOrder=[0,1,4,2,3,5];
 const pageNames=['用量首页','统计分析','系统检测','明信片','虚拟宠物','全屏壁纸'];
 const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按检测卡片配置显示','头像、文字与联系方式','六种动画，陪伴每一次思考','你的图片，铺满整块屏幕'];
@@ -436,20 +436,23 @@ async function savePages(event){
 function renderPetKeys(){
  const labels=['上 · 单击','上 · 双击','上 · 三击','下 · 单击','下 · 双击','下 · 三击','OK · 单击','OK · 三击','OK · 长按'];
  const actions=['无','发送消息','撤销输入（Ctrl+Z）','停止／继续思考','自定义快捷键','按住语音输入'];
- $('petKeyRows').replaceChildren(...labels.map((label,i)=>{const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const shortcut=$('petCustomHotkey').value.replaceAll('LeftAlt','Alt');const option=new Option(v===4&&shortcut?'自定义快捷键 · '+shortcut:actions[v],v);select.add(option);}select.value=petKeys[i];const commit=value=>{petKeys[i]=value;$('petKeysState').textContent='有未保存的宠物按键设置';renderPetKeys();refreshDraftNotice();};
- select.onchange=()=>{const value=Number(select.value);if(value===4){select.value=petKeys[i];document.dispatchEvent(new CustomEvent('pickpetshortcut',{detail:{source:select,confirm:()=>commit(4)}}));}else commit(value);};row.append(title,select);
- if(petKeys[i]===4){const edit=document.createElement('button');edit.type='button';edit.className='secondary shortcut-edit-link';edit.textContent='选择快捷键';edit.onclick=()=>document.dispatchEvent(new CustomEvent('pickpetshortcut',{detail:{source:edit}}));row.append(edit);}return row;}));
+ $('petKeyRows').replaceChildren(...labels.map((label,i)=>{const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const shortcut=window.PetShortcuts?.get(i)||'';const option=new Option(v===4&&shortcut?'自定义快捷键 · '+shortcut:actions[v],v);select.add(option);}select.value=petKeys[i]>=16?4:petKeys[i];const commit=value=>{petKeys[i]=value;$('petKeysState').textContent='有未保存的宠物按键设置';renderPetKeys();refreshDraftNotice();};
+ if(petKeys[i]===4||petKeys[i]>=16)select.add(new Option('调整快捷键…','edit'));
+ select.onchange=()=>{const value=select.value==='edit'?4:Number(select.value);if(value===4){select.value=petKeys[i]>=16?4:petKeys[i];document.dispatchEvent(new CustomEvent('pickpetshortcut',{detail:{slot:i,source:select,confirm:()=>commit(16+i)}}));}else commit(value);};row.append(title,select);
+ return row;}));
 }
 document.addEventListener('petshortcutchange',()=>renderPetKeys());
 async function readPetKeys(connection){
  let parts=[];try{parts=(await connection.rpc('PC_KEYS_GET')).split(' ');}catch{}
- petKeysSupported=parts[0]==='PC_KEYS'&&parts[1]==='1'&&parts.length===11;
- if(petKeysSupported){const values=parts.slice(2).map(Number);if(values.some((v,i)=>!Number.isInteger(v)||(i===8?![0,5].includes(v):v<0||v>4)))throw new Error('宠物按键设置格式错误');petKeys=values;}
+ petKeysSupported=parts[0]==='PC_KEYS'&&['1','2'].includes(parts[1])&&parts.length===11;
+ petKeysVersion=petKeysSupported?Number(parts[1]):0;
+ if(petKeysSupported){const values=parts.slice(2).map(Number);if(values.some((v,i)=>!Number.isInteger(v)||(i===8?![0,5].includes(v):!((v>=0&&v<=4)||(petKeysVersion>=2&&v>=16&&v<=23)))))throw new Error('宠物按键设置格式错误');petKeys=values;}
  $('petKeysState').textContent=petKeysSupported?'已读取设备宠物按键':'升级支持宠物遥控的固件后可保存';renderPetKeys();
 }
 async function savePetKeys(event){
  event.preventDefault();if(!link||busy||!petKeysSupported){status('请先连接支持宠物遥控的固件','error');return;}
- const desired=[...petKeys],id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;busy=true;controls();
+ if(petKeysVersion<2&&petKeys.some(v=>v>=16)){status('请升级至 v31 固件以分别设置快捷键','error');return;}
+ const desired=petKeys.map((v,i)=>v===4&&petKeysVersion>=2?16+i:v),id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;busy=true;controls();
  try{let reply=await link.rpc(`PC_KEYS_SET ${id} ${desired.join(' ')}`),saved=false;
   for(let i=0;i<300;i++){const p=reply.split(' ');if(p[0]!=='PC_CFG_STATE'||Number(p[1])!==id)throw new Error('设备暂忙，请重试');if(p[2]==='3')throw new Error('按键保存失败');if(p[2]==='2'){saved=true;break;}await delay(50);reply=await link.rpc('PC_CFG_STATUS');}
   if(!saved)throw new Error('保存超时');await readPetKeys(link);if(!petKeysSupported||desired.some((v,i)=>v!==petKeys[i]))throw new Error('按键校验不一致');drafts.mark('petkeys');$('petKeysState').textContent='宠物按键已保存到设备';status('宠物按键已保存到设备');

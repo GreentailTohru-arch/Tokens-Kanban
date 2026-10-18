@@ -275,7 +275,7 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
     if(!queue)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
     if(!strcmp(line,"PC_KEYS_GET")) {
         pet_bindings_t b=device_runtime_pet_bindings();
-        return snprintf(reply,capacity,"PC_KEYS 1 %u %u %u %u %u %u %u %u %u\n",(unsigned)b.action[0],(unsigned)b.action[1],(unsigned)b.action[2],(unsigned)b.action[3],(unsigned)b.action[4],(unsigned)b.action[5],(unsigned)b.action[6],(unsigned)b.action[7],(unsigned)b.action[8]);
+        return snprintf(reply,capacity,"PC_KEYS 2 %u %u %u %u %u %u %u %u %u\n",(unsigned)b.action[0],(unsigned)b.action[1],(unsigned)b.action[2],(unsigned)b.action[3],(unsigned)b.action[4],(unsigned)b.action[5],(unsigned)b.action[6],(unsigned)b.action[7],(unsigned)b.action[8]);
     }
     unsigned key_values[10];
     if(numbers(line,"PC_KEYS_SET",key_values,10)) {

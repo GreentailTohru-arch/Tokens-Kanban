@@ -111,6 +111,34 @@ class TestRemote(unittest.TestCase):
                 self.assertEqual(dictation_keys(p),(0xA4,0x48))
                 custom_shortcut('');self.assertEqual(screenshot_keys(),())
 
+    def test_independent_custom_bindings(self):
+        from pet_remote import custom_shortcuts
+        import tempfile,json
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'controls.json'
+            path.write_text(json.dumps({'custom_hotkey':'Alt+T','dictation_hotkey':'Alt+H'}))
+            with patch('pet_remote.custom_shortcut_path',return_value=path):
+                values=custom_shortcuts();self.assertEqual(values,['Alt+T']*8)
+                values[4]='Ctrl+Shift+S';custom_shortcuts(values)
+                self.assertEqual(custom_shortcuts()[0],'Alt+T')
+                self.assertEqual(custom_shortcuts()[4],'Ctrl+Shift+S')
+                self.assertEqual(dictation_keys(path),(0xA4,0x48))
+                before=path.read_bytes()
+                with self.assertRaises(ValueError):custom_shortcuts(['Bad']*8)
+                self.assertEqual(path.read_bytes(),before)
+                b=DesktopKeys.__new__(DesktopKeys);b.supported=True;events=[]
+                b.key=lambda k,down:events.append((k,down))
+                with patch('pet_remote.time.sleep'):
+                    b.action(16)
+                    self.assertEqual(events,[(0xA4,True),(0x54,True),(0x54,False),(0xA4,False)])
+                    events.clear();b.action(20)
+                    self.assertEqual(events,[(0xA2,True),(0xA0,True),(0x53,True),(0x53,False),(0xA0,False),(0xA2,False)])
+                backend=Backend();remote=PetRemote(backend)
+                remote.poll(None,lambda c,q:'PC_CTRL 1 1 20 0')
+                remote.poll(None,lambda c,q:'PC_CTRL 1 1 20 0')
+                values[0]='';custom_shortcuts(values)
+                self.assertEqual(custom_shortcuts()[4],'Ctrl+Shift+S')
+
     def test_invalid(self):
         for reply in ['PC_CTRL 2 0 0 0','PC_CTRL 1 0 9 0','PC_CTRL 1 0 0 2']:
             with self.assertRaises(OSError):PetRemote(Backend()).poll(None,lambda c,q:reply)

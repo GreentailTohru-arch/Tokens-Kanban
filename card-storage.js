@@ -1,4 +1,4 @@
-import {FACE_BYTES,pack} from './codec.js?v=30';
+import {FACE_BYTES,pack} from './codec.js?v=31';
 export function encodeCardText(content){
  const bytes=new TextEncoder().encode(JSON.stringify([content.title,content.subtitle,content.name]));
  if(bytes.length>510)throw Error('明信片文字过长');

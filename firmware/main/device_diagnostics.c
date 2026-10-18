@@ -84,7 +84,7 @@ size_t device_diagnostics_line(const char *line,char *reply,size_t cap) {
     if(!strcmp(line,"PC_INFO_BATTERY"))return snprintf(reply,cap,"PC_BATTERY %d %d 500\n",s.soc,s.mv);
     if(!strcmp(line,"PC_INFO_NAME")){char hex[DEVICE_NAME_BYTES*2+1];diagnostic_name_encode(name,hex);return snprintf(reply,cap,"PC_NAME %s\n",hex);}
     if(!strcmp(line,"PC_INFO_KEYS"))return snprintf(reply,cap,"PC_KEYS %d %u %u %u %u %u\n",s.adc,atomic_load(&key_count[0]),atomic_load(&key_count[1]),atomic_load(&key_count[2]),atomic_load(&last_key),atomic_load(&last_event));
-    if(!strcmp(line,"PC_INFO_CHIP")){uint8_t mac[6];esp_chip_info_t chip;esp_chip_info(&chip);if(esp_read_mac(mac,ESP_MAC_BASE)!=ESP_OK)memset(mac,0,sizeof(mac));char elf[65];esp_app_get_elf_sha256(elf,sizeof(elf));return snprintf(reply,cap,"PC_CHIP ESP32-C3 %u %u %02x%02x%02x%02x%02x%02x %.12s v30\n",chip.cores,chip.revision,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],elf);}
+    if(!strcmp(line,"PC_INFO_CHIP")){uint8_t mac[6];esp_chip_info_t chip;esp_chip_info(&chip);if(esp_read_mac(mac,ESP_MAC_BASE)!=ESP_OK)memset(mac,0,sizeof(mac));char elf[65];esp_app_get_elf_sha256(elf,sizeof(elf));return snprintf(reply,cap,"PC_CHIP ESP32-C3 %u %u %02x%02x%02x%02x%02x%02x %.12s v31\n",chip.cores,chip.revision,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],elf);}
     if(!strcmp(line,"PC_NAME_STATE"))return snprintf(reply,cap,"PC_NAME_STATE %u %u\n",ni,ns);
     if(!strcmp(line,"PC_TEST_STATE"))return snprintf(reply,cap,"PC_TEST_STATE %u %u %u %d %d %u\n",ti,ts,tk,tp,ta,tc);
     if(!strncmp(line,"PC_NAME_SET ",12)){

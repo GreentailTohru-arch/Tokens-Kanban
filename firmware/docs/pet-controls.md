@@ -71,9 +71,17 @@ Set `dictation_hotkey` in `%LOCALAPPDATA%/TokensKanban/pet-controls.json` (for e
 
 ## Custom keyboard shortcut
 
-The unreliable Appshot action is replaced by Custom shortcut. Open the management page from the Windows sync program, select a key (F8, Space) or a combination (Ctrl+Shift+A) in the keyboard dialog, and save the local shortcut. Assign Custom shortcut to a single/double/triple device press and save the device bindings. These bindings share one shortcut. Blank disables it; the foreground application receives it. The setting survives package upgrades and preserves the dictation binding. This does not guarantee that applications accept synthetic input.
+The unreliable Appshot action is replaced by Custom shortcut. Open the management page from the Windows sync program, select a key (F8, Space) or a combination (Ctrl+Shift+A) in the keyboard dialog, and save the local shortcut. Assign Custom shortcut to a single/double/triple device press and save the device bindings. Each gesture has its own shortcut. Blank disables it; the foreground application receives it. The setting survives package upgrades and preserves the dictation binding. This does not guarantee that applications accept synthetic input.
 
 
 ## Visual shortcut picker
 
-Select Custom shortcut to open a full desktop-keyboard dialog. Click a key or modifier combination, click again to deselect, and confirm to display the chosen shortcut. The dialog has no physical-key capture field. On narrow screens, scroll the full keyboard horizontally. Save the binding on this PC and save the device gesture mapping separately. All custom gestures share one binding (up to four keys, with at most one ordinary key); clear and save to disable it.
+Select Custom shortcut to open a full desktop-keyboard dialog. Click a key or modifier combination, click again to deselect, and confirm to display the chosen shortcut. The dialog has no physical-key capture field. On narrow screens, scroll the full keyboard horizontally. Save the binding on this PC and save the device gesture mapping separately. Each custom gesture has its own binding (up to four keys, with at most one ordinary key); clear and save to disable it.
+
+## Independent gesture shortcuts (v31)
+
+Each of the eight single/double/triple gesture slots has its own custom binding; OK double press remains page navigation and OK hold remains dictation. Choose Custom shortcut on a gesture, select keys in the dialog, confirm, save shortcuts on this PC, and save device bindings. Existing shared shortcuts are copied to all eight local slots on migration; changing or clearing one does not affect the others or dictation. This requires v31 firmware and the updated Windows companion. The public site can preview selections but cannot save computer preferences.
+
+The device reports `PC_KEYS 2`; custom actions 16–23 identify the eight slots. The poll reply retains the `PC_CTRL 1` frame format, extending the action range. Old ordinary actions and the legacy shared action 4 remain supported.
+
+For an existing custom binding, choose Adjust shortcut in the same gesture dropdown to reopen the keyboard; there is no separate edit button.

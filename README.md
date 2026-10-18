@@ -6,6 +6,14 @@
 
 View local Codex token usage, quota, model/activity trends, TrafficMonitor system metrics and a personal postcard on AI Passport. Costs are API-price estimates, not subscription bills; usage covers readable local history.
 
+## v31 · 2026-10-18
+
+- Configure independent custom shortcuts for up to eight pet gestures. Editing or clearing one binding leaves the others unchanged.
+- Each gesture opens the full keyboard picker and displays its own confirmed combination; adjustment lives in the dropdown and the close button matches other dialogs. Migrate the legacy shared binding without changing dictation preferences.
+- Update both firmware and the Windows companion to distinguish custom actions. OK double press still changes pages; OK hold still dictates.
+- Retain v30 postcard-text readback, temperature-unit and adaptive monitor-layout fixes.
+
+
 ## v30 · 2026-10-18
 
 - Read postcard text and wallpaper settings when connecting to avoid overwriting them with defaults. Legacy image-only postcards cannot restore text; enter and save it once.

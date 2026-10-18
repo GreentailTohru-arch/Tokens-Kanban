@@ -5,7 +5,7 @@
 pet_bindings_t pet_bindings_default(void) {return (pet_bindings_t){{1,2,3,0,4,0,0,0,5}};}
 bool pet_bindings_valid(const pet_bindings_t *b) {
     if(!b)return false;
-    for(unsigned i=0;i<8;++i)if(b->action[i]>PET_ACTION_APPSHOT)return false;
+    for(unsigned i=0;i<8;++i)if(b->action[i]>PET_ACTION_APPSHOT && (b->action[i]<PET_ACTION_CUSTOM_FIRST || b->action[i]>PET_ACTION_CUSTOM_LAST))return false;
     return b->action[8]==PET_ACTION_NONE || b->action[8]==PET_ACTION_VOICE;
 }
 void pet_controls_cancel(pet_controls_t *s) {memset(s,0,sizeof(*s));}

@@ -12,7 +12,7 @@ static bool pair(const char *p,unsigned *a,unsigned *b){
 void pet_remote_update(pet_remote_t *r,unsigned action,bool voice,uint64_t now){
     if(!r->session || now-r->polled>1500){r->action=0;r->voice=false;return;}
     r->voice=voice;
-    if(action && action<PET_ACTION_VOICE && !r->action){r->seq=r->seq==UINT32_MAX?1:r->seq+1;r->action=action;r->created=now;}
+    if(action && (action<PET_ACTION_VOICE || (action>=PET_ACTION_CUSTOM_FIRST && action<=PET_ACTION_CUSTOM_LAST)) && !r->action){r->seq=r->seq==UINT32_MAX?1:r->seq+1;r->action=action;r->created=now;}
 }
 size_t pet_remote_line(pet_remote_t *r,const char *line,char *out,size_t cap,unsigned transport,uint64_t now){
     if(!strcmp(line,"PC_CTRL_HELLO"))return snprintf(out,cap,"PC_CTRL_READY 1\n");

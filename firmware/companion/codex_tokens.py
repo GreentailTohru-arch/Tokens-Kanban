@@ -469,7 +469,7 @@ def run_sync(args):
     from pet_remote import PetRemote,DesktopKeys
     remote=PetRemote(DesktopKeys());can_control=False;control_error=""
     management=None
-    print('Tokens Kanban v30 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
+    print('Tokens Kanban v31 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)

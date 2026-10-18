@@ -20,6 +20,12 @@ class Tests(unittest.TestCase):
             for asset in ['shortcut-picker.js','shortcut-picker.css','card-storage.js']:
                 with request(asset+'?v=30') as response:
                     self.assertEqual(response.read(),(Path(__file__).resolve().parents[1]/'companion/postcard'/asset).read_bytes())
+            with patch('pet_remote.custom_shortcut_path',return_value=Path(temporary.name)/'controls.json'):
+                bindings=['Alt+T','','','','Ctrl+Shift+S','','','']
+                with request('api/pet-shortcut',json.dumps({'shortcuts':bindings}).encode()) as response:self.assertEqual(response.status,200)
+                with request('api/pet-shortcut') as response:self.assertEqual(json.load(response)['shortcuts'],bindings)
+                with self.assertRaises(urllib.error.HTTPError):request('api/pet-shortcut',json.dumps({'shortcuts':['bad']*8}).encode())
+                with request('api/pet-shortcut') as response:self.assertEqual(json.load(response)['shortcuts'],bindings)
             with self.assertRaises(urllib.error.HTTPError):urllib.request.urlopen(url+'api/info')
             with self.assertRaises(urllib.error.HTTPError):request('api/info',extra={'Host':'attacker.example'})
             with request('api/info') as response:self.assertFalse(json.load(response)['connected'])
