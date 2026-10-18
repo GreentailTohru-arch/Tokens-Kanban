@@ -33,7 +33,7 @@ run_static_checks() {
         tests/test_device_model.c main/device_model.c -o "${TMPDIR:-/tmp}/passport-device-model-test"
     "${TMPDIR:-/tmp}/passport-device-model-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/postcard_stubs -Icomponents/bsp/include -Imain \
-        tests/test_device_runtime.c main/device_model.c main/page_model.c main/theme_model.c main/monitor_model.c assets/fonts/token_text_coverage.c assets/music/codex_sounds.c assets/images/startup_assets.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
+        tests/test_device_runtime.c main/pet_controls.c main/device_model.c main/page_model.c main/theme_model.c main/monitor_model.c assets/fonts/token_text_coverage.c assets/music/codex_sounds.c assets/images/startup_assets.c -lm -o "${TMPDIR:-/tmp}/passport-device-runtime-test"
     "${TMPDIR:-/tmp}/passport-device-runtime-test"
     "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain \
         tests/test_page_system.c main/page_model.c main/system_model.c main/token_model.c -o "${TMPDIR:-/tmp}/passport-page-system-test"
@@ -128,6 +128,15 @@ run_static_checks() {
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_archive_firmware.py
     PYTHONDONTWRITEBYTECODE=1 python3 tests/test_install_passport_skills.py
     rm -rf "${test_dir}"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain tests/test_pet_model.c main/pet_model.c assets/images/codex-pet/pet_assets.c -o "${TMPDIR:-/tmp}/passport-pet-test"
+    "${TMPDIR:-/tmp}/passport-pet-test"
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_pet_state.py
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_pet_assets.py
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Imain tests/test_pet_controls.c main/pet_controls.c main/pet_remote.c -o "${TMPDIR:-/tmp}/passport-pet-controls-test"
+    "${TMPDIR:-/tmp}/passport-pet-controls-test"
+    PYTHONDONTWRITEBYTECODE=1 python3 tests/test_pet_remote.py
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -Itests/postcard_stubs -Imain tests/test_wallpaper.c main/postcard_codec.c -o "${TMPDIR:-/tmp}/passport-wallpaper-test"
+    "${TMPDIR:-/tmp}/passport-wallpaper-test"
     echo "Host tests: PASS"
 }
 

@@ -12,12 +12,14 @@ bool boot_logo_decode(const uint8_t *data,size_t length,uint8_t *pixels,size_t b
     }return out==bytes;
 }
 bool boot_logo_validate(const uint8_t *data,size_t length,boot_logo_index_t *index){
-    if(length<8||length>BOOT_LOGO_MAX_BYTES||memcmp(data,"TLG1",4))return false;
+    if(length<8||length>BOOT_LOGO_MAX_BYTES||(memcmp(data,"TLG1",4)&&memcmp(data,"TLG2",4)))return false;
     boot_logo_index_t result={.side=u16(data+4),.count=u16(data+6)};
-    if(result.side<16||result.side>96||result.count<1||result.count>BOOT_LOGO_MAX_FRAMES)return false;
+    bool full=data[3]=='2';
+    result.height=full?result.side*4/3:result.side;
+    if((full&&(result.side%3||result.side>120))||result.side<16||(!full&&result.side>96)||result.count<1||result.count>BOOT_LOGO_MAX_FRAMES)return false;
     size_t pos=8;
     for(unsigned i=0;i<result.count;++i){if(length-pos<6)return false;unsigned duration=u16(data+pos);uint32_t n=u32(data+pos+2);pos+=6;
-        if(duration<50||duration>1000||n>length-pos||!boot_logo_decode(data+pos,n,NULL,result.side*result.side*2u))return false;
+        if(duration<50||duration>1000||n>length-pos||!boot_logo_decode(data+pos,n,NULL,result.side*result.height*2u))return false;
         result.frames[i]=(boot_frame_t){pos,n,duration};result.duration+=duration;if(result.duration>6000)return false;pos+=n;
     }
     if(pos!=length&&!(pos+1==length&&data[pos]==0))return false;

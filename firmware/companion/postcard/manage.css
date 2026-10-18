@@ -66,3 +66,12 @@
 }
 @media(max-width:480px){.topbar .connection{font-size:0;gap:0;min-width:7px}.topbar .connection::before{width:7px;height:7px}}
 
+
+/* The framing viewport follows the physical 240x320 rounded display. */
+#logoCrop{border-radius:12.5% / 9.375%}#logoZoomValue{float:right;font-variant-numeric:tabular-nums}
+
+.pet-preview-control{display:flex;flex-direction:column;gap:8px;margin-top:16px;font-size:13px;color:var(--muted)}.pet-preview-control select{max-width:100%;padding:8px;border-radius:8px}
+
+.pet-key-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 20px}.pet-key-grid .field{margin:0}.pet-key-grid select{width:100%;margin-top:8px}#petKeySettings kbd{white-space:nowrap}@media(max-width:760px){.pet-key-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:420px){.pet-key-grid{grid-template-columns:1fr}}
+
+.wall-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}.wall-actions{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.wall-preview-panel{text-align:center}.wall-preview-panel canvas{display:block;max-width:100%;width:240px;height:auto;margin:20px auto;border-radius:12px;box-shadow:0 8px 26px #0003}.wall-layout input[type=file]{max-width:100%}#wallCropDialog{width:min(440px,calc(100vw - 32px));max-height:92dvh;overflow:auto}#wallCropCanvas{display:block;width:240px;max-width:100%;height:auto;max-height:52dvh;object-fit:contain;margin:12px auto;touch-action:none;cursor:grab;border-radius:8px}#wallCropZoom{width:100%}@media(max-width:760px){.wall-layout{grid-template-columns:1fr}.wall-preview-panel{order:-1}.wall-preview-panel canvas{width:180px}}

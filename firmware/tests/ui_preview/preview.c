@@ -1,6 +1,7 @@
 /* Real application UI rendered by LVGL into PPM, without a physical display. */
 #include "lvgl.h"
 #include "token_ui.h"
+#include "pet_model.h"
 #include "postcard_codec.h"
 #include "postcard_defaults.h"
 #include <assert.h>
@@ -58,6 +59,12 @@ int main(void) {
     puts("Creating UI");token_ui_create();puts("UI created");page_config_t pages=page_config_default();token_ui_pages(&pages,0);
     token_ui_startup(true);save("startup.ppm");check_labels(lv_layer_top());
     token_ui_startup(false);token_ui_startup(false);
+    static uint16_t full_logo[120*160];
+    for(unsigned i=0;i<120*160;++i)full_logo[i]=0xf800;
+    token_ui_startup(true);token_ui_startup_frame((const uint8_t *)full_logo,120,160);
+    save("startup-fullscreen.ppm");
+    assert(framebuffer[(160*240+5)*3]==255 && framebuffer[(310*240+120)*3]==255);
+    token_ui_startup(false);
     token_snapshot_t s={.v={1,18800000,15000000,15200,215584794,209747072,506820,640773677,623715584,1746255,13,10080,530000,-1,-1,-1,1,3,0}};
     s.v[T_ACTIVITY]=TOKEN_BUSY;s.transport=TOKEN_BLE;
     s.v[T_DAY_CENTS]=2736;s.v[T_DAY_COST_STATUS]=1;
@@ -151,7 +158,7 @@ int main(void) {
     for(int color=0;color<7;++color){token_ui_diagnostic(color);lv_refr_now(NULL);check_labels(lv_layer_top());}
     token_ui_diagnostic(-1);lv_refr_now(NULL);check_labels(lv_screen_active());
     static uint8_t boot_pixels[96*96*2];memset(boot_pixels,0x5a,sizeof(boot_pixels));
-    for(unsigned i=0;i<20;++i){token_ui_startup(true);token_ui_startup_frame(boot_pixels,i%2?96:64);lv_refr_now(NULL);check_labels(lv_layer_top());token_ui_startup(false);}
+    for(unsigned i=0;i<20;++i){token_ui_startup(true);token_ui_startup_frame(boot_pixels,i%2?96:64,i%2?96:64);lv_refr_now(NULL);check_labels(lv_layer_top());token_ui_startup(false);}
     /* Exercise the real LVGL tree through every palette, including deleted overlays. */
     theme_config_t themes[]={theme_default(),{1,0xD6D9DE,0x6AB9F0,0x0D0F11,0xECEEF1,0x9CA3AD},{2,0x2761A8,0x2F8EC8,0xE9EDF1,0x242A32,0x586777},{3,0x45FF7B,0x6EFF92,0x030703,0xA3FFB7,0x63BF7D}};
     token_ui_postcard_image(postcard_default_pixels);
@@ -179,6 +186,31 @@ int main(void) {
     assert(!memcmp(original_theme,framebuffer,sizeof(framebuffer)));
     lv_mem_monitor_t after_theme;lv_mem_monitor(&after_theme);assert(after_theme.free_size==before_theme.free_size);
     puts("Four device themes: all pages/glyphs, 40 switches, deletion safety, exact default restore and no heap loss PASS");
+    token_ui_theme(&themes[0]);
+    for(unsigned state=0;state<PET_COUNT;++state){
+        token_ui_update(&s,0,false,true,0,86,PAGE_PET);token_ui_pages(&pages,PAGE_PET);
+        token_ui_pet(state,state*10000,true);lv_refr_now(NULL);check_labels(lv_screen_active());
+        char filename[40];snprintf(filename,sizeof(filename),"pet-%u.ppm",state);save(filename);
+        for(unsigned t=0;t<3000;t+=100){token_ui_pet(state,state*10000+t,true);lv_refr_now(NULL);}
+    }
+    puts("Six pet animations: real LVGL rendering and header glyphs PASS");
+    static uint8_t wallpaper_pixels[240*320*2];
+    for(unsigned i=0;i<sizeof(wallpaper_pixels);i+=2){wallpaper_pixels[i]=0;wallpaper_pixels[i+1]=0xf8;}
+    for(unsigned round=0;round<30;++round){
+        token_ui_wallpaper(round%2?wallpaper_pixels:NULL,round%8);
+        token_ui_update(&s,0,false,true,0,86,PAGE_WALLPAPER);token_ui_pages(&pages,PAGE_WALLPAPER);
+        token_ui_postcard_clock(1792143660ULL,true,false);lv_refr_now(NULL);check_labels(lv_screen_active());
+        if(round==1){assert(framebuffer[(319*240+239)*3]==255);assert(framebuffer[(319*240+239)*3+1]==0);save("wallpaper-image.ppm");}
+        if(round==0)save("wallpaper-blank.ppm");
+        token_ui_update(&s,0,false,true,0,86,PAGE_PET);lv_refr_now(NULL);
+    }
+    token_ui_wallpaper(NULL,0);
+    token_ui_update(&s,0,false,true,0,86,PAGE_POSTCARD);token_ui_postcard_clock(1792143660ULL,true,false);lv_refr_now(NULL);
+    for(unsigned p=0;p<240*38;++p){unsigned color=themes[0].background;assert(framebuffer[p*3]==((color>>19)&31)*255/31);assert(framebuffer[p*3+1]==((color>>10)&63)*255/63);assert(framebuffer[p*3+2]==((color>>3)&31)*255/31);}
+    token_ui_wallpaper(NULL,4);
+    puts("Postcard combined header off: every header pixel matches background PASS");
+    puts("Wallpaper: full-screen pixels, optional clock/date, pet-page switches and 48KB heap PASS");
+
     assert(lv_anim_count_running()==0);
     flush_count=0;lv_obj_invalidate(lv_screen_active());lv_refr_now(NULL);assert(flush_count==16);puts("Full-screen refresh: 16 strips (20 lines), no page animations PASS");
     assert(lv_mem_test()==LV_RESULT_OK);

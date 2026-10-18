@@ -8,6 +8,7 @@ monitor_config_t device_runtime_monitor(void);
 page_config_t device_runtime_pages(void);
 unsigned device_runtime_volume(void);
 unsigned device_runtime_brightness(void);
+bool device_runtime_screen_off(void);
 void device_runtime_volume_set(unsigned value,uint64_t now_ms);
 bool device_runtime_start(void);
 /* The single startup request is owned by the audio worker, never by LVGL. */
@@ -19,3 +20,6 @@ void device_runtime_tick(uint64_t now_ms,const token_snapshot_t *new_snapshot);
 
 /* Explicit web tests share the same serialized audio worker. kind: 2 mic, 3 speaker. */
 bool device_runtime_test(unsigned id,unsigned kind);
+
+#include "pet_controls.h"
+pet_bindings_t device_runtime_pet_bindings(void);

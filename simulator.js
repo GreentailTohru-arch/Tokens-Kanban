@@ -1,14 +1,16 @@
 import {renderFace} from './codec.js?v=preview-22';
-const $=id=>document.getElementById(id),names=['用量首页','统计分析','系统检测','明信片'],periods=['今日','本周','累计'];
+const $=id=>document.getElementById(id),names=['用量首页','统计分析','系统检测','明信片','虚拟宠物','全屏壁纸'],periods=['今日','本周','累计'];
+const petNames=['未连接','在线','思考','额度不够','正在听你说话／看你打字','正在使用电脑'];
+const petKeys=['offline','online','thinking','limited','listening','computer'];
 const bg='#2f3a49',ink='#f1f7f4',muted='#adb8c3',teal='#68c4cb';
 const usage=[[18800000,15000000,15200,27.47],[215584794,209747072,506820,150.22],[640773677,623715584,1746255,351.87]];
 const tones={1:'codex-notification.wav',3:'codex-error.wav',4:'opencode-complete.wav',5:'opencode-error.wav',6:'antigravity-complete.wav',7:'antigravity-error.wav'};
 export class ExperienceModel {
   constructor(config,now=0){this.reset(config,now);}
   enabled(){return this.config.order.filter(id=>this.config.mask&(1<<id));}
-  reset(config,now){this.config=config;this.on=true;this.awake=true;this.page=this.enabled()[0];this.period=0;this.details=false;this.contact=false;this.volume=config.volume;this.baseVolume=config.volume;this.overlay=false;this.held=null;this.pendingOK=null;this.quietUntil=0;this.okUntil=0;this.bootUntil=0;this.lastAction=now;this.lastVolume=now;this.preview=false;this.running=false;this.exhausted=false;}
+  reset(config,now){this.config=config;this.on=true;this.awake=true;this.page=this.enabled()[0];this.period=0;this.details=false;this.contact=false;this.volume=config.volume;this.baseVolume=config.volume;this.overlay=false;this.held=null;this.pendingOK=null;this.quietUntil=0;this.okUntil=0;this.bootUntil=0;this.lastAction=now;this.lastVolume=now;this.preview=false;this.running=false;this.exhausted=false;this.petState=1;this.petStarted=now;this.petClicks=null;this.petVoice=false;this.petAction="";}
   sync(config){if(config.volume!==this.baseVolume){this.baseVolume=config.volume;this.volume=config.volume;}this.config=config;if(!this.enabled().includes(this.page))this.page=this.enabled()[0];}
-  cancel(){this.held=null;this.pendingOK=null;}
+  cancel(){this.held=null;this.pendingOK=null;this.petClicks=null;if(this.petVoice){this.petState=1;this.petVoice=false;}}
   power(now){this.cancel();this.overlay=false;this.on=!this.on;this.awake=this.on;this.lastAction=now;if(this.on){this.page=this.enabled()[0];this.period=0;this.details=this.contact=false;this.bootUntil=now+Math.max(this.config.startup&&this.volume?3000:1200,Math.min(6000,this.config.bootDuration||0));}}
   screen(now){if(!this.on)return;this.cancel();this.overlay=false;this.awake=!this.awake;this.lastAction=now;}
   adjust(key,now){const old=this.volume;this.volume=Math.max(0,Math.min(100,this.volume+(key==='up'?5:-5)));this.lastVolume=this.lastAction=now;this.preview ||=old!==this.volume;}
@@ -21,18 +23,32 @@ export class ExperienceModel {
   }
   release(key,now){
     const h=this.held;if(!h||h.key!==key)return;this.held=null;this.lastAction=now;
+    if(this.petVoice){this.petVoice=false;this.petState=1;this.petAction="语音文字已保留（模拟，不发送）";}
     if(h.consumed){if(!h.long&&!this.overlay)this.quietUntil=now+400;return;}
     if(h.long)return;
+    if(this.page===4){
+      const previous=this.petClicks;this.petClicks={key,count:previous?.key===key&&now-previous.at<350?previous.count+1:1,at:now};
+      if(this.petClicks.count===3)this.finishPetClicks(now);return;
+    }
     if(key==='ok'){
       if(this.pendingOK!==null&&now-this.pendingOK<=300){this.pendingOK=null;const pages=this.enabled();this.page=pages[(pages.indexOf(this.page)+1)%pages.length];}
       else this.pendingOK=now;
     }else if(this.page<2)this.period=(this.period+(key==='up'?2:1))%3;
   }
+  finishPetClicks(now){
+    const p=this.petClicks;this.petClicks=null;if(!p)return;
+    if(p.key==='ok'&&p.count===2){const pages=this.enabled();this.page=pages[(pages.indexOf(this.page)+1)%pages.length];this.petAction='';return;}
+    const slot=p.key==='up'?p.count-1:p.key==='down'?p.count+2:p.count===1?6:7;
+    const action=(this.config.petBindings||[1,2,3,0,4,0,0,0,5])[slot];
+    this.petAction=['无操作','发送消息（模拟）','撤销输入（模拟）','停止／继续（模拟）','窗口截图（模拟）'][action]||'';
+    if(action===3){this.running=!this.running;this.petState=this.running?2:1;this.petStarted=now;}
+  }
   tick(now){
+    if(this.petClicks&&!this.held&&now-this.petClicks.at>=350)this.finishPetClicks(now);
     const h=this.held;
     if(h&&now-h.at>=20000)this.cancel();
-    else if(h&&h.key==='ok'&&!h.consumed&&now-h.at>=500){h.long=true;h.consumed=true;}
-    else if(h&&!h.consumed&&h.key!=='ok'&&now-h.at>=500){h.long=true;h.consumed=true;h.next=now+180;this.overlay=true;this.pendingOK=null;this.adjust(h.key,now);}
+    else if(h&&h.key==='ok'&&!h.consumed&&now-h.at>=500){h.long=true;h.consumed=true;this.petClicks=null;if(this.page===4&&(this.config.petBindings||[1,2,3,0,4,0,0,0,5])[8]===5){this.petState=4;this.petVoice=true;this.petAction='正在听写（模拟）';}}
+    else if(h&&!h.consumed&&h.key!=='ok'&&now-h.at>=500){h.long=true;h.consumed=true;h.next=now+180;this.overlay=true;this.petClicks=null;this.pendingOK=null;this.adjust(h.key,now);}
     else if(h&&h.key!=='ok'&&h.consumed&&this.overlay){
       if(!h.long&&now-h.at>=500){h.long=true;h.next=now+180;}
       if(h.long&&now>=h.next){this.adjust(h.key,now);h.next=now+180;}
@@ -45,6 +61,12 @@ export class ExperienceModel {
 export class ExperienceSimulator {
   constructor(getConfig){
     this.getConfig=getConfig;this.active=false;this.model=new ExperienceModel(getConfig(),performance.now());this.canvas=$('simScreen');this.screenCtx=this.canvas.getContext('2d');this.frame=document.createElement('canvas');this.frame.width=240;this.frame.height=320;this.ctx=this.frame.getContext('2d');this.face=document.createElement('canvas');this.face.width=240;this.face.height=264;this.audio=null;this.audioNext=0;this.audioTimer=null;this.images={};
+    this.petAssets=[];
+    fetch(new URL('pet/manifest.json',import.meta.url)).then(r=>r.json()).then(items=>{this.petAssets=items;for(const a of items){a.image=new Image();a.image.onload=()=>{this.render();document.dispatchEvent(new Event('petassetsready'));};a.image.src=new URL('pet/'+a.key+'.png',import.meta.url);}}).catch(()=>{});
+    const select=document.createElement('select');select.id='simPetState';select.setAttribute('aria-label','宠物状态预览');
+    petNames.forEach((name,i)=>{const o=document.createElement('option');o.value=i;o.textContent=name;select.append(o);});select.value='1';
+    const row=document.createElement('label');row.className='pet-preview-control';row.textContent='宠物状态 · 示例预览';row.append(select);$('simTask').parentElement.append(row);
+    select.onchange=()=>{this.model.petState=Number(select.value);this.model.petStarted=performance.now();this.model.page=4;this.model.awake=this.model.on=true;this.model.lastAction=performance.now();this.render();};
     for(const [id,file] of [['startup','sim-startup.png']]){const im=new Image();im.onload=()=>this.render();im.src=file;this.images[id]=im;}
     for(const key of ['up','down','ok'])this.bind($('sim'+key[0].toUpperCase()+key.slice(1)),key);
     const power=()=>{this.sync();this.model.power(performance.now());this.stopAudio();if(this.model.on&&this.model.bootUntil>performance.now()&&this.model.config.startup)this.play('startup.wav');this.render();};
@@ -53,8 +75,8 @@ export class ExperienceSimulator {
     const releasePower=e=>{e.preventDefault();if(powerHeld&&!powerFired&&e.type==='pointerup'){this.model.screen(performance.now());this.stopAudio();this.render();}powerHeld=false;clearTimeout(this.powerTimer);$('simPower').classList.remove('pressed');if($('simPower').hasPointerCapture(e.pointerId))$('simPower').releasePointerCapture(e.pointerId);};
     $('simPower').onpointerup=releasePower;$('simPower').onpointercancel=releasePower;$('simPower').onlostpointercapture=()=>{clearTimeout(this.powerTimer);$('simPower').classList.remove('pressed');};$('simPower').onclick=e=>{if(e.detail===0){this.model.screen(performance.now());this.stopAudio();this.render();}};
     $('simReset').onclick=()=>{this.stopAudio();this.model.reset(getConfig(),performance.now());this.render();};
-    $('simTask').onclick=()=>{const m=this.model;if(!m.on)return;m.running=!m.running;m.lastAction=performance.now();if(!m.running)this.play(tones[m.config.done]);this.render();};
-    $('simQuota').onclick=()=>{const m=this.model;if(!m.on)return;m.exhausted=!m.exhausted;m.lastAction=performance.now();if(m.exhausted)this.play(tones[m.config.quota]);this.render();};
+    $('simTask').onclick=()=>{const m=this.model;if(!m.on)return;m.running=!m.running;m.lastAction=performance.now();m.petState=m.running?2:1;m.petStarted=performance.now();if(!m.running)this.play(tones[m.config.done]);this.render();};
+    $('simQuota').onclick=()=>{const m=this.model;if(!m.on)return;m.exhausted=!m.exhausted;m.lastAction=performance.now();m.petState=m.exhausted?3:1;m.petStarted=performance.now();if(m.exhausted)this.play(tones[m.config.quota]);this.render();};
     $('simAudio').onchange=()=>{if(!$('simAudio').checked)this.stopAudio();};
     window.addEventListener('blur',()=>this.cancel());document.addEventListener('visibilitychange',()=>{if(document.hidden){this.cancel();this.stopAudio();}});
     $('simDevice').addEventListener('keydown',e=>{if(e.target.id==='simPower')return;const key={ArrowUp:'up',ArrowDown:'down',Enter:'ok'}[e.key];if(key){e.preventDefault();if(!e.repeat)this.press(key);}});
@@ -108,7 +130,7 @@ export class ExperienceSimulator {
     const m=this.model,c=this.ctx;this.canvas.dataset.page=m.page;this.canvas.dataset.period=m.period;this.canvas.dataset.volume=m.volume;this.canvas.dataset.awake=String(m.awake);this.canvas.dataset.on=String(m.on);this.canvas.dataset.details=String(m.details);this.canvas.dataset.contact=String(m.contact);this.canvas.dataset.overlay=String(m.overlay);
     c.fillStyle=this.color(bg);c.fillRect(0,0,240,320);$('simVolumeBar').style.setProperty('--volume-accent',window.DeviceTheme?.colors().accent||teal);$('simVolumeBar').hidden=!(m.overlay&&m.on&&m.awake);$('simVolumeBar').style.setProperty('--volume',m.volume+'%');$('simVolumeBar').setAttribute('aria-valuenow',m.volume);
     $('simTask').disabled=$('simQuota').disabled=!m.on;$('simTask').textContent=m.running?'结束思考':'开始思考';$('simQuota').textContent=m.exhausted?'恢复额度':'额度耗尽';$('simPower').setAttribute('aria-pressed',String(m.on));
-    const state=!m.on?'已关机':!m.awake?'已熄屏':`${names[m.page]}${m.page<2?' · '+periods[m.period]:''} · 音量 ${m.volume}%`;if($('simState').textContent!==state)$('simState').textContent=state;if($('themeSimState'))$('themeSimState').textContent=state;
+    const state=!m.on?'已关机':!m.awake?'已熄屏':`${names[m.page]}${m.page<2?' · '+periods[m.period]:''} · 音量 ${m.volume}%${m.page===4&&m.petAction?' · '+m.petAction:''}`;if($('simState').textContent!==state)$('simState').textContent=state;if($('themeSimState'))$('themeSimState').textContent=state;
     if(!m.on||!m.awake){c.fillStyle='#050b10';c.fillRect(0,0,240,320);return;}
     if(performance.now()<m.bootUntil){c.fillStyle='#000';c.fillRect(0,0,240,320);if(m.config.drawBoot)m.config.drawBoot(c);else if(this.images.startup.complete&&this.images.startup.naturalWidth)c.drawImage(this.images.startup,0,0,240,320);return;}
     this.drawPage();
@@ -118,10 +140,18 @@ export class ExperienceSimulator {
     try{this.ctx=c.getContext('2d');this.model=Object.assign(Object.create(Object.getPrototypeOf(model)),model,{page,contact:false});this.drawPage();return c.toDataURL();}
     finally{this.model=model;this.ctx=ctx;}
   }
+  pet(){
+    const state=this.model.petState??1,a=this.petAssets?.[state];
+    this.ctx.fillStyle=state===0?'#788391':state===3?'#ff626c':state===2||state===5?'#4cdd91':'#5ba7ff';this.ctx.beginPath();this.ctx.arc(26,23,6,0,7);this.ctx.fill();
+    const short=['未连接','在线','思考','额度不够','聆听输入','使用电脑'];
+    this.text('Codex / '+short[state],39,14);this.text('86%',222,14,14,muted,'right');
+    if(a?.image.complete&&a.image.naturalWidth){let t=(performance.now()-(this.model.petStarted||0))%a.durations.reduce((x,y)=>x+y,0),frame=0;while(frame<a.durations.length-1&&t>=a.durations[frame])t-=a.durations[frame++];this.ctx.imageSmoothingEnabled=false;this.ctx.drawImage(a.image,frame*192,0,192,208,24,65,192,208);}
+  }
   drawPage(){const m=this.model,c=this.ctx;c.fillStyle=this.color(bg);c.fillRect(0,0,240,320);
     if(m.page===0)this.home();if(m.page===1)this.analytics();if(m.page===2){c.drawImage($('monitorPreview'),0,0);c.fillStyle=this.color(bg);c.fillRect(0,0,240,38);this.header(true);}
-    if(m.page===3){renderFace(this.face,m.config.content,m.contact,true);c.drawImage(this.face,0,38);this.header(true);c.fillStyle=this.color(bg);c.fillRect(70,0,170,38);const now=new Date();this.text(`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`,222,14,14,ink,'right');}
-    this.marks();
+    if(m.page===3){renderFace(this.face,m.config.content,m.contact,true);c.drawImage(this.face,0,38);if(m.config.postcardDate!==false)this.header(true);c.fillStyle=this.color(bg);c.fillRect(70,0,170,38);const now=new Date();if(m.config.postcardDate!==false)this.text(`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`,222,14,14,ink,'right');}
+    if(m.page===4)this.pet();
+    if(m.page===5){m.config.wallpaper?.(c);return;}this.marks();
   }
 }
 

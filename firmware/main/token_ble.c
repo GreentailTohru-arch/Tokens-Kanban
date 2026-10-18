@@ -77,7 +77,7 @@ static int access_value(uint16_t connection,uint16_t attribute,struct ble_gatt_a
         uint16_t n=length-pos; if(n>sizeof(bytes)) n=sizeof(bytes);
         if(os_mbuf_copydata(ctxt->om,pos,n,bytes)) return BLE_ATT_ERR_UNLIKELY;
         for(uint16_t i=0;i<n;++i) if(token_stream_push(&stream,bytes[i])) {
-            char reply[96]; size_t len=receiver(stream.data,reply,sizeof(reply));
+            char reply[256]; size_t len=receiver(stream.data,reply,sizeof(reply));
             if(len) reply_notify(connection,reply,len);
         }
         pos+=n;

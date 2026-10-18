@@ -231,6 +231,12 @@ esp_lcd_panel_handle_t bsp_display_panel(void) { return s_panel; }
 
 esp_lcd_panel_io_handle_t bsp_display_io(void) { return s_io; }
 
+esp_err_t bsp_display_wait_frame(void) {
+    if (!s_ready) return ESP_ERR_INVALID_STATE;
+    // IDF SPI tx_param drains queued color transfers before this ST7789 NOP.
+    return esp_lcd_panel_io_tx_param(s_io, 0x00, NULL, 0);
+}
+
 void bsp_display_backlight(uint8_t percent) {
     if (!s_bl_ready) return;
     if (percent > 100) percent = 100;

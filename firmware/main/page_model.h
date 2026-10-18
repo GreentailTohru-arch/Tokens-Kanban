@@ -1,6 +1,6 @@
 #pragma once
 #include "token_model.h"
-enum { PAGE_HOME, PAGE_ANALYTICS, PAGE_SYSTEM, PAGE_POSTCARD, PAGE_COUNT };
+enum { PAGE_HOME, PAGE_ANALYTICS, PAGE_SYSTEM, PAGE_POSTCARD, PAGE_PET, PAGE_WALLPAPER, PAGE_COUNT };
 typedef struct { uint32_t enabled, order[PAGE_COUNT]; } page_config_t;
 page_config_t page_config_default(void);
 bool page_config_valid(const page_config_t *config);

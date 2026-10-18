@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <setjmp.h>
 #include "../main/device_runtime.c"
+static pet_bindings_t stored_keys,staged_keys;static bool have_keys,keys_write;
 static request_t pending[4];
 static unsigned count,writes,commits,audio_samples,backlight=75,format_calls,last_audio_volume;
 static unsigned mute_at,inject_volume=UINT32_MAX;
@@ -9,6 +10,7 @@ static int64_t fake_time_us;
 static bool fail_commit,fail_task,have_stored;
 static device_config_t stored,staged;
 static theme_config_t stored_theme,staged_theme;static bool have_theme,theme_write;
+static size_t pages_size=sizeof(page_config_t);
 static page_config_t stored_pages,staged_pages;static bool have_pages,pages_write;
 static monitor_config_t stored_monitor,staged_monitor;static bool have_monitor,monitor_write;
 static unsigned stored_brightness=75,staged_brightness;static bool display_write,have_brightness;
@@ -26,15 +28,16 @@ esp_err_t nvs_flash_init(void){return ESP_OK;}
 esp_err_t nvs_open(const char *name,int mode,nvs_handle_t *handle){(void)mode;assert(!strcmp(name,"tokens_ui"));*handle=1;return ESP_OK;}
 esp_err_t nvs_get_blob(nvs_handle_t handle,const char *key,void *data,size_t *size){
     (void)handle;
+    if(!strcmp(key,"petkeys1")){assert(*size==sizeof(stored_keys));if(!have_keys)return ESP_FAIL;memcpy(data,&stored_keys,*size);return ESP_OK;}
     if(!strcmp(key,"theme1")){assert(*size==sizeof(stored_theme));if(!have_theme)return ESP_FAIL;memcpy(data,&stored_theme,*size);return ESP_OK;}
     if(!strcmp(key,"display1")){assert(*size==4);if(!have_brightness)return ESP_FAIL;memcpy(data,&stored_brightness,4);return ESP_OK;}
     if(!strcmp(key,"mon1")){assert(*size==sizeof(stored_monitor));if(!have_monitor)return ESP_FAIL;memcpy(data,&stored_monitor,*size);return ESP_OK;}
-    if(!strcmp(key,"pages1")){assert(*size==sizeof(stored_pages));if(!have_pages)return ESP_FAIL;memcpy(data,&stored_pages,*size);return ESP_OK;}
+    if(!strcmp(key,"pages1")){assert(*size==sizeof(stored_pages));if(!have_pages)return ESP_FAIL;memcpy(data,&stored_pages,pages_size);*size=pages_size;return ESP_OK;}
     if(!strcmp(key,"cfg2")){assert(*size==sizeof(stored));if(!have_stored)return ESP_FAIL;memcpy(data,&stored,*size);return ESP_OK;}
     assert(!strcmp(key,"cfg1")&&*size==sizeof(legacy));if(!have_legacy)return ESP_FAIL;memcpy(data,legacy,*size);return ESP_OK;
 }
-esp_err_t nvs_set_blob(nvs_handle_t handle,const char *key,const void *data,size_t size){(void)handle;theme_write=!strcmp(key,"theme1");if(theme_write){assert(size==sizeof(staged_theme));memcpy(&staged_theme,data,size);writes++;return ESP_OK;}display_write=!strcmp(key,"display1");if(display_write){assert(size==4);memcpy(&staged_brightness,data,4);writes++;return ESP_OK;}monitor_write=!strcmp(key,"mon1");pages_write=!strcmp(key,"pages1");if(monitor_write){assert(size==sizeof(staged_monitor));memcpy(&staged_monitor,data,size);}else if(pages_write){assert(size==sizeof(staged_pages));memcpy(&staged_pages,data,size);}else{assert(!strcmp(key,"cfg2")&&size==sizeof(stored));memcpy(&staged,data,size);}writes++;return ESP_OK;}
-esp_err_t nvs_commit(nvs_handle_t handle){(void)handle;commits++;if(fail_commit)return ESP_FAIL;if(theme_write){stored_theme=staged_theme;have_theme=true;}else if(display_write){stored_brightness=staged_brightness;have_brightness=true;}else if(monitor_write){stored_monitor=staged_monitor;have_monitor=true;}else if(pages_write){stored_pages=staged_pages;have_pages=true;}else{stored=staged;have_stored=true;}if(inject_volume!=UINT32_MAX){unsigned next=inject_volume;inject_volume=UINT32_MAX;device_runtime_volume_set(next,(uint64_t)fake_time_us/1000);}return ESP_OK;}
+esp_err_t nvs_set_blob(nvs_handle_t handle,const char *key,const void *data,size_t size){(void)handle;keys_write=!strcmp(key,"petkeys1");if(keys_write){assert(size==sizeof(staged_keys));memcpy(&staged_keys,data,size);writes++;return ESP_OK;}theme_write=!strcmp(key,"theme1");if(theme_write){assert(size==sizeof(staged_theme));memcpy(&staged_theme,data,size);writes++;return ESP_OK;}display_write=!strcmp(key,"display1");if(display_write){assert(size==4);memcpy(&staged_brightness,data,4);writes++;return ESP_OK;}monitor_write=!strcmp(key,"mon1");pages_write=!strcmp(key,"pages1");if(monitor_write){assert(size==sizeof(staged_monitor));memcpy(&staged_monitor,data,size);}else if(pages_write){assert(size==sizeof(staged_pages));memcpy(&staged_pages,data,size);}else{assert(!strcmp(key,"cfg2")&&size==sizeof(stored));memcpy(&staged,data,size);}writes++;return ESP_OK;}
+esp_err_t nvs_commit(nvs_handle_t handle){(void)handle;commits++;if(fail_commit)return ESP_FAIL;if(keys_write){stored_keys=staged_keys;have_keys=true;}else if(theme_write){stored_theme=staged_theme;have_theme=true;}else if(display_write){stored_brightness=staged_brightness;have_brightness=true;}else if(monitor_write){stored_monitor=staged_monitor;have_monitor=true;}else if(pages_write){stored_pages=staged_pages;have_pages=true;}else{stored=staged;have_stored=true;}if(inject_volume!=UINT32_MAX){unsigned next=inject_volume;inject_volume=UINT32_MAX;device_runtime_volume_set(next,(uint64_t)fake_time_us/1000);}return ESP_OK;}
 void nvs_close(nvs_handle_t handle){(void)handle;}
 esp_err_t bsp_audio_init(void){return ESP_OK;}
 esp_err_t bsp_audio_wake(void){return ESP_OK;}
@@ -117,6 +120,12 @@ int main(void){
     device_runtime_tick(1,NULL);assert(!device_runtime_key(2));run();
     assert(audio_samples==before_boot+startup_sound_samples+1920); /* Waking never replays startup. */
     line("PC_CFG_SET2 45 120 4 5 0 1","PC_CFG_STATE 45 1\n");run();before_boot=audio_samples;reboot();assert(audio_samples==before_boot);
+    line("PC_PAGES_GET3","PC_PAGES 3 63 0 1 4 2 3 5\n");
+    line("PC_PAGES_GET2","PC_PAGES 2 31 0 1 4 2 3\n");
+    stored_pages=(page_config_t){12,{3,2,1,0,0}};have_pages=true;pages_size=20;reboot();
+    line("PC_PAGES_GET2","PC_PAGES 2 28 3 2 1 0 4\n");
+    stored_pages=(page_config_t){16,{4,3,2,1,0,0}};pages_size=24;reboot();line("PC_PAGES_GET3","PC_PAGES 3 48 4 3 2 1 0 5\n");
+    have_pages=false;pages_size=sizeof(page_config_t);reboot();
     line("PC_PAGES_GET","PC_PAGES 1 15 0 1 2 3\n");
     const char *bad_pages[]={"PC_PAGES_SET 100 0 0 1 2 3","PC_PAGES_SET 100 16 0 1 2 3","PC_PAGES_SET 100 15 0 1 2 2","PC_PAGES_SET 100 15 0 1 2 4","PC_PAGES_SET 0 15 0 1 2 3"};
     for(unsigned i=0;i<sizeof(bad_pages)/sizeof(*bad_pages);++i)line(bad_pages[i],"PC_CFG_INVALID\n");
@@ -171,14 +180,24 @@ int main(void){
     monitor_config_t custom=monitor_default();custom.cards[0].metric=M_TODAY;custom.cards[1].enabled=0;custom.bits=1;custom.decimals=2;
     strcpy(custom.cards[0].title,"今日流量");char hex[MONITOR_CONFIG_BYTES*2+1],command[400];monitor_encode(&custom,hex);
     snprintf(command,sizeof(command),"PC_MON_SET 150 %s",hex);line(command,"PC_CFG_STATE 150 1\n");run();reboot();
-    monitor_config_t got=device_runtime_monitor();assert(!memcmp(&got,&custom,sizeof(got)));assert(config.idle_seconds==120&&config.startup_sound==0);assert(pages.enabled==12);
+    monitor_config_t got=device_runtime_monitor();assert(!memcmp(&got,&custom,sizeof(got)));assert(config.idle_seconds==120&&config.startup_sound==0);assert(pages.enabled==60);
     fail_commit=true;custom.bits=0;monitor_encode(&custom,hex);snprintf(command,sizeof(command),"PC_MON_SET 151 %s",hex);line(command,"PC_CFG_STATE 151 1\n");run();
     assert(device_runtime_monitor().bits==1);fail_commit=false;reboot();assert(device_runtime_monitor().bits==1);
     assert(device_runtime_line("PC_MON_GET",reply,sizeof(reply))>0&&strstr(reply,"PC_MON 1 ")==reply);
     assert(device_runtime_line("PC_MON_READ 0",reply,sizeof(reply))>0&&strstr(reply,"PC_MON_DATA ")==reply);
     line("PC_MON_READ 148","PC_CFG_INVALID\n");
     puts("Independent monitor configuration, chunked reads, NVS persistence and save failure: PASS");
+    line("PC_PAGES_SET2 9876 16 4 3 2 1 0","PC_CFG_STATE 9876 1\n");run();reboot();
+    line("PC_PAGES_GET2","PC_PAGES 2 16 4 3 2 1 0\n");
+    line("PC_PAGES_SET2 9877 32 4 3 2 1 0","PC_CFG_INVALID\n");
+    line("PC_KEYS_GET","PC_KEYS 1 1 2 3 0 4 0 0 0 5\n");
+    line("PC_KEYS_SET 9880 2 1 0 4 0 3 1 2 0","PC_CFG_STATE 9880 1\n");run();reboot();
+    line("PC_KEYS_GET","PC_KEYS 1 2 1 0 4 0 3 1 2 0\n");
+    line("PC_KEYS_SET 9881 5 1 0 4 0 3 1 2 0","PC_CFG_INVALID\n");
+    fail_commit=true;line("PC_KEYS_SET 9882 1 2 3 0 4 0 0 0 5","PC_CFG_STATE 9882 1\n");run();fail_commit=false;reboot();
+    line("PC_KEYS_GET","PC_KEYS 1 2 1 0 4 0 3 1 2 0\n");
     nvs_ready=false;line("PC_CFG_SET 30 60 1 3 10","PC_CFG_UNAVAILABLE\n");
     fail_task=true;assert(!device_runtime_start());line("PC_CFG_GET","PC_CFG_UNAVAILABLE\n");
-    puts("Settings worker, persistence failures, audio bounds, wake and event deduplication: PASS");return 0;
+    puts("Settings worker, persistence failures, audio bounds, wake and event deduplication: PASS");
+    return 0;
 }

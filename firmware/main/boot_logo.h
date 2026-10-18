@@ -9,3 +9,4 @@ const uint8_t *boot_logo_frame(uint64_t elapsed,unsigned *side);
 void boot_logo_finish(void);
 
 unsigned boot_logo_duration(void);
+unsigned boot_logo_height(void);

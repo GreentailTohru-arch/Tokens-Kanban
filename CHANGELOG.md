@@ -2,6 +2,16 @@
 
 # Changelog
 
+## v28 · 2026-10-18
+
+- Add virtual pet and fullscreen wallpaper pages. New defaults: usage, analytics, virtual pet, system monitor, postcard, wallpaper; saved custom order is retained.
+- Crop and compress wallpapers, use a theme background, and toggle time/date together independently for postcard and wallpaper.
+- Support full-screen boot-logo framing and fix duplicate custom logo playback, boot flashing and power-button screen-off behavior.
+- Unify web previews, crop dialogs, mobile layouts and navigation; add RTOS branding and version badges.
+- Pet buttons are configurable. Sending, undo and stop/resume depend on Codex accessibility support; screenshot and hold-to-dictate still require hardware acceptance and are not advertised as verified.
+- Include app/full firmware, Windows/MacOS sync packages, separate TrafficMonitor bridge, source and unified checksums.
+
+
 ## v23 · 2026-10-17
 
 - Link the saved device name to Bluetooth without intentionally disconnecting the current peer; reload it after reboot.

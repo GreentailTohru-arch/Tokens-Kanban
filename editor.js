@@ -1,10 +1,11 @@
+import {WallpaperEditor} from './wallpaper.js?v=matching-guides-28';
 import {NoticeCenter} from './notices.js?v=atelier-20';
 import {LocalConnection} from './local-connection.js?v=atelier-20';
 import {DraftState} from './draft-state.js?v=atelier-20';
-import {LogoEditor} from './logo-editor.js?v=dialog-close-22';
-import {AboutPanel} from './about.js?v=sync-packages-22';
+import {LogoEditor} from './logo-editor.js?v=upload-crop-only-28';
+import {AboutPanel} from './about.js?v=rtos-badge-28';
 import {DeviceInfoPanel} from './device-info.js?v=screen-test-22';
-import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=theme-cards-22';
+import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=virtual-pet-28';
 import {MonitorEditor} from './monitor.js?v=device-themes-21';
 import {loadDefaults} from './defaults.js';
 import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=preview-22';
@@ -26,18 +27,20 @@ const rxId='9e7a0002-4b51-4a4c-9b50-2f53f077c301',txId='9e7a0003-4b51-4a4c-9b50-
 const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,zoom:1},qrCrop:{x:.5,y:.5,zoom:1}};
 let back=false,link=null,busy=false,imageLoading=true,activePage='experience',settingsSupported=false,startupSupported=false,brightnessSupported=false,autoLocalEnabled=true;
 let themeSupported=false;
-let pagesSupported=false,pageEnabled=15,pageOrder=[0,1,2,3];
-const pageNames=['用量首页','统计分析','系统检测','明信片'];
-const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按检测卡片配置显示','头像、文字与联系方式'];
+const petKeyDefaults=[1,2,3,0,4,0,0,0,5];
+let petKeys=[...petKeyDefaults],petKeysSupported=false;
+let pagesSupported=false,pagesVersion=3,pageEnabled=63,pageOrder=[0,1,4,2,3,5];
+const pageNames=['用量首页','统计分析','系统检测','明信片','虚拟宠物','全屏壁纸'];
+const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按检测卡片配置显示','头像、文字与联系方式','六种动画，陪伴每一次思考','你的图片，铺满整块屏幕'];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-let simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null,drafts=null,savingAll=false;
+let wallEditor=null,simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null,drafts=null,savingAll=false;
 const notices=new NoticeCenter($('status'));
 function status(text,kind='success'){notices.show(text,kind);}
 
 function repaint(){renderFace($('preview'),content,back,true);refreshPreviewColors();refreshThumbnails();$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const locked=busy||imageLoading;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
+function controls(){wallEditor?.controls();const locked=busy||imageLoading;$("petKeysSave").disabled=locked||!link||!petKeysSupported;$("petKeysReset").disabled=locked;$("petKeyRows").inert=locked;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='pet'&&!petKeysSupported)||(activePage==='wallpaper'&&!wallEditor?.supported)||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
-function updateClock(){const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
+function updateClock(){if(activePage==='wallpaper')wallEditor?.render();const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
   const now=new Date(),reply=await connection.rpc('PC_CLOCK '+localClock(now));
   // Keep the new crop editor usable with v4 while v5 awaits flashing approval.
@@ -67,7 +70,7 @@ function closeCrop(apply){
   if(apply){
     if(draft.fresh){content[draft.field]?.close();content[draft.field]=draft.image;selectedFiles[draft.field]=draft.file;}
     content[cropKey(draft.field)]={...draft.crop};
-    $(draft.field+'Edit').hidden=false;back=draft.field==='qr';repaint();
+    back=draft.field==='qr';repaint();
   }else if(draft.fresh)draft.image.close();
   restoreFile(draft.field);draft=null;drag=null;$('cropDialog').close();
 }
@@ -88,7 +91,7 @@ $('zoom').oninput=()=>{if(draft){draft.crop.zoom=Number($('zoom').value);repaint
 $('resetCrop').onclick=()=>{if(draft){draft.crop={x:.5,y:.5,zoom:1};repaintCrop();}};
 $('applyCrop').onclick=()=>closeCrop(true);$('cancelCrop').onclick=()=>closeCrop(false);
 $('cropDialog').addEventListener('cancel',e=>{e.preventDefault();closeCrop(false);});
-for(const field of ['photo','qr'])$(field+'Edit').onclick=()=>openCrop(field);
+
 class Connection{
   constructor(kind){this.commands=Promise.resolve();this.kind=kind;this.text='';this.pending=null;this.closed=false;this.timeout=12000;}
   feed(bytes){this.text+=new TextDecoder().decode(bytes);let pos;while((pos=this.text.indexOf('\n'))>=0){const line=this.text.slice(0,pos).trim();this.text=this.text.slice(pos+1);if(line.startsWith('PC_')&&this.pending){this.pending.resolve(line);this.pending=null;}}if(this.text.length>2048)this.text='';}
@@ -140,7 +143,7 @@ async function connect(kind){
   busy=true;controls();let candidate=kind==='local'?new LocalConnection():kind==='ble'?new BluetoothConnection():new SerialConnection();
   try{if(kind==='local')candidate.onlost=()=>Connection.prototype.lost.call(candidate);await candidate.open();const deadline=performance.now()+10000;candidate.timeout=kind==='usb'?1000:12000;
     for(;;){try{if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await readTheme(candidate);drafts?.mark('theme');await aboutPanel.read(candidate);candidate.timeout=12000;link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');break;
+    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await wallEditor.read(candidate);drafts?.mark('wallpaper');await readPetKeys(candidate);drafts?.mark('petkeys');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await readTheme(candidate);drafts?.mark('theme');await aboutPanel.read(candidate);candidate.timeout=12000;link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');break;
     }catch(error){if(kind!=='usb'||candidate.closed||error.message!=='设备响应超时，请断开重连'||performance.now()>=deadline)throw error;candidate.text='';await delay(350);}}
   }catch(error){await candidate.close();status(error.message,'error');}finally{busy=false;controls();}
 }
@@ -179,9 +182,9 @@ async function upload(event){
 function setPage(page){
   const changed=activePage!==page;
   if(drawerMedia.matches)setSidebar(false,document.querySelector('.app-shell').classList.contains('sidebar-open'));
-  activePage=page;$('experiencePage').hidden=page!=='experience';if(page==='theme')$('themeMachineHost').append($('simDevice'));else if(page==='experience')$('experienceStage').prepend($('simDevice'));simulator?.setActive(page==='experience'||page==='theme');devicePanel?.setActive(page==='device');$('devicePage').hidden=page!=='device';$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';$('aboutPage').hidden=page!=='about';$('themePage').hidden=page!=='theme';
-  for(const name of ['experience','pages','monitor','postcard','theme','settings','device','about']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));if(selected)$(name+'Nav').setAttribute('aria-current','page');else $(name+'Nav').removeAttribute('aria-current');}
-  $('upload').setAttribute('form',page==='theme'?'themeForm':page==='settings'?'settingsForm':page==='pages'?'pagesForm':page==='monitor'?'monitorForm':'form');controls();if(changed)window.scrollTo({top:0,behavior:'instant'});
+  activePage=page;$('petPage').hidden=page!=='pet';$('wallpaperPage').hidden=page!=='wallpaper';wallEditor?.render();$('experiencePage').hidden=page!=='experience';if(page==='theme')$('themeMachineHost').append($('simDevice'));else if(page==='experience')$('experienceStage').prepend($('simDevice'));simulator?.setActive(page==='experience'||page==='theme');devicePanel?.setActive(page==='device');$('devicePage').hidden=page!=='device';$('monitorPage').hidden=page!=='monitor';$('pagesPage').hidden=page!=='pages';$('postcardPage').hidden=page!=='postcard';$('settingsPage').hidden=page!=='settings';$('aboutPage').hidden=page!=='about';$('themePage').hidden=page!=='theme';
+  for(const name of ['experience','pages','monitor','postcard','wallpaper','pet','theme','settings','device','about']){const selected=page===name;$(name+'Nav').classList.toggle('selected',selected);$(name+'Nav').setAttribute('aria-pressed',String(selected));if(selected)$(name+'Nav').setAttribute('aria-current','page');else $(name+'Nav').removeAttribute('aria-current');}
+  $('upload').setAttribute('form',page==='pet'?'petKeysForm':page==='wallpaper'?'wallForm':page==='theme'?'themeForm':page==='settings'?'settingsForm':page==='pages'?'pagesForm':page==='monitor'?'monitorForm':'form');controls();if(changed)window.scrollTo({top:0,behavior:'instant'});
 }
 function settingsValues(){const values=['idleTime','doneTone','quotaTone','soundVolume'].map(id=>Number($(id).value));if(startupSupported)values.push(Number($('startupSound').checked));return values;}
 function putSettings(values){
@@ -267,7 +270,8 @@ async function saveTheme(event){
 }
 const monitorEditor=new MonitorEditor({onSaved:()=>drafts?.mark('monitor'),status,getLink:()=>link,setBusy:value=>{busy=value;controls();},controls,onRender:url=>{document.querySelector('.page-card[data-page="2"] img')?.setAttribute('src',url);}});
 devicePanel=new DeviceInfoPanel({onSaved:()=>drafts?.mark('name'),getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
-simulator=new ExperienceSimulator(()=>({mask:pageEnabled,order:[...pageOrder],content,volume:Number($('soundVolume').value),idle:Number($('idleTime').value),done:Number($('doneTone').value),quota:Number($('quotaTone').value),startup:$('startupSound').checked,drawBoot:ctx=>logoEditor.draw(ctx),bootDuration:logoEditor?.frames?.reduce((n,f)=>n+f.duration,0)||0}));
+wallEditor=new WallpaperEditor({link:()=>link,locked:()=>busy||imageLoading,busy:value=>{busy=value;controls();},status,changed:()=>{refreshThumbnails();},saved:()=>drafts?.mark('wallpaper')});
+simulator=new ExperienceSimulator(()=>({wallpaper:ctx=>wallEditor.draw(ctx),postcardDate:!!(wallEditor.flags&4),petBindings:[...petKeys],mask:pageEnabled,order:[...pageOrder],content,volume:Number($('soundVolume').value),idle:Number($('idleTime').value),done:Number($('doneTone').value),quota:Number($('quotaTone').value),startup:$('startupSound').checked,drawBoot:ctx=>logoEditor.draw(ctx),bootDuration:logoEditor?.frames?.reduce((n,f)=>n+f.duration,0)||0}));
 logoEditor=new LogoEditor({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 aboutPanel=new AboutPanel({getLink:()=>link,isBusy:()=>busy||imageLoading,setBusy:value=>{busy=value;controls();},status});
 $('themeForm').addEventListener('submit',saveTheme);
@@ -280,7 +284,7 @@ $('brightness').oninput=()=>{$('brightnessValue').textContent=$('brightness').va
 $('experienceNav').onclick=()=>setPage('experience');$('deviceNav').onclick=()=>setPage('device');
 $('monitorNav').onclick=()=>setPage('monitor');
 $('pagesNav').onclick=()=>setPage('pages');$('pagesForm').addEventListener('submit',savePages);
-$('postcardNav').onclick=()=>setPage('postcard');$('settingsNav').onclick=()=>setPage('settings');
+$('petNav').onclick=()=>setPage('pet');$('wallpaperNav').onclick=()=>setPage('wallpaper');$('postcardNav').onclick=()=>setPage('postcard');$('settingsNav').onclick=()=>setPage('settings');
 $('settingsForm').addEventListener('submit',saveSettings);
 for(const id of ['idleTime','doneTone','quotaTone','soundVolume','startupSound'])$(id).addEventListener('input',()=>{$('soundVolumeValue').textContent=$('soundVolume').value+'%';$('settingsState').textContent='有未保存的设置';controls();});
 $('previewDone').onclick=()=>previewTone('doneTone');$('previewQuota').onclick=()=>previewTone('quotaTone');
@@ -299,18 +303,20 @@ for(const field of ['photo','qr'])$(field).addEventListener('change',async e=>{
 $('frontTab').onclick=()=>{back=false;repaint();};$('backTab').onclick=()=>{back=true;repaint();};
 for(const kind of ['ble','usb'])$(kind).onclick=()=>{const local=!!document.querySelector('meta[name=passport-device]');if(local)autoLocalEnabled=true;connect(local?'local':kind);};
 $('disconnect').onclick=async()=>{autoLocalEnabled=false;busy=true;controls();try{await link?.close();}finally{link=null;busy=false;controls();}};
-$('form').addEventListener('submit',upload);
+$('form').addEventListener('submit',async e=>{e.preventDefault();if(drafts?.changed().some(c=>c.key==='postcard')||!drafts?.changed().some(c=>c.key==='wallpaper'))await upload(e);if(drafts?.changed().some(c=>c.key==='wallpaper'))await wallEditor.save();});
 window.addEventListener('beforeunload',event=>{if(unsaved().length||aboutPanel?.installing||savingAll){event.preventDefault();event.returnValue='';}});
 window.addEventListener('pagehide',()=>{if(link instanceof BluetoothConnection)link.device?.gatt.disconnect();});
 drafts=new DraftState();
 const bitmapIds=new WeakMap();let nextBitmap=1;
 const bitmapId=image=>{if(!image)return 0;if(!bitmapIds.has(image))bitmapIds.set(image,nextBitmap++);return bitmapIds.get(image);};
 const cardKey=()=>JSON.stringify([content.title,content.subtitle,content.name,bitmapId(content.photo),bitmapId(content.qr),content.crop,content.qrCrop]);
+drafts.add('wallpaper','壁纸与日期',()=>wallEditor.key());
+drafts.add('petkeys','宠物按键',()=>JSON.stringify(petKeys));
 drafts.add('theme','设备主题',()=>JSON.stringify(window.DeviceTheme.values()));
 drafts.add('settings','显示与声音',()=>JSON.stringify([settingsValues(),Number($('brightness').value)]));
 drafts.add('pages','页面管理',()=>JSON.stringify([pageEnabled,pageOrder]));drafts.add('monitor','系统检测',()=>JSON.stringify(monitorEditor.config));drafts.add('name','设备名称',()=>$('deviceName').value.trim());drafts.add('postcard','明信片',cardKey);
 function unsaved(){
- const changes=drafts?.changed()||[];
+ const changes=drafts?.changed()||[];if(wallEditor?.pending&&!changes.some(c=>c.key==='wallpaper'))changes.push({key:'wallpaper',label:'壁纸取景'});
  if(draft&&(draft.fresh||JSON.stringify(draft.crop)!==JSON.stringify(content[cropKey(draft.field)]))&&!changes.some(c=>c.key==='postcard'))changes.push({key:'postcard',label:'明信片'});
  if(logoEditor?.dirty||(logoEditor?.pending&&(logoEditor.pending.file!==logoEditor.file||JSON.stringify(logoEditor.draftCrop)!==JSON.stringify(logoEditor.crop))))changes.push({key:'logo',label:'开机 Logo'});
  return changes;
@@ -318,9 +324,9 @@ function unsaved(){
 function refreshDraftNotice(){const changes=unsaved();$('draftNotice').hidden=!changes.length;$('draftSummary').textContent='未保存：'+changes.map(c=>c.label).join('、');$('draftNotice').title=$('draftSummary').textContent;$('saveAll').disabled=busy||imageLoading||savingAll;}
 async function saveAll(){
  if(busy||imageLoading||savingAll)return;if(!link){status('请先连接设备，再保存修改','error');return;}
- if(draft)closeCrop(true);if(logoEditor.pending){status('请先在小窗中确定 Logo 取景','error');return;}
+ if(wallEditor.pending){status('请先确定或取消壁纸取景','error');return;}if(draft)closeCrop(true);if(logoEditor.pending){status('请先在小窗中确定 Logo 取景','error');return;}
  savingAll=true;refreshDraftNotice();const event={preventDefault(){}};
- const jobs={theme:()=>saveTheme(event),settings:()=>saveSettings(event),pages:()=>savePages(event),monitor:()=>monitorEditor.save(event),name:()=>devicePanel.saveName(event),postcard:()=>upload(event),logo:()=>logoEditor.save()};
+ const jobs={wallpaper:()=>wallEditor.save(),petkeys:()=>savePetKeys(event),theme:()=>saveTheme(event),settings:()=>saveSettings(event),pages:()=>savePages(event),monitor:()=>monitorEditor.save(event),name:()=>devicePanel.saveName(event),postcard:()=>upload(event),logo:()=>logoEditor.save()};
  try{for(const {key,label} of unsaved()){await jobs[key]();if(unsaved().some(c=>c.key===key)){status(label+'保存未确认，修改仍保留，请检查后重试','error');return;}}status('全部修改已保存到设备');}
  catch(e){status(e.message,'error');}finally{savingAll=false;refreshDraftNotice();}
 }
@@ -348,12 +354,13 @@ finally{imageLoading=false;controls();}
 void aboutPanel.check({automatic:true});
 
 function refreshPreviewColors(){
- const map=window.DeviceTheme.map;for(const el of document.querySelectorAll('.device,.page-thumbnail')){
+ wallEditor?.render();const map=window.DeviceTheme.map;for(const el of document.querySelectorAll('.device,.page-thumbnail')){
   el.style.setProperty('--device-bg',map('#2f3a49'));el.style.setProperty('--device-ink',map('#f1f7f4'));el.style.setProperty('--device-mark',map('#52616e'));el.style.setProperty('--device-accent',map('#68c4cb'));
  }
 }
+document.addEventListener('petassetsready',()=>refreshThumbnails());
 function refreshThumbnails(){if(!simulator)return;simulator.sync();for(const image of document.querySelectorAll('.page-card img'))image.src=simulator.previewURL(+image.closest('.page-card').dataset.page);}
-function validPages(mask,order){return Number.isInteger(mask)&&mask>0&&mask<16&&order.length===4&&order.every(n=>Number.isInteger(n)&&n>=0&&n<4)&&new Set(order).size===4;}
+function validPages(mask,order){return Number.isInteger(mask)&&mask>0&&mask<(1<<order.length)&&[4,5,6].includes(order.length)&&order.every(n=>Number.isInteger(n)&&n>=0&&n<order.length)&&new Set(order).size===order.length;}
 function renderPages(){
   const list=$('pageList');list.replaceChildren();
   const postcardMarks=document.querySelector('.marks');postcardMarks.replaceChildren();for(const id of pageOrder.filter(n=>pageEnabled&(1<<n))){const mark=document.createElement('i');if(id===3)mark.className='active';postcardMarks.append(mark);}
@@ -372,14 +379,16 @@ function renderPages(){
     const toggle=document.createElement('input');toggle.type='checkbox';toggle.setAttribute('role','switch');toggle.setAttribute('aria-label',pageNames[id]);toggle.checked=enabled;toggle.disabled=enabled&&count===1;
     toggle.onchange=()=>{const next=pageEnabled^(1<<id);if(!next){status('至少保留一个页面','error');toggle.checked=true;return;}pageEnabled=next;changedPages();};label.append(text,toggle);info.append(label);
     const actions=document.createElement('div');actions.className='page-actions';
-    for(const [delta,name] of [[-1,'上移'],[1,'下移']]){const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=name;button.setAttribute('aria-label',pageNames[id]+name);button.disabled=index+delta<0||index+delta>=4;button.onclick=()=>{const target=index+delta;[pageOrder[index],pageOrder[target]]=[pageOrder[target],pageOrder[index]];changedPages();$('pageList').querySelector(`[data-page="${id}"] button[aria-label="${pageNames[id]+name}"]`)?.focus();};actions.append(button);}info.append(actions);card.append(info);list.append(card);
+    for(const [delta,name] of [[-1,'上移'],[1,'下移']]){const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=name;button.setAttribute('aria-label',pageNames[id]+name);button.disabled=index+delta<0||index+delta>=pageOrder.length;button.onclick=()=>{const target=index+delta;[pageOrder[index],pageOrder[target]]=[pageOrder[target],pageOrder[index]];changedPages();$('pageList').querySelector(`[data-page="${id}"] button[aria-label="${pageNames[id]+name}"]`)?.focus();};actions.append(button);}info.append(actions);card.append(info);list.append(card);
   });
   refreshPreviewColors();
 }
 function changedPages(){simulator?.sync();renderPages();refreshPreviewColors();$('pagesState').textContent='有未保存的页面设置';controls();}
 async function readPages(connection){
-  const parts=(await connection.rpc('PC_PAGES_GET')).split(' ');
-  pagesSupported=parts.length===7&&parts[0]==='PC_PAGES'&&parts[1]==='1';
+  let parts=[];try{parts=(await connection.rpc('PC_PAGES_GET3')).split(' ');}catch{}
+  if(parts[0]!=='PC_PAGES'||parts[1]!=='3')try{parts=(await connection.rpc('PC_PAGES_GET2')).split(' ');}catch{}
+  if(parts[0]!=='PC_PAGES'||!['2','3'].includes(parts[1]))parts=(await connection.rpc('PC_PAGES_GET')).split(' ');
+  pagesVersion=Number(parts[1]);pagesSupported=parts[0]==='PC_PAGES'&&((pagesVersion===3&&parts.length===9)||(pagesVersion===2&&parts.length===8)||(pagesVersion===1&&parts.length===7));
   if(pagesSupported){const values=parts.slice(2).map(Number);if(!validPages(values[0],values.slice(1)))throw new Error('设备页面设置格式错误');pageEnabled=values[0];pageOrder=values.slice(1);}
   $('pagesState').textContent=pagesSupported?'已读取设备页面设置':'升级 v13 固件后可管理页面';renderPages();
 }
@@ -389,7 +398,7 @@ async function savePages(event){
   const mask=pageEnabled,order=[...pageOrder],id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;
   busy=true;controls();$('pagesState').textContent='正在保存页面设置…';
   try{
-    let reply=await link.rpc(`PC_PAGES_SET ${id} ${mask} ${order.join(' ')}`),saved=false;
+    let reply=await link.rpc(`PC_PAGES_SET${pagesVersion>=2?String(pagesVersion):''} ${id} ${mask} ${order.join(' ')}`),saved=false;
     for(let i=0;i<300;i++){
       const parts=reply.split(' ');if(parts[0]!=='PC_CFG_STATE'||Number(parts[1])!==id)throw new Error('设备暂忙，请稍后保存');
       if(parts[2]==='3')throw new Error('设备保存失败，原页面设置仍保留');if(parts[2]==='2'){saved=true;break;}
@@ -400,6 +409,27 @@ async function savePages(event){
     drafts?.mark('pages');$('pagesState').textContent='页面设置已保存到设备';status('页面设置已保存到设备');
   }catch(error){pageEnabled=mask;pageOrder=[...order];renderPages();$('pagesState').textContent='保存未确认，请重新连接读取';status(error.message,'error');}finally{busy=false;controls();}
 }
+
+function renderPetKeys(){
+ const labels=['上 · 单击','上 · 双击','上 · 三击','下 · 单击','下 · 双击','下 · 三击','OK · 单击','OK · 三击','OK · 长按'];
+ const actions=['无','发送消息','撤销输入（Ctrl+Z）','停止／继续思考','窗口截图（双 Alt）','按住语音输入'];
+ $('petKeyRows').replaceChildren(...labels.map((label,i)=>{const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const option=new Option(actions[v],v);select.add(option);}select.value=petKeys[i];select.onchange=()=>{petKeys[i]=Number(select.value);$('petKeysState').textContent='有未保存的宠物按键设置';refreshDraftNotice();};row.append(title,select);return row;}));
+}
+async function readPetKeys(connection){
+ let parts=[];try{parts=(await connection.rpc('PC_KEYS_GET')).split(' ');}catch{}
+ petKeysSupported=parts[0]==='PC_KEYS'&&parts[1]==='1'&&parts.length===11;
+ if(petKeysSupported){const values=parts.slice(2).map(Number);if(values.some((v,i)=>!Number.isInteger(v)||(i===8?![0,5].includes(v):v<0||v>4)))throw new Error('宠物按键设置格式错误');petKeys=values;}
+ $('petKeysState').textContent=petKeysSupported?'已读取设备宠物按键':'升级支持宠物遥控的固件后可保存';renderPetKeys();
+}
+async function savePetKeys(event){
+ event.preventDefault();if(!link||busy||!petKeysSupported){status('请先连接支持宠物遥控的固件','error');return;}
+ const desired=[...petKeys],id=(crypto.getRandomValues(new Uint32Array(1))[0]>>>1)||1;busy=true;controls();
+ try{let reply=await link.rpc(`PC_KEYS_SET ${id} ${desired.join(' ')}`),saved=false;
+  for(let i=0;i<300;i++){const p=reply.split(' ');if(p[0]!=='PC_CFG_STATE'||Number(p[1])!==id)throw new Error('设备暂忙，请重试');if(p[2]==='3')throw new Error('按键保存失败');if(p[2]==='2'){saved=true;break;}await delay(50);reply=await link.rpc('PC_CFG_STATUS');}
+  if(!saved)throw new Error('保存超时');await readPetKeys(link);if(!petKeysSupported||desired.some((v,i)=>v!==petKeys[i]))throw new Error('按键校验不一致');drafts.mark('petkeys');$('petKeysState').textContent='宠物按键已保存到设备';status('宠物按键已保存到设备');
+ }catch(e){petKeys=desired;renderPetKeys();status(e.message,'error');}finally{busy=false;controls();refreshDraftNotice();}
+}
+$('petKeysForm').addEventListener('submit',savePetKeys);$('petKeysReset').onclick=()=>{petKeys=[...petKeyDefaults];renderPetKeys();$('petKeysState').textContent='已恢复默认，保存后生效';refreshDraftNotice();};renderPetKeys();
 
 if(document.querySelector('meta[name="passport-device"]')){
  const connectLocal=async()=>{if(autoLocalEnabled&&!link&&!busy&&!imageLoading&&!unsaved().length)await connect('local');};

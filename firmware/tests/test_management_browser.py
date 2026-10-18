@@ -19,6 +19,7 @@ def main():
    if(v[0]==='PC_DISPLAY_GET')reply=window.legacyDisplay?'PC_INVALID':'PC_DISPLAY 1 '+(window.deviceBrightness||75);
    if(v[0]==='PC_DISPLAY_SET'){window.deviceBrightness=+v[2];window.lastDisplayId=+v[1];reply=`PC_CFG_STATE ${v[1]} 2`;}
    if(v[0]==='PC_VERSION')reply='PC_VERSION '+(window.deviceVersion||'v18');
+   if(v[0]==='PC_LOGO_CAPS')reply='PC_LOGO_CAPS 2 240 320';
    if(v[0]==='PC_LOGO_GET')reply=window.legacyLogo?'PC_INVALID':`PC_LOGO 1 ${window.logoBytes?.length||0} ${window.logoHash||0}`;
    if(v[0]==='PC_LOGO_BEGIN'){window.logoId=+v[1];window.logoExpected=+v[2];window.logoHash=+v[3];window.logoBytes=[];reply=`PC_LOGO_STATE ${v[1]} 2 0`;}
    if(v[0]==='PC_LOGO_DATA'){window.logoBytes.push(...decode(v[3]));reply=`PC_LOGO_STATE ${v[1]} 2 ${window.logoBytes.length}`;}
@@ -36,7 +37,7 @@ def main():
   page.locator('#disconnect').click();page.locator('#ble').click();expect(page.locator('#brightness')).to_have_value('40')
   navigate(page,'monitorNav');page.locator('#bridgeHelp').click();expect(page.locator('#bridgeDialog')).to_be_visible();assert page.locator('#bridgeDialog li').count()==3;page.locator('#bridgeClose').click();expect(page.locator('#bridgeDialog')).to_be_hidden();assert page.get_by_role('link',name='下载电脑同步程序',exact=True).count()==0
   navigate(page,'settingsNav');page.locator('#logoFile').set_input_files(out/'motion.gif');expect(page.locator('#logoDialog')).to_be_visible();page.locator('#logoZoom').fill('1.4');page.locator('#logoZoom').dispatch_event('input');page.locator('#logoApply').click();expect(page.locator('#logoDialog')).to_be_hidden(timeout=15000);expect(page.locator('#logoState')).to_contain_text('6帧');page.locator('#logoSave').click();expect(page.locator('#logoState')).to_contain_text('下次启动显示',timeout=20000)
-  data=bytes(page.evaluate('window.logoBytes'));assert data[:4]==b'TLG1' and len(data)%2==0;side,count=struct.unpack_from('<HH',data,4);assert side==96 and count==6;(out/'uploaded-logo.tlg').write_bytes(data)
+  data=bytes(page.evaluate('window.logoBytes'));assert data[:4]==b'TLG2' and len(data)%2==0;side,count=struct.unpack_from('<HH',data,4);assert side==120 and count==6;(out/'uploaded-logo.tlg').write_bytes(data)
   # Cancel framing leaves the successfully prepared/saved image intact.
   before=page.locator('#logoPreview').evaluate('(c)=>c.toDataURL()');page.locator('#logoFile').set_input_files(out/'still.png');page.locator('#logoCancel').click();expect(page.locator('#logoSave')).to_be_disabled()
   page.locator('#logoDefault').click();page.locator('#logoSave').click();expect(page.locator('#logoState')).to_contain_text('已恢复原默认');assert page.evaluate('window.logoBytes.length')==0

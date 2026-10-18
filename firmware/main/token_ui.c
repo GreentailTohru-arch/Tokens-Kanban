@@ -1,4 +1,5 @@
 #include "token_ui.h"
+#include "pet_model.h"
 #include "postcard_codec.h"
 #include "postcard_defaults.h"
 #include "startup_assets.h"
@@ -18,8 +19,15 @@ LV_FONT_DECLARE(token_font_14);
 static lv_obj_t *tabs[3], *tab_labels[3], *value, *exact, *battery_label;
 static lv_obj_t *quota_name[2], *quota_pct[2], *quota_time[2], *bars[2];
 static lv_obj_t *credits, *plan, *quota_panel, *detail_panel, *details[3];
-static lv_obj_t *home_group, *stats_group, *page_marks[PAGE_COUNT], *card_group, *card_image, *clock_label, *date_label;
+static lv_obj_t *home_group, *stats_group, *card_group, *card_image, *clock_label, *date_label;
+static unsigned marks_count=PAGE_COUNT,marks_position;
 static lv_image_dsc_t card_faces[2];
+static lv_obj_t *pet_image,*wall_group,*wall_image,*wall_time,*wall_date;
+static unsigned wall_flags=4,shown_page;
+static lv_image_dsc_t wall_descriptor;
+static unsigned pet_frame,pet_state=PET_COUNT;
+static uint64_t pet_started;
+static const lv_image_dsc_t pet_descriptor={.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=192,.h=208,.stride=384},.data_size=1,.data=(const uint8_t *)"P"};
 static const uint8_t *card_data;
 static bool card_contact;
 static lv_obj_t *system_group,*system_clock,*system_status,*system_values[6],*system_second[6],*system_titles[6],*system_panels[6],*system_empty;
@@ -31,6 +39,7 @@ static bool charts_available;
 static lv_obj_t *signal_light, *signal_label;
 static lv_obj_t *startup_panel;
 static lv_image_dsc_t startup_custom_image;
+static unsigned startup_source_width,startup_source_height;
 static lv_obj_t *volume_panel,*volume_bar;
 static bool volume_visible;
 static unsigned volume_value=101;
@@ -43,14 +52,14 @@ typedef struct {lv_obj_t *object;uint32_t original;lv_style_selector_t selector;
 static themed_style_t themed_styles[192];
 static unsigned themed_count;
 static theme_config_t ui_theme={0,0x68C4CB,0x70BFFF,0x2F3A49,0xF1F7F4,0xADB8C3};
-/* Decode the two known postcard descriptors a row at a time: no full-face RAM
- * allocation or flash rewrite, and other images never pass through this decoder. */
+/* Decode known postcard and boot descriptors row by row without full-face
+ * RAM allocation. All other images retain their normal LVGL decoder. */
 static lv_result_t card_info(lv_image_decoder_t *decoder,lv_image_decoder_dsc_t *dsc,lv_image_header_t *header){
-    (void)decoder;if(dsc->src!=&card_faces[0]&&dsc->src!=&card_faces[1])return LV_RESULT_INVALID;
+    (void)decoder;if(dsc->src!=&card_faces[0]&&dsc->src!=&card_faces[1]&&dsc->src!=&startup_custom_image&&dsc->src!=&wall_descriptor&&dsc->src!=&pet_descriptor)return LV_RESULT_INVALID;
     *header=((const lv_image_dsc_t *)dsc->src)->header;return LV_RESULT_OK;
 }
 static lv_result_t card_open(lv_image_decoder_t *decoder,lv_image_decoder_dsc_t *dsc){
-    (void)decoder;dsc->user_data=lv_draw_buf_create(POSTCARD_WIDTH,1,LV_COLOR_FORMAT_RGB565,LV_STRIDE_AUTO);
+    (void)decoder;dsc->user_data=lv_draw_buf_create(dsc->src==&startup_custom_image?240:POSTCARD_WIDTH,1,LV_COLOR_FORMAT_RGB565,LV_STRIDE_AUTO);
     dsc->decoded=NULL;return dsc->user_data?LV_RESULT_OK:LV_RESULT_INVALID;
 }
 static lv_result_t card_area(lv_image_decoder_t *decoder,lv_image_decoder_dsc_t *dsc,const lv_area_t *full,lv_area_t *area){
@@ -58,12 +67,31 @@ static lv_result_t card_area(lv_image_decoder_t *decoder,lv_image_decoder_dsc_t 
     if(area->y1>full->y2)return LV_RESULT_INVALID;
     lv_draw_buf_t *row=lv_draw_buf_reshape(dsc->user_data,LV_COLOR_FORMAT_RGB565,lv_area_get_width(full),1,LV_STRIDE_AUTO);if(!row)return LV_RESULT_INVALID;
     const lv_image_dsc_t *image=dsc->src;const uint16_t *source=(const uint16_t *)image->data;
-    uint16_t *pixels=(uint16_t *)row->data;bool back=dsc->src==&card_faces[1];
+    uint16_t *pixels=(uint16_t *)row->data;
+    if(dsc->src==&startup_custom_image){
+        for(int x=area->x1;x<=area->x2;++x)pixels[x-area->x1]=source[(unsigned)area->y1*startup_source_height/image->header.h*startup_source_width+(unsigned)x*startup_source_width/image->header.w];
+        dsc->decoded=row;return LV_RESULT_OK;
+    }
+    if(dsc->src==&pet_descriptor){
+        uint32_t bg=ui_theme.background;uint16_t color=((bg>>19)<<11)|(((bg>>10)&63)<<5)|((bg>>3)&31);
+        pet_decode_row(pet_frame,area->y1,area->x1,lv_area_get_width(area),color,pixels);
+        dsc->decoded=row;return LV_RESULT_OK;
+    }
+    if(dsc->src==&wall_descriptor){memcpy(pixels,source+area->y1*240+area->x1,lv_area_get_width(area)*2u);dsc->decoded=row;return LV_RESULT_OK;}
+    bool back=dsc->src==&card_faces[1];
     for(int x=area->x1;x<=area->x2;++x)pixels[x-area->x1]=theme_postcard_pixel(&ui_theme,source[area->y1*POSTCARD_WIDTH+x],x,area->y1,back);
     dsc->decoded=row;return LV_RESULT_OK;
 }
 static void card_close(lv_image_decoder_t *decoder,lv_image_decoder_dsc_t *dsc){(void)decoder;lv_draw_buf_destroy(dsc->user_data);dsc->user_data=NULL;}
 static void card_decoder_init(void){lv_image_decoder_t *d=lv_image_decoder_create();lv_image_decoder_set_info_cb(d,card_info);lv_image_decoder_set_open_cb(d,card_open);lv_image_decoder_set_get_area_cb(d,card_area);lv_image_decoder_set_close_cb(d,card_close);}
+static void draw_marks(lv_event_t *event){
+    if(shown_page==PAGE_WALLPAPER)return;
+    int start=(240-(int)(marks_count*28-6))/2;
+    for(unsigned i=0;i<marks_count;++i){lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);
+        d.bg_color=lv_color_hex(theme_color(&ui_theme,i==marks_position?TEAL:0x52616E));d.bg_opa=LV_OPA_COVER;d.radius=2;
+        lv_area_t area={start+(int)i*28,309,start+(int)i*28+21,311};lv_draw_rect(lv_event_get_layer(event),&d,&area);
+    }
+}
 static void forget_style(lv_obj_t *object){
     for(unsigned j=0;j<lv_obj_get_child_count(object);++j)forget_style(lv_obj_get_child(object,j));
     for(unsigned i=0;i<themed_count;)if(themed_styles[i].object==object)themed_styles[i]=themed_styles[--themed_count];else ++i;
@@ -216,7 +244,7 @@ void token_ui_create(void) {
         system_second[i]=label(system_panels[i],9,41,86,"",MUTED);
     }
     visible(system_group,false);
-    for(unsigned i=0;i<PAGE_COUNT;++i)page_marks[i]=box(screen,67+i*28,309,22,3,i==0?TEAL:0x52616E,2);
+    lv_obj_add_event_cb(screen,draw_marks,LV_EVENT_DRAW_POST,NULL);
     token_ui_postcard_image(postcard_default_pixels);
     lv_screen_load(screen);
 }
@@ -229,11 +257,16 @@ void token_ui_startup(bool show) {
         delete_themed(startup_panel);startup_panel=NULL;lv_image_cache_drop(&startup_custom_image);
     }
 }
-void token_ui_startup_frame(const uint8_t *pixels,unsigned side){
-    lv_image_dsc_t *custom=&startup_custom_image;if(!startup_panel||!pixels||side<16||side>96)return;
+void token_ui_startup_frame(const uint8_t *pixels,unsigned side,unsigned height){
+    lv_image_dsc_t *custom=&startup_custom_image;if(!startup_panel||!pixels||side<16||side>120||height<16||height>160)return;
     lv_obj_t *image=lv_obj_get_child(startup_panel,0);lv_image_cache_drop(custom);
-    *custom=(lv_image_dsc_t){.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=side,.h=side,.stride=side*2},.data_size=side*side*2,.data=pixels};
-    lv_obj_set_pos(image,(240-(int)side)/2,(320-(int)side)/2);lv_image_set_src(image,custom);lv_obj_invalidate(image);
+    startup_source_width=side;startup_source_height=height;
+    unsigned display_w=height==side?side:240,display_h=height==side?height:320;
+    *custom=(lv_image_dsc_t){.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=display_w,.h=display_h,.stride=display_w*2},.data_size=side*height*2,.data=pixels};
+    lv_image_set_src(image,custom);
+    lv_image_set_pivot(image,0,0);
+    lv_image_set_scale(image,256);
+    lv_obj_set_pos(image,height==side?(240-(int)side)/2:0,height==side?(320-(int)height)/2:0);lv_obj_invalidate(image);
 }
 void token_ui_postcard_image(const uint8_t *data) {
     /* Boot images use their own descriptor and never replace these postcard faces. */
@@ -245,15 +278,22 @@ void token_ui_postcard_image(const uint8_t *data) {
     }
     card_data=data;lv_image_set_src(card_image,&card_faces[card_contact?1:0]);visible(card_image,true);
 }
+void token_ui_wallpaper(const uint8_t *data,unsigned flags){
+    lv_image_cache_drop(&wall_descriptor);wall_flags=(flags&4)|((flags&3)?3:0);
+    wall_descriptor=(lv_image_dsc_t){.header={.magic=LV_IMAGE_HEADER_MAGIC,.cf=LV_COLOR_FORMAT_RGB565,.w=240,.h=320,.stride=480},.data_size=153600,.data=data};
+    if(wall_image){if(data)lv_image_set_src(wall_image,&wall_descriptor);visible(wall_image,data!=NULL);}
+}
 void token_ui_postcard_clock(uint64_t seconds,bool dated,bool contact) {
     char text[48];snprintf(text,sizeof(text),"%02u:%02u",(unsigned)(seconds/3600%24),(unsigned)(seconds/60%60));
-    lv_label_set_text(clock_label,text);lv_label_set_text(system_clock,text);
+    lv_label_set_text(clock_label,(wall_flags&4)?text:"");lv_label_set_text(system_clock,text);
+    if(wall_time){lv_label_set_text(wall_time,text);visible(wall_time,(wall_flags&1)!=0);}
     unsigned month,day,weekday;
     static const char *weekdays[]={"日","一","二","三","四","五","六"};
     if(dated && postcard_calendar(seconds,&month,&day,&weekday))
         snprintf(text,sizeof(text),"%u月%u日, 星期%s",month,day,weekdays[weekday]);
     else text[0]=0;
-    lv_label_set_text(date_label,text);
+    lv_label_set_text(date_label,(wall_flags&4)?text:"");
+    if(wall_date){lv_label_set_text(wall_date,text);visible(wall_date,(wall_flags&2)!=0);}
     if(card_contact!=contact && card_data) lv_image_set_src(card_image,&card_faces[contact?1:0]);
     card_contact=contact;
 }
@@ -267,8 +307,19 @@ void token_ui_update(const token_snapshot_t *s,unsigned period,bool show_cost,bo
     char text[80],num[32];
     if(period>2) period=0;
     if(page>=PAGE_COUNT) page=0;
+    shown_page=page;
+    if(page!=PAGE_PET && pet_image){lv_obj_delete(pet_image);pet_image=NULL;}
+    if(page==PAGE_WALLPAPER&&!wall_group){
+        wall_group=group(lv_screen_active());wall_image=lv_image_create(wall_group);
+        if(wall_descriptor.data)lv_image_set_src(wall_image,&wall_descriptor);else visible(wall_image,false);
+        wall_time=label(wall_group,14,14,55,"",INK);wall_date=label(wall_group,70,14,156,"",INK);lv_obj_set_style_text_align(wall_date,LV_TEXT_ALIGN_RIGHT,0);
+        lv_obj_move_to_index(wall_group,0);
+    }
+    if(page!=PAGE_WALLPAPER&&wall_group){delete_themed(wall_group);wall_group=wall_image=wall_time=wall_date=NULL;}
+    if(page==PAGE_PET && !pet_image){pet_image=lv_image_create(lv_screen_active());lv_obj_set_pos(pet_image,24,65);lv_image_set_src(pet_image,&pet_descriptor);}
+    if(page!=PAGE_PET && pet_image){lv_obj_delete(pet_image);pet_image=NULL;}
     visible(home_group,page==0);visible(stats_group,page==1);visible(card_group,page==PAGE_POSTCARD);visible(system_group,page==PAGE_SYSTEM);
-    visible(signal_light,page!=PAGE_POSTCARD && page!=PAGE_SYSTEM);visible(signal_label,page!=PAGE_POSTCARD && page!=PAGE_SYSTEM);visible(battery_label,page!=PAGE_POSTCARD);
+    visible(signal_light,page!=PAGE_POSTCARD && page!=PAGE_SYSTEM && page!=PAGE_WALLPAPER);visible(signal_label,page!=PAGE_POSTCARD && page!=PAGE_SYSTEM && page!=PAGE_WALLPAPER);visible(battery_label,page!=PAGE_POSTCARD && page!=PAGE_WALLPAPER);
     visible(quota_panel,!show_cost);visible(detail_panel,show_cost);
     for(unsigned i=0;i<3;++i) {
         style_color(tabs[i],i==period?0x516471:PANEL,0,bg_ROLE);
@@ -345,13 +396,19 @@ void token_ui_update(const token_snapshot_t *s,unsigned period,bool show_cost,bo
     lv_label_set_text(credits,text);
 }
 
+void token_ui_pet(unsigned state,uint64_t now,bool animate){
+    if(state>=PET_COUNT)state=PET_OFFLINE;
+    if(pet_state!=state){pet_state=state;pet_started=now;}
+    if(!animate)return;
+    unsigned frame=pet_frame_at(state,now-pet_started);
+    if(frame!=pet_frame){pet_frame=frame;lv_image_cache_drop(&pet_descriptor);lv_obj_invalidate(pet_image);}
+    const char *names[]={"未连接","在线","思考","额度不够","聆听输入","使用电脑"};
+    char text[48];snprintf(text,sizeof(text),"Codex / %s",names[state]);lv_label_set_text(signal_label,text);
+    style_color(signal_light,state==PET_OFFLINE?0x788391:state==PET_LIMITED?0xFF626C:state==PET_THINKING||state==PET_COMPUTER?0x4CDD91:0x5BA7FF,0,bg_ROLE);
+}
 void token_ui_pages(const page_config_t *config,unsigned current) {
     unsigned n=page_count(config),pos=page_position(config,current);
-    int start=(240-(int)(n*28-6))/2;
-    for(unsigned i=0;i<PAGE_COUNT;++i) {
-        visible(page_marks[i],i<n);
-        if(i<n) {lv_obj_set_x(page_marks[i],start+(int)i*28);style_color(page_marks[i],i==pos?TEAL:0x52616E,0,bg_ROLE);}
-    }
+    if(n!=marks_count||pos!=marks_position){marks_count=n;marks_position=pos;lv_obj_invalidate(lv_screen_active());}
 }
 static bool text_fits(lv_obj_t *obj,const char *text,const lv_font_t *font,int spacing) {
     lv_point_t size;lv_text_get_size(&size,text,font,spacing,0,10000,LV_TEXT_FLAG_NONE);return size.x<=lv_obj_get_width(obj);

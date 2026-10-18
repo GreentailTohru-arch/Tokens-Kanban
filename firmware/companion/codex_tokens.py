@@ -16,6 +16,7 @@ import sys
 from token_pricing import PRICE_DATE, request_nano_usd
 from token_analytics import summarize
 from token_events import CompletionTracker,supports_events
+from pet_state import PetTracker,observe_tool
 from system_monitor import SystemPoller,encode_system
 
 MAX_VALUE = 10**15
@@ -55,11 +56,14 @@ class UsageIndex:
                             state['offset'] = start
                             break
                         state['offset'] = stream.tell()
-                        if len(line) > 8*1024*1024 or (b'"event_msg"' not in line and b'"turn_context"' not in line):
+                        if len(line) > 8*1024*1024 or (b'"event_msg"' not in line and b'"turn_context"' not in line and b'"response_item"' not in line):
                             continue
                         try:
                             record = json.loads(line)
                             payload = record.get('payload') or {}
+                            if record.get('type') == 'response_item':
+                                observe_tool(state,record,payload)
+                                continue
                             if record.get('type') == 'turn_context':
                                 state['model'] = payload.get('model')
                                 continue
@@ -111,13 +115,13 @@ class UsageIndex:
         turn=payload.get('turn_id')
         if kind=='task_started' and isinstance(turn,str):
             state['model']=None  # A new turn must identify its own model.
-            state['active']=turn; state['turns'][turn]=(2,stamp)
+            state['active']=turn; state['turns'][turn]=(2,stamp);state['pet_tools']={}
         elif kind in ('task_complete','turn_aborted'):
             turn=turn or state['active']
             if isinstance(turn,str):
                 state['turns'][turn]=(1,stamp)
                 if kind=='task_complete':state['completions'][turn]=stamp
-            if turn==state['active']: state['active']=None
+            if turn==state['active']: state['active']=None;state['pet_tools']={}
         elif state['active']:
             state['turns'][state['active']]=(2,stamp)
 
@@ -385,11 +389,16 @@ def main():
     parser.add_argument('--stop-sync',action='store_true',help='Stop the running sender through its authenticated local API')
     args=parser.parse_args()
     if args.launcher:
-        print('\nTokens Kanban\n1. 启动同步（默认）\n2. 开启开机启动\n3. 关闭开机启动\n4. 停止后台同步\n0. 退出')
+        print('\nTokens Kanban\n1. 启动同步（默认）\n2. 开启开机启动\n3. 关闭开机启动\n4. 停止后台同步\n5. 以辅助访问模式打开 Codex（宠物按键兼容测试）\n0. 退出')
         while True:
-            choice=input('请选择 [1/2/3/4/0，回车启动]：').strip() or '1'
-            if choice in ('0','1','2','3','4'):break
+            choice=input('请选择 [1/2/3/4/5/0，回车启动]：').strip() or '1'
+            if choice in ('0','1','2','3','4','5'):break
         if choice=='0':return
+        if choice=='5':
+            from pet_remote import open_accessible_codex
+            try:print(open_accessible_codex(),flush=True)
+            except OSError as error:print(str(error),flush=True);raise SystemExit(1)
+            return
         args.enable_startup=choice=='2';args.disable_startup=choice=='3';args.stop_sync=choice=='4'
     if args.enable_startup or args.disable_startup:
         try:
@@ -457,8 +466,10 @@ def run_sync(args):
     router=ConnectionRouter(args.transport,candidates,open_passport,open_ble,args.port,args.ble_address)
     monitor=SystemPoller()
     index=UsageIndex(args.codex_home); quota=QuotaPoller(); connection=None; sequence=0; events=CompletionTracker(); can_notify=False; can_monitor=False
+    from pet_remote import PetRemote,DesktopKeys
+    remote=PetRemote(DesktopKeys());can_control=False;control_error=""
     management=None
-    print('Tokens Kanban v23 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
+    print('Tokens Kanban v28 | USB + Bluetooth LE\nTokens / estimated API USD / models / activity / trends / PC system monitor. Ctrl+C to exit.',flush=True)
     try:
         if args.dry_run:
             index.refresh(); quota.ready.wait(30)
@@ -469,9 +480,10 @@ def run_sync(args):
                 'frame':encode_frame(1,totals,values,index.activity(),index.costs(),index.analytics()).decode().strip()},ensure_ascii=True)); return
         from management_server import LinkManager,ManagementServer
         manager=LinkManager();management=ManagementServer(manager)
-        last_status='';opened_browser=False
+        last_status='';opened_browser=False;pet_tracker=PetTracker();can_pet=False
         while not manager.stop_event.is_set():
             index.refresh(); events.observe(index.completions()); sequence+=1
+            pet_state=pet_tracker.state(index)
             now=dt.datetime.now().astimezone()
             frame=encode_frame(sequence,index.totals(now),quota.values(),index.activity(),index.costs(now),index.analytics(now))
             try:
@@ -479,9 +491,14 @@ def run_sync(args):
                     previous=connection
                     connection=router.ensure(connection,allow_upgrade=time.monotonic()-manager.last_rpc>=5)
                     if connection is not previous:
+                        remote.reset()
                         manager.attach(connection)
                         can_notify=supports_events(connection)
                         from token_events import rpc as device_rpc
+                        try:can_pet=device_rpc(connection,'PC_PET_HELLO')=='PC_PET_READY 1'
+                        except OSError:can_pet=False
+                        try:can_control=device_rpc(connection,'PC_CTRL_HELLO')=='PC_CTRL_READY 1'
+                        except OSError:can_control=False
                         capability=device_rpc(connection,'PC_SYS_HELLO2')
                         system_version=2 if capability=='PC_SYS_READY 2' else 1
                         can_monitor=system_version==2 or device_rpc(connection,'PC_SYS_HELLO')=='PC_SYS_READY 1'
@@ -491,6 +508,11 @@ def run_sync(args):
                     if can_monitor:
                         reply=device_rpc(connection,encode_system(sequence%0xffffffff or 1,monitor.values() if system_version==2 else monitor.values()[:7]))
                         if reply!=f'PC_SYS_ACK {sequence%0xffffffff or 1}':raise OSError('System snapshot not acknowledged')
+                    if can_pet:
+                        pet_seq=sequence%0xffffffff or 1
+                        shown_state=4 if remote.backend.held else pet_state
+                        if device_rpc(connection,f'PC_PET {pet_seq} {shown_state}')!=f'PC_PET_ACK {pet_seq}':raise OSError('Pet state not acknowledged')
+                        remote.last_state=shown_state
                     if can_notify:events.send(connection)
                     else:events.pending=None
                     status='Connected: '+connection.port+' | syncing every 5 seconds'
@@ -498,14 +520,36 @@ def run_sync(args):
                     management.open();opened_browser=True
             except OSError as error:
                 with manager.lock:
-                    manager.detach()
+                    remote.reset();manager.detach()
                     router.failed(connection);connection=None
                 status=str(error)
             if status!=last_status: print(status,flush=True); last_status=status
-            manager.stop_event.wait(5)
+            deadline=time.monotonic()+5
+            while not manager.stop_event.wait(.1 if can_control and connection else 5):
+                if time.monotonic()>=deadline:break
+                if can_control and connection:
+                    try:
+                        with manager.lock:
+                            if manager.connection is not connection:
+                                remote.reset();break
+                            remote.poll(connection,device_rpc)
+                            listening=bool(remote.backend.held)
+                            state=4 if listening else pet_state
+                            if state!=getattr(remote,'last_state',None):
+                                pet_seq=sequence%0xffffffff or 1
+                                device_rpc(connection,f'PC_PET {pet_seq} {state}')
+                                remote.last_state=state
+                        if remote.backend.error and remote.backend.error!=control_error:
+                            print('Pet control: '+remote.backend.error,flush=True)
+                        control_error=remote.backend.error
+                    except (OSError,ValueError):
+                        remote.reset();can_control=False;break
+            remote.backend.tick()
     except KeyboardInterrupt:
         pass
     finally:
+        remote.reset()
+        remote.backend.close()
         if management:management.close()
         if connection: connection.close()
         quota.close(); monitor.close()

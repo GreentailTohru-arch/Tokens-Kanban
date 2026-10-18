@@ -14,11 +14,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdatomic.h>
-typedef struct { unsigned command,id,tone,volume,volume_revision; device_config_t config; page_config_t pages; monitor_config_t monitor; theme_config_t theme; } request_t;
+typedef struct { unsigned command,id,tone,volume,volume_revision; device_config_t config; page_config_t pages; monitor_config_t monitor; theme_config_t theme; pet_bindings_t bindings; } request_t;
 static QueueHandle_t queue;
 static device_config_t config,requested;
 static page_config_t pages,requested_pages;
 static unsigned save_kind;
+static pet_bindings_t bindings,requested_bindings;
 static theme_config_t theme,requested_theme;
 static monitor_config_t monitor,requested_monitor;
 static unsigned volume_revision;
@@ -72,7 +73,11 @@ static void worker(void *arg) {
     (void)arg;request_t request;
     for(;;) {
         if(xQueueReceive(queue,&request,portMAX_DELAY)!=pdTRUE) continue;
-        if(request.command==12) {
+        if(request.command==13) {
+            nvs_handle_t handle;esp_err_t error=nvs_open("tokens_ui",NVS_READWRITE,&handle);
+            if(error==ESP_OK){error=nvs_set_blob(handle,"petkeys1",&request.bindings,sizeof(request.bindings));if(error==ESP_OK)error=nvs_commit(handle);nvs_close(handle);}
+            portENTER_CRITICAL(&mutex);if(error==ESP_OK){bindings=request.bindings;save_state=2;}else save_state=3;portEXIT_CRITICAL(&mutex);
+        } else if(request.command==12) {
             nvs_handle_t handle;esp_err_t error=nvs_open("tokens_ui",NVS_READWRITE,&handle);
             if(error==ESP_OK){error=nvs_set_blob(handle,"theme1",&request.theme,sizeof(request.theme));if(error==ESP_OK)error=nvs_commit(handle);nvs_close(handle);}
             portENTER_CRITICAL(&mutex);if(error==ESP_OK){theme=request.theme;save_state=2;atomic_store(&wake_requested,true);}else save_state=3;portEXIT_CRITICAL(&mutex);
@@ -161,11 +166,13 @@ bool device_runtime_start(void) {
     atomic_store(&boot_finished,false);
     volume_revision=0;volume_unsaved=volume_save_pending=preview_requested=preview_pending=false;
     volume_changed_at=volume_save_after=preview_next=0;atomic_store(&preview_playback,false);
-    theme=theme_default();config=device_config_default();pages=page_config_default();monitor=monitor_default();brightness=75;config_dirty=false;behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
+    bindings=pet_bindings_default();theme=theme_default();config=device_config_default();pages=page_config_default();monitor=monitor_default();brightness=75;config_dirty=false;behavior.last_touch=(uint64_t)esp_timer_get_time()/1000;
     nvs_ready=nvs_flash_init()==ESP_OK;
     if(nvs_ready) {
         nvs_handle_t handle;
         if(nvs_open("tokens_ui",NVS_READONLY,&handle)==ESP_OK) {
+            pet_bindings_t saved_keys;size_t key_size=sizeof(saved_keys);
+            if(nvs_get_blob(handle,"petkeys1",&saved_keys,&key_size)==ESP_OK && key_size==sizeof(saved_keys) && pet_bindings_valid(&saved_keys))bindings=saved_keys;
             theme_config_t saved_theme;size_t theme_size=sizeof(saved_theme);
             if(nvs_get_blob(handle,"theme1",&saved_theme,&theme_size)==ESP_OK && theme_size==sizeof(saved_theme) && theme_valid(&saved_theme))theme=saved_theme;
             unsigned saved_brightness;size_t display_size=sizeof(saved_brightness);
@@ -183,8 +190,12 @@ bool device_runtime_start(void) {
                 device_config_t previous=stored;device_config_upgrade(&stored);
                 if(device_config_valid(&stored)) {config=stored;config_dirty|=memcmp(&previous,&stored,sizeof(stored))!=0;}
             }
-            page_config_t saved_pages;size=sizeof(saved_pages);
-            if(nvs_get_blob(handle,"pages1",&saved_pages,&size)==ESP_OK && size==sizeof(saved_pages) && page_config_valid(&saved_pages))pages=saved_pages;
+            page_config_t saved_pages={0};size=sizeof(saved_pages);
+            if(nvs_get_blob(handle,"pages1",&saved_pages,&size)==ESP_OK) {
+                if(size==5*sizeof(uint32_t)){saved_pages.order[4]=PAGE_PET;saved_pages.enabled|=1u<<PAGE_PET;}
+                if(size==5*sizeof(uint32_t)||size==6*sizeof(uint32_t)){saved_pages.order[5]=PAGE_WALLPAPER;saved_pages.enabled|=1u<<PAGE_WALLPAPER;}
+                if((size==sizeof(saved_pages)||size==5*sizeof(uint32_t)||size==6*sizeof(uint32_t)) && page_config_valid(&saved_pages))pages=saved_pages;
+            }
             monitor_config_t saved_monitor;size=sizeof(saved_monitor);
             if(nvs_get_blob(handle,"mon1",&saved_monitor,&size)==ESP_OK && size==sizeof(saved_monitor) && monitor_valid(&saved_monitor))monitor=saved_monitor;
             nvs_close(handle);
@@ -226,6 +237,7 @@ static bool notify(bool done) {
 bool device_runtime_key(uint64_t now) {
     bool was_off=device_key(&behavior,now);if(was_off)bsp_display_backlight(device_runtime_brightness());return was_off;
 }
+bool device_runtime_screen_off(void){return behavior.off;}
 unsigned device_runtime_brightness(void){portENTER_CRITICAL(&mutex);unsigned value=brightness;portEXIT_CRITICAL(&mutex);return value;}
 void device_runtime_tick(uint64_t now,const token_snapshot_t *snapshot) {
     portENTER_CRITICAL(&mutex);device_config_t current=config;portEXIT_CRITICAL(&mutex);
@@ -257,9 +269,30 @@ static bool numbers(const char *line,const char *prefix,unsigned *out,unsigned c
     }
     return !*p;
 }
+pet_bindings_t device_runtime_pet_bindings(void) {portENTER_CRITICAL(&mutex);pet_bindings_t b=bindings;portEXIT_CRITICAL(&mutex);return b;}
 size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
-    if(strncmp(line,"PC_THEME",8) && strncmp(line,"PC_DISPLAY",10) && strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6) && strncmp(line,"PC_PAGES",8) && strncmp(line,"PC_MON",6))return 0;
+    if(strncmp(line,"PC_KEYS",7) && strncmp(line,"PC_THEME",8) && strncmp(line,"PC_DISPLAY",10) && strncmp(line,"PC_CFG",6) && strncmp(line,"PC_SOUND",8) && strncmp(line,"PC_EVT",6) && strncmp(line,"PC_PAGES",8) && strncmp(line,"PC_MON",6))return 0;
     if(!queue)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
+    if(!strcmp(line,"PC_KEYS_GET")) {
+        pet_bindings_t b=device_runtime_pet_bindings();
+        return snprintf(reply,capacity,"PC_KEYS 1 %u %u %u %u %u %u %u %u %u\n",(unsigned)b.action[0],(unsigned)b.action[1],(unsigned)b.action[2],(unsigned)b.action[3],(unsigned)b.action[4],(unsigned)b.action[5],(unsigned)b.action[6],(unsigned)b.action[7],(unsigned)b.action[8]);
+    }
+    unsigned key_values[10];
+    if(numbers(line,"PC_KEYS_SET",key_values,10)) {
+        request_t request={.command=13,.id=key_values[0]};
+        for(unsigned i=0;i<PET_BINDINGS;++i)request.bindings.action[i]=key_values[i+1];
+        if(!request.id || !pet_bindings_valid(&request.bindings))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+        if(!nvs_ready)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
+        portENTER_CRITICAL(&mutex);
+        unsigned state=save_state,old_id=save_id,old_kind=save_kind;pet_bindings_t previous=requested_bindings;
+        bool duplicate=save_kind==13 && request.id==save_id && !memcmp(&requested_bindings,&request.bindings,sizeof(request.bindings));
+        bool accept=!duplicate && state!=1 && request.id!=save_id;
+        if(accept){save_kind=13;save_id=request.id;save_state=1;requested_bindings=request.bindings;}
+        portEXIT_CRITICAL(&mutex);
+        if(!accept && !duplicate)return snprintf(reply,capacity,"PC_CFG_BUSY\n");
+        if(accept && xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);save_id=old_id;save_kind=old_kind;save_state=state;requested_bindings=previous;portEXIT_CRITICAL(&mutex);return snprintf(reply,capacity,"PC_CFG_RETRY\n");}
+        return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",request.id,duplicate?state:1);
+    }
     if(!strcmp(line,"PC_SOUND_BANKS"))return snprintf(reply,capacity,"PC_SOUND_BANKS 3\n");
     if(!strcmp(line,"PC_CFG_GET2")) {
         portENTER_CRITICAL(&mutex);device_config_t c=config;portEXIT_CRITICAL(&mutex);
@@ -275,8 +308,18 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         portENTER_CRITICAL(&mutex);unsigned id=save_id,state=save_state;portEXIT_CRITICAL(&mutex);
         return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",id,state);
     }
-    if(!strcmp(line,"PC_PAGES_GET")) {
+    if(!strcmp(line,"PC_PAGES_GET3")){
+        page_config_t c=device_runtime_pages();return snprintf(reply,capacity,"PC_PAGES 3 %lu %lu %lu %lu %lu %lu %lu\n",(unsigned long)c.enabled,(unsigned long)c.order[0],(unsigned long)c.order[1],(unsigned long)c.order[2],(unsigned long)c.order[3],(unsigned long)c.order[4],(unsigned long)c.order[5]);
+    }
+    if(!strcmp(line,"PC_PAGES_GET2")) {
         page_config_t c=device_runtime_pages();
+        unsigned j=0;for(unsigned i=0;i<PAGE_COUNT;++i)if(c.order[i]<5)c.order[j++]=c.order[i];c.enabled&=31;if(!c.enabled)c.enabled=1;
+        return snprintf(reply,capacity,"PC_PAGES 2 %lu %lu %lu %lu %lu %lu\n",(unsigned long)c.enabled,(unsigned long)c.order[0],(unsigned long)c.order[1],(unsigned long)c.order[2],(unsigned long)c.order[3],(unsigned long)c.order[4]);
+    }
+    if(!strcmp(line,"PC_PAGES_GET")) {
+        page_config_t c=device_runtime_pages();unsigned j=0;
+        for(unsigned i=0;i<PAGE_COUNT;++i)if(c.order[i]<4)c.order[j++]=c.order[i];
+        c.enabled&=15;if(!c.enabled)c.enabled=1;
         return snprintf(reply,capacity,"PC_PAGES 1 %lu %lu %lu %lu %lu\n",(unsigned long)c.enabled,
             (unsigned long)c.order[0],(unsigned long)c.order[1],(unsigned long)c.order[2],(unsigned long)c.order[3]);
     }
@@ -306,7 +349,7 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         if(accept && xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);save_id=old_id;save_kind=old_kind;save_state=state;requested_monitor=previous;portEXIT_CRITICAL(&mutex);return snprintf(reply,capacity,"PC_CFG_RETRY\n");}
         return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",request.id,duplicate?state:1);
     }
-    unsigned values[7];
+    unsigned values[8];
     if(!strcmp(line,"PC_THEME_GET")) {
         theme_config_t c=device_runtime_theme();
         return snprintf(reply,capacity,"PC_THEME 1 %lu %lu %lu %lu %lu %lu\n",(unsigned long)c.preset,(unsigned long)c.accent,(unsigned long)c.chart,(unsigned long)c.background,(unsigned long)c.text,(unsigned long)c.muted);
@@ -336,8 +379,12 @@ size_t device_runtime_line(const char *line,char *reply,size_t capacity) {
         if(accept&&xQueueSend(queue,&request,0)!=pdTRUE){portENTER_CRITICAL(&mutex);save_id=old_id;save_state=old_state;save_kind=old_kind;requested_brightness=old_value;portEXIT_CRITICAL(&mutex);return snprintf(reply,capacity,"PC_CFG_RETRY\n");}
         return snprintf(reply,capacity,"PC_CFG_STATE %u %u\n",id,duplicate?old_state:1);
     }
-    if(numbers(line,"PC_PAGES_SET",values,6)) {
-        request_t request={.command=4,.id=values[0],.pages={values[1],{values[2],values[3],values[4],values[5]}}};
+    bool pages_v3=numbers(line,"PC_PAGES_SET3",values,8);
+    bool pages_v2=!pages_v3&&numbers(line,"PC_PAGES_SET2",values,7);
+    if(pages_v3 || pages_v2 || numbers(line,"PC_PAGES_SET",values,6)) {
+        if((!pages_v3&&!pages_v2 && (!values[1] || values[1]>=16)) || (pages_v2&&(!values[1]||values[1]>=32)))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
+        request_t request={.command=4,.id=values[0],.pages={values[1],{values[2],values[3],values[4],values[5],(pages_v2||pages_v3)?values[6]:PAGE_PET,pages_v3?values[7]:PAGE_WALLPAPER}}};
+        if(!pages_v3){page_config_t old=device_runtime_pages();request.pages.enabled|=old.enabled&(1u<<PAGE_WALLPAPER);if(!pages_v2)request.pages.enabled|=old.enabled&(1u<<PAGE_PET);}
         if(!request.id || !page_config_valid(&request.pages))return snprintf(reply,capacity,"PC_CFG_INVALID\n");
         if(!nvs_ready)return snprintf(reply,capacity,"PC_CFG_UNAVAILABLE\n");
         portENTER_CRITICAL(&mutex);

@@ -47,24 +47,26 @@ bool boot_logo_start(void){
     if(esp_partition_mmap(partition,0,partition->size,ESP_PARTITION_MMAP_DATA,(const void **)&mapped,&mapping)!=ESP_OK)return false;
     header_t a,b;bool va=valid(0,&a),vb=valid(1,&b);active=vb&&(!va||b.generation>a.generation)?1:va?0:-1;
     if(active>=0){header_t h=active?b:a;generation=h.generation;active_length=h.length;active_hash=h.hash;
-        if(h.length&&boot_logo_validate(mapped+active*SLOT+START,h.length,&boot_index)){pixels=malloc(boot_index.side*boot_index.side*2u);if(pixels){boot_data=mapped+active*SLOT+START;atomic_store(&playing,true);}}}
+        if(h.length&&boot_logo_validate(mapped+active*SLOT+START,h.length,&boot_index)){pixels=malloc(boot_index.side*boot_index.height*2u);if(pixels){boot_data=mapped+active*SLOT+START;atomic_store(&playing,true);}}}
     queue=xQueueCreate(1,sizeof(request_t));if(!queue)return false;
     if(xTaskCreate(worker,"boot_logo",4096,NULL,3,NULL)==pdPASS)return true;
     vQueueDelete(queue);queue=NULL;return false;
 }
 const uint8_t *boot_logo_frame(uint64_t elapsed,unsigned *side){
     if(!pixels)return NULL;
-    unsigned at=elapsed%boot_index.duration,i=0;
+    /* Play once, then hold the final frame while startup audio finishes. */
+    unsigned at=elapsed>=boot_index.duration?boot_index.duration-1:(unsigned)elapsed,i=0;
     while(i+1<boot_index.count&&at>=boot_index.frames[i].duration){at-=boot_index.frames[i].duration;++i;}
     if((int)i==last_frame)return NULL;
     const boot_frame_t *f=&boot_index.frames[i];
-    if(!boot_logo_decode(boot_data+f->offset,f->length,pixels,boot_index.side*boot_index.side*2u))return NULL;
+    if(!boot_logo_decode(boot_data+f->offset,f->length,pixels,boot_index.side*boot_index.height*2u))return NULL;
     last_frame=(int)i;*side=boot_index.side;return pixels;
 }
 void boot_logo_finish(void){if(pixels){free(pixels);pixels=NULL;}atomic_store(&playing,false);}
 size_t boot_logo_line(const char *line,char *reply,size_t cap){
     if(strncmp(line,"PC_LOGO",7))return 0;
     if(!queue)return snprintf(reply,cap,"PC_LOGO_UNAVAILABLE\n");
+    if(!strcmp(line,"PC_LOGO_CAPS"))return snprintf(reply,cap,"PC_LOGO_CAPS 2 240 320\n");
     if(!strcmp(line,"PC_LOGO_GET")){portENTER_CRITICAL(&mutex);unsigned n=active_length,h=active_hash;portEXIT_CRITICAL(&mutex);return snprintf(reply,cap,"PC_LOGO 1 %u %u\n",n,h);}
     bool status=!strcmp(line,"PC_LOGO_STATUS");request_t r={0};int end=0;
     if(!strncmp(line,"PC_LOGO_BEGIN ",14)&&line[14]>='0'&&line[14]<='9'&&sscanf(line,"PC_LOGO_BEGIN %u %u %u%n",&r.id,&r.length,&r.hash,&end)==3&&!line[end]&&r.id&&r.length<=BOOT_LOGO_MAX_BYTES)r.command=1;
@@ -78,4 +80,5 @@ size_t boot_logo_line(const char *line,char *reply,size_t cap){
     return snprintf(reply,cap,"PC_LOGO_STATE %u %u %u\n",id,s,n);
 }
 
+unsigned boot_logo_height(void){return boot_index.height;}
 unsigned boot_logo_duration(void){return pixels&&boot_index.count>1?boot_index.duration:1200;}

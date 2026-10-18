@@ -1,13 +1,13 @@
 #include "page_model.h"
-page_config_t page_config_default(void) {return (page_config_t){15,{0,1,2,3}};}
+page_config_t page_config_default(void) {return (page_config_t){63,{PAGE_HOME,PAGE_ANALYTICS,PAGE_PET,PAGE_SYSTEM,PAGE_POSTCARD,PAGE_WALLPAPER}};}
 bool page_config_valid(const page_config_t *c) {
-    if(!c || !c->enabled || c->enabled>=16)return false;
+    if(!c || !c->enabled || c->enabled>=64)return false;
     unsigned seen=0;
     for(unsigned i=0;i<PAGE_COUNT;++i) {
         if(c->order[i]>=PAGE_COUNT || (seen&(1u<<c->order[i])))return false;
         seen|=1u<<c->order[i];
     }
-    return seen==15;
+    return seen==63;
 }
 unsigned page_count(const page_config_t *c) {
     unsigned n=0;for(unsigned i=0;i<PAGE_COUNT;++i)n+=(c->enabled>>i)&1u;return n;

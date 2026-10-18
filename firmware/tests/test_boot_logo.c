@@ -29,5 +29,23 @@ int main(void){
  memset(flash,255,sizeof(flash));reboot();assert(!pixels);upload(1,false);assert(state==3&&active==0);reboot();assert(pixels);unsigned side=0;assert(boot_logo_frame(0,&side)&&side==16&&pixels[0]==0x34);line("PC_LOGO_BEGIN 2 20 0");assert(!queued);boot_logo_finish();upload(2,true);assert(state==4&&active==0);reboot();assert(pixels&&active==0);boot_logo_finish();
  line("PC_LOGO_BEGIN 3 20 0");run();line("PC_LOGO_DATA 3 0 00544c");run();reboot();assert(active==0&&pixels);boot_logo_finish();fail_erase=true;line("PC_LOGO_BEGIN 4 20 0");run();assert(state==4&&active==0);fail_erase=false;upload(5,false);assert(state==3&&active==1);
  reboot();boot_logo_finish();line("PC_LOGO_BEGIN 6 0 2166136261");run();fail_write=true;line("PC_LOGO_DONE 6");run();assert(state==4&&active==1);fail_write=false;reboot();assert(pixels);boot_logo_finish();line("PC_LOGO_BEGIN 7 0 2166136261");run();line("PC_LOGO_DONE 7");run();assert(state==3);reboot();assert(!pixels&&active_length==0);
- puts("Boot logo validation, RLE, interruption, flash errors, boot lock, persistence and default restore: PASS");return 0;
+ /* TLG2 portrait frames validate independently from legacy square data. */
+ uint8_t portrait[32]={84,76,71,50,24,0,1,0,100,0,18,0,0,0};
+ for(unsigned i=14;i<32;i+=3){portrait[i]=255;portrait[i+1]=0x34;portrait[i+2]=0x12;}
+ assert(boot_logo_validate(portrait,sizeof(portrait),&index)&&index.side==24&&index.height==32);
+ portrait[4]=25;assert(!boot_logo_validate(portrait,sizeof(portrait),NULL));portrait[4]=24;
+ portrait[3]='1';assert(!boot_logo_validate(portrait,sizeof(portrait),NULL));
+ /* Two frames: exact boundary, delayed startup, and long audio must not loop. */
+ uint8_t animation[]={255,0x11,0x11,255,0x11,0x11,255,0x22,0x22,255,0x22,0x22};
+ boot_data=animation;pixels=malloc(512);assert(pixels);last_frame=-1;
+ boot_index=(boot_logo_index_t){.side=16,.height=16,.count=2,.duration=200,
+     .frames={{0,6,100},{6,6,100}}};
+ assert(boot_logo_frame(0,&side)&&pixels[0]==0x11);
+ assert(!boot_logo_frame(99,&side));
+ assert(boot_logo_frame(100,&side)&&pixels[0]==0x22);
+ assert(!boot_logo_frame(200,&side)&&pixels[0]==0x22);
+ assert(!boot_logo_frame(6000,&side)&&pixels[0]==0x22);
+ last_frame=-1;assert(boot_logo_frame(UINT64_MAX,&side)&&pixels[0]==0x22);
+ boot_logo_finish();
+ puts("Boot logo validation, RLE, interruption, flash errors, boot lock, persistence, one-shot animation and default restore: PASS");return 0;
 }

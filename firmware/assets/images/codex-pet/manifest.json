@@ -1,0 +1,94 @@
+[
+  {
+    "key": "offline",
+    "source": "未连接.gif",
+    "sha256": "fe3f0229008b826ba26321051af2cd275188e1931b49a3c5988137b2c4877832",
+    "width": 192,
+    "height": 208,
+    "durations": [
+      1680,
+      660,
+      660,
+      840,
+      840,
+      1920
+    ]
+  },
+  {
+    "key": "online",
+    "source": "在线.gif",
+    "sha256": "a94857115c4d3cb3a9634d437681a5dee3ab795456c73ea8b8b912cd44a7c3ed",
+    "width": 192,
+    "height": 208,
+    "durations": [
+      150,
+      150,
+      150,
+      150,
+      150,
+      260
+    ]
+  },
+  {
+    "key": "thinking",
+    "source": "思考.gif",
+    "sha256": "e2947ee53fc870fa036dd3872932ef3d5b99c98efbeb5e7b88e2ac92aa318241",
+    "width": 192,
+    "height": 208,
+    "durations": [
+      150,
+      150,
+      150,
+      150,
+      150,
+      280
+    ]
+  },
+  {
+    "key": "limited",
+    "source": "额度不够.gif",
+    "sha256": "6d2c01a0d300c63f5007244ce04beb601a46a00e01da41b9ffa905e1feae81e1",
+    "width": 192,
+    "height": 208,
+    "durations": [
+      140,
+      140,
+      140,
+      140,
+      140,
+      140,
+      140,
+      240
+    ]
+  },
+  {
+    "key": "listening",
+    "source": "正在听你说话或者正在看你打字.gif",
+    "sha256": "69ad5c6ad40eb49d2555e90f66c5a17cc162768dbbd61bc15b74cbe568bea04e",
+    "width": 192,
+    "height": 208,
+    "durations": [
+      300,
+      180,
+      1400,
+      350,
+      700,
+      180
+    ]
+  },
+  {
+    "key": "computer",
+    "source": "正在使用电脑.gif",
+    "sha256": "40fd1777c927f2b5055e51896d7d16da93a836c8ec7a2ecb2a9df92ea951073f",
+    "width": 192,
+    "height": 208,
+    "durations": [
+      120,
+      120,
+      120,
+      120,
+      120,
+      220
+    ]
+  }
+]

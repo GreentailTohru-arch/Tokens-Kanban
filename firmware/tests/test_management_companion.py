@@ -45,6 +45,7 @@ class Tests(unittest.TestCase):
                 request('api/stop',b'',{'Origin':'https://attacker.example'})
             self.assertFalse(manager.stop_event.is_set())
             self.assertIn('已请求停止',request_stop(path=runtime))
-            self.assertTrue(manager.stop_event.is_set())
+            # The handler flushes its HTTP response before signaling the sender.
+            self.assertTrue(manager.stop_event.wait(1))
         finally:server.close();self.assertFalse(runtime.exists());temporary.cleanup()
 if __name__=='__main__':unittest.main()

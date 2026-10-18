@@ -12,6 +12,11 @@ ASSETS = {'/vendor/day-night-toggle.css':('vendor/day-night-toggle.css','text/cs
           '/default-avatar.png': ('default-avatar.png','image/png'),
           '/default-qr.png': ('default-qr.png','image/png')}
 
+ASSETS['/wallpaper.js']=('wallpaper.js','text/javascript; charset=utf-8')
+ASSETS['/pet/manifest.json']=('pet/manifest.json','application/json; charset=utf-8')
+for _pet in ('offline','online','thinking','limited','listening','computer'):
+    ASSETS[f'/pet/{_pet}.png']=(f'pet/{_pet}.png','image/png')
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         entry = ASSETS.get(urlsplit(self.path).path)

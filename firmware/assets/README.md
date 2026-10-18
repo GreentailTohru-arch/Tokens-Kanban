@@ -128,3 +128,15 @@ Original sources and conversion manifests stay here; no new synthesized audio.
 The v18 editor includes the Apache-2.0 esptool-js 0.7.0 browser bundle and license under companion/postcard/vendor. User-selected startup images remain local/device data and are never added to the source repository.
 
 The v22 brand-light.svg / brand-dark.svg in companion/postcard wrap the two user-supplied TK PNGs unchanged (embedded original bytes), with a square viewport and neutral backdrop. They serve the favicon, sidebar and About; no generated replacement or boot-logo change.
+
+### Codex pet (v26)
+
+`images/codex-pet/` preserves the six active GIFs supplied by the creator on 2026-10-18,
+in the requested offline, online, thinking, limited, listening/input,
+computer-use order. Rights remain with the source owner; no additional license
+was supplied. `manifest.json` records original names, hashes and frame timing.
+`tools/convert_pet_assets.py` emits RGB565 row RLE for firmware and lossless RGBA
+sprite sheets under `companion/postcard/pet/`. No generated replacement artwork,
+background removal or animation retiming is applied. See [pet behavior](../docs/codex-pet.md).
+At the creator's request, completion returns directly to online. The original
+finished GIF is retained as source material only; firmware and web packages exclude it.

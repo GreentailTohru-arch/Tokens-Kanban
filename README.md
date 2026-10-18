@@ -32,3 +32,12 @@ Build and host tests pass, including merged-image/archive checks, Bluetooth-name
 Windows: start.cmd menu 1 starts, 2 enables login startup, 3 disables it, 4 stops sync. macOS: Python 3.10+ and start.command; real-Mac operation is unverified and system metrics are unavailable. The plugin is a separate download.
 
 Saved device names also update Bluetooth; long advertisements preserve UTF-8 boundaries. See [name linking](firmware/docs/bluetooth-device-name.md).
+
+## v28 · 2026-10-18
+
+- Add virtual pet and fullscreen wallpaper pages. New defaults: usage, analytics, virtual pet, system monitor, postcard, wallpaper; saved custom order is retained.
+- Crop and compress wallpapers, use a theme background, and toggle time/date together independently for postcard and wallpaper.
+- Support full-screen boot-logo framing and fix duplicate custom logo playback, boot flashing and power-button screen-off behavior.
+- Unify web previews, crop dialogs, mobile layouts and navigation; add RTOS branding and version badges.
+- Pet buttons are configurable. Sending, undo and stop/resume depend on Codex accessibility support; screenshot and hold-to-dictate still require hardware acceptance and are not advertised as verified.
+- Include app/full firmware, Windows/MacOS sync packages, separate TrafficMonitor bridge, source and unified checksums.

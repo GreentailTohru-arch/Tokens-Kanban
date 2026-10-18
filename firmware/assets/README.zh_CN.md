@@ -116,3 +116,12 @@ Codex 既有滤波后 PCM 保持不变。不手工裁剪、不归一化、不改
 v18编辑器在companion/postcard/vendor保留Apache-2.0的esptool-js 0.7.0及许可。用户选择的开机图片仅在本地及设备处理，不加入源码仓库。
 
 v22 的 companion/postcard/brand-light.svg 与 brand-dark.svg 原样嵌入用户提供的黑／白 TK PNG 字节，仅通过方形视口和中性背景展示，用于标签图标、侧栏和关于页，没有重新生成图案，也不改变开机 Logo。
+
+### Codex 宠物（v26）
+
+`images/codex-pet/` 保存作者于 2026-10-18 提供的原始 GIF，实际使用六种状态：
+未连接、在线、思考、额度不够、聆听／输入、使用电脑。按作者后续要求，思考结束
+直接回到在线，原“思考结束”GIF 仅作为源素材留档，不编入固件或网页程序包。
+版权属于来源方，未提供额外许可。`manifest.json` 记录实际使用素材的文件名、哈希和帧时长。
+`tools/convert_pet_assets.py` 生成固件的 RGB565 逐行压缩数据及网页的无损 RGBA 帧图，
+不重新生成图案、不去背景、不改变动画节奏。行为见[宠物页说明](../docs/codex-pet.zh_CN.md)。

@@ -23,6 +23,9 @@ esp_lcd_panel_io_handle_t bsp_display_io(void);
 
 // 背光亮度 0..100(%)。LEDC PWM,0=全灭。
 void bsp_display_backlight(uint8_t percent);
+// Wait for queued SPI pixels before exposing a frame. Call with LVGL locked;
+// blocking task-context operation, never from a button or display callback.
+esp_err_t bsp_display_wait_frame(void);
 
 // deep sleep 专用：关闭显示、让 ST7789 进入 Sleep In，停止背光 PWM，
 // 将 CS/SCLK/MOSI/DC/背光设为安全电平并在 deep sleep 中保持。调用时必须
