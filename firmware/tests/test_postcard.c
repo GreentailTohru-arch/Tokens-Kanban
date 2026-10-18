@@ -38,7 +38,8 @@ void bsp_lvgl_unlock(void){}
 void token_ui_postcard_image(const uint8_t *data){shown=data;}
 void token_ui_postcard_clock(uint64_t seconds,bool dated,bool contact){(void)contact;shown_seconds=seconds%86400;shown_dated=dated;if(dated)assert(postcard_calendar(seconds,&shown_month,&shown_day,&shown_weekday));}
 static void run(void){if(!setjmp(yielded))worker(NULL);}
-static char reply[64];
+static char reply[256];
+static bool with_metadata;
 static void line(const char *s){assert(postcard_line(s,reply,sizeof(reply))>0);}
 static void reboot(void){state=transfer_id=received_bytes=0;queued=false;clock_set=false;shown=NULL;assert(postcard_start());}
 static void upload(unsigned id,unsigned color,bool bad_hash){
@@ -46,6 +47,7 @@ static void upload(unsigned id,unsigned color,bool bad_hash){
     uint32_t h=2166136261u;for(unsigned i=0;i<POSTCARD_BYTES;i+=256)h=postcard_hash(h,raw,256);
     char command[100];snprintf(command,sizeof(command),"PC_BEGIN %u %u",id,h+(bad_hash?1:0));line(command);run();assert(state==2);
     for(unsigned off=0;off<POSTCARD_BYTES;off+=256){snprintf(command,sizeof(command),"PC_DATA %u %u ff%02x00",id,off,color);line(command);run();assert(received_bytes==off+256 && state==2);}
+    if(with_metadata){snprintf(command,sizeof(command),"PC_META %u 0 015b5d0000",id);line(command);run();assert(state==2);}
     snprintf(command,sizeof(command),"PC_DONE %u",id);line(command);run();
 }
 int main(void){
@@ -87,5 +89,12 @@ int main(void){
     reboot();assert(shown[0]==0x66);
     fail_task=true;assert(!postcard_start() && !queue);line("PC_HELLO");assert(!strcmp(reply,"PC_UNAVAILABLE\n"));
     puts("Postcard codec, ordering, interrupted upload, flash failures, persistence and clock: PASS");
+    fail_task=false;reboot();with_metadata=true;test_time+=61000000;upload(101,12,false);assert(state==3);
+    line("PC_CARD_INFO");assert(strstr(reply,"PC_CARD_INFO 1 ")&&strstr(reply," 4\n"));
+    char read_cmd[96];snprintf(read_cmd,sizeof(read_cmd),"PC_CARD_META %u 0",generation);line(read_cmd);assert(!strcmp(reply,"PC_CARD_DATA 0 5b5d0000\n"));
+    reboot();line(read_cmd);assert(!strcmp(reply,"PC_CARD_DATA 0 5b5d0000\n"));
+    line("PC_CARD_READ 0 0");assert(!strcmp(reply,"PC_CARD_CHANGED\n"));
+    unsigned keep=generation;upload(102,13,true);assert(state==4&&generation==keep);line(read_cmd);assert(!strcmp(reply,"PC_CARD_DATA 0 5b5d0000\n"));
+    with_metadata=false;upload(103,14,false);line("PC_CARD_INFO");assert(strstr(reply," 0\n"));
     return 0;
 }

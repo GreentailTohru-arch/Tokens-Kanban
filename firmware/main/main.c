@@ -40,7 +40,7 @@ static volatile bool s_input_ready;
 static atomic_bool input_overflow;
 static size_t accept_unlocked(const char *line,char *reply,size_t capacity,unsigned transport) {
     if(!strcmp(line,"PC_INFO_STACK"))return snprintf(reply,capacity,"PC_STACK %u %u\n",(unsigned)CONFIG_ESP_MAIN_TASK_STACK_SIZE,(unsigned)uxTaskGetStackHighWaterMark(main_task_handle));
-    if(!strcmp(line,"PC_VERSION"))return snprintf(reply,capacity,"PC_VERSION v29\n");
+    if(!strcmp(line,"PC_VERSION"))return snprintf(reply,capacity,"PC_VERSION v30\n");
     if(!strcmp(line,"PC_PET_HELLO"))return snprintf(reply,capacity,"PC_PET_READY 1\n");
     if(!strncmp(line,"PC_PET ",7)){
         unsigned seq,state;

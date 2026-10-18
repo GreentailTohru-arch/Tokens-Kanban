@@ -19,3 +19,6 @@ unsigned monitor_count(const monitor_config_t *config);
 const char *monitor_title(const monitor_card_t *card);
 void monitor_format(const monitor_config_t *config,unsigned metric,const system_snapshot_t *s,bool live,char *first,char *second,size_t size);
 void monitor_layout(unsigned count,unsigned index,int *x,int *y,int *w,int *h);
+
+typedef struct { int x,title_y,top,height,gap,font_size; } monitor_content_t;
+monitor_content_t monitor_content_layout(int width,int height,bool pair);

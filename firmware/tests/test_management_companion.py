@@ -17,6 +17,9 @@ class Tests(unittest.TestCase):
         manager=LinkManager();server=ManagementServer(manager,runtime=runtime);url=server.url.split('#')[0];headers={'Authorization':'Bearer '+server.token}
         def request(path,data=None,extra=None):return urllib.request.urlopen(urllib.request.Request(url+path,data=data,headers={**headers,**(extra or {})}),timeout=3)
         try:
+            for asset in ['shortcut-picker.js','shortcut-picker.css','card-storage.js']:
+                with request(asset+'?v=30') as response:
+                    self.assertEqual(response.read(),(Path(__file__).resolve().parents[1]/'companion/postcard'/asset).read_bytes())
             with self.assertRaises(urllib.error.HTTPError):urllib.request.urlopen(url+'api/info')
             with self.assertRaises(urllib.error.HTTPError):request('api/info',extra={'Host':'attacker.example'})
             with request('api/info') as response:self.assertFalse(json.load(response)['connected'])

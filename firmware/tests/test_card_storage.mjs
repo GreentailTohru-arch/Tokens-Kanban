@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readCardText,encodeCardText,decodeCardText,writeCardText} from '../companion/postcard/card-storage.js';
+const original={title:'我的明信片',subtitle:'你好\nHello',name:'联系人'};
+const bytes=encodeCardText(original);assert.deepEqual(decodeCardText(bytes),original);
+const link={async rpc(command){if(command==='PC_CARD_INFO')return `PC_CARD_INFO 1 7 253440 123 ${bytes.length}`;const [op,g,off]=command.split(' ');assert.equal(op,'PC_CARD_META');assert.equal(+g,7);return `PC_CARD_DATA ${off} ${Buffer.from(bytes.slice(+off,+off+96)).toString('hex')}`;}};
+assert.deepEqual((await readCardText(link)).text,original);
+assert.deepEqual(await readCardText({rpc:async()=>'PC_INVALID'}),{supported:false});
+assert.equal((await readCardText({rpc:async()=>'PC_CARD_INFO 1 8 253440 123 0'})).text,undefined);
+await assert.rejects(()=>readCardText({rpc:async()=>'PC_CARD_BUSY'}));
+await assert.rejects(()=>readCardText({rpc:async c=>c==='PC_CARD_INFO'?'PC_CARD_INFO 1 8 253440 123 2':'PC_CARD_CHANGED'}));
+assert.throws(()=>encodeCardText({title:'字'.repeat(200),subtitle:'',name:''}));
+assert.throws(()=>decodeCardText(new TextEncoder().encode('[1,2,3]')));
+let written=0;await writeCardText({rpc:async cmd=>{assert(cmd.startsWith('PC_META 9 '));written++;return 'OK';}},9,original,async(id,response)=>{assert.equal(id,9);assert.equal(response,'OK');});assert(written>0);
+console.log('Card text: unicode, round-trip, legacy, busy, changed generation and validation PASS');

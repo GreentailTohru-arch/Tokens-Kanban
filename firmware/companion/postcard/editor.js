@@ -1,15 +1,16 @@
+import {readCardText,readCardPicture,writeCardText,encodeCardText} from './card-storage.js?v=30';
 import {completeSave,cancelSaveCompletion} from './save-progress.js';
-import {WallpaperEditor} from './wallpaper.js?v=29';
-import {NoticeCenter} from './notices.js?v=29';
-import {LocalConnection} from './local-connection.js?v=29';
-import {DraftState} from './draft-state.js?v=29';
-import {LogoEditor} from './logo-editor.js?v=29';
-import {AboutPanel} from './about.js?v=29';
-import {DeviceInfoPanel} from './device-info.js?v=29';
-import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=29';
-import {MonitorEditor} from './monitor.js?v=29';
+import {WallpaperEditor} from './wallpaper.js?v=30';
+import {NoticeCenter} from './notices.js?v=30';
+import {LocalConnection} from './local-connection.js?v=30';
+import {DraftState} from './draft-state.js?v=30';
+import {LogoEditor} from './logo-editor.js?v=30';
+import {AboutPanel} from './about.js?v=30';
+import {DeviceInfoPanel} from './device-info.js?v=30';
+import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=30';
+import {MonitorEditor} from './monitor.js?v=30-readback';
 import {loadDefaults} from './defaults.js';
-import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=29';
+import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=30';
 const $=id=>document.getElementById(id);
 const drawerMedia=matchMedia('(max-width:760px)');
 function setSidebar(open,restoreFocus=false){
@@ -27,7 +28,7 @@ const service='9e7a0001-4b51-4a4c-9b50-2f53f077c301';
 const rxId='9e7a0002-4b51-4a4c-9b50-2f53f077c301',txId='9e7a0003-4b51-4a4c-9b50-2f53f077c301';
 const content={photo:null,qr:null,title:'',subtitle:'',name:'',crop:{x:.5,y:.5,zoom:1},qrCrop:{x:.5,y:.5,zoom:1}};
 let back=false,link=null,busy=false,imageLoading=true,activePage='experience',settingsSupported=false,startupSupported=false,brightnessSupported=false,autoLocalEnabled=true;
-let themeSupported=false;
+let themeSupported=false,cardInfo=null;
 const petKeyDefaults=[1,2,3,0,4,0,0,0,5];
 let petKeys=[...petKeyDefaults],petKeysSupported=false;
 let pagesSupported=false,pagesVersion=3,pageEnabled=63,pageOrder=[0,1,4,2,3,5];
@@ -39,7 +40,7 @@ const notices=new NoticeCenter($('status'));
 function status(text,kind='success'){if(kind==='error')cancelSaveCompletion();else if(text.includes('已保存'))completeSave();notices.show(text,kind);}
 
 function repaint(){renderFace($('preview'),content,back,true);refreshPreviewColors();refreshThumbnails();$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
-function controls(){const progress=$('progress');if(!busy)progress.hidden=true;else if(progress.hidden){progress.removeAttribute('value');progress.hidden=false;}wallEditor?.controls();const locked=busy||imageLoading;$("petKeysSave").disabled=locked||!link||!petKeysSupported;$("petKeysReset").disabled=locked;$("petKeyRows").inert=locked;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='pet'&&!petKeysSupported)||(activePage==='wallpaper'&&!wallEditor?.supported)||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
+function controls(){const progress=$('progress');if(!busy)progress.hidden=true;else if(progress.hidden){progress.removeAttribute('value');progress.hidden=false;}wallEditor?.controls();const locked=busy||imageLoading;$("petKeysSave").disabled=locked||!link||!petKeysSupported;$("petKeysReset").disabled=locked;$("petKeyRows").inert=locked;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='postcard'&&!cardInfo?.supported)||(activePage==='pet'&&!petKeysSupported)||(activePage==='wallpaper'&&!wallEditor?.supported)||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
 function localClock(now=new Date()){return Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate(),now.getHours(),now.getMinutes(),now.getSeconds())/1000);}
 function updateClock(){if(activePage==='wallpaper'||activePage==='pages'){wallEditor?.render();if(activePage==='pages'){const thumbnail=document.querySelector('.page-card[data-page="5"] img');if(thumbnail)thumbnail.src=$('wallPreview').toDataURL();}}const now=new Date();$('time').textContent=[now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':');$('date').textContent=`${now.getMonth()+1}月${now.getDate()}日, 星期${'日一二三四五六'[now.getDay()]}`;}
 async function syncClock(connection){
@@ -69,7 +70,7 @@ function openCrop(field,image=content[field],fresh=false,file=null){
 function closeCrop(apply){
   if(!draft)return;
   if(apply){
-    if(draft.fresh){content[draft.field]?.close();content[draft.field]=draft.image;selectedFiles[draft.field]=draft.file;}
+    if(draft.fresh){content[draft.field]?.close?.();content[draft.field]=draft.image;selectedFiles[draft.field]=draft.file;}
     content[cropKey(draft.field)]={...draft.crop};
     back=draft.field==='qr';repaint();
   }else if(draft.fresh)draft.image.close();
@@ -144,9 +145,21 @@ async function connect(kind){
   busy=true;controls();let candidate=kind==='local'?new LocalConnection():kind==='ble'?new BluetoothConnection():new SerialConnection();
   try{if(kind==='local')candidate.onlost=()=>Connection.prototype.lost.call(candidate);await candidate.open();const deadline=performance.now()+10000;candidate.timeout=kind==='usb'?1000:12000;
     for(;;){try{if(await candidate.rpc('PC_HELLO')!=='PC_READY 1')throw new Error('设备尚未安装明信片固件');
-    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await wallEditor.read(candidate);drafts?.mark('wallpaper');await readPetKeys(candidate);drafts?.mark('petkeys');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await readTheme(candidate);drafts?.mark('theme');await aboutPanel.read(candidate);candidate.timeout=12000;link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');break;
+    const dated=await syncClock(candidate);await readSettings(candidate);drafts?.mark('settings');await readPages(candidate);drafts?.mark('pages');await wallEditor.read(candidate);drafts?.mark('wallpaper');await readPostcard(candidate);await readPetKeys(candidate);drafts?.mark('petkeys');await monitorEditor.read(candidate);drafts?.mark('monitor');await devicePanel.read(candidate);drafts?.mark('name');await logoEditor.read(candidate);await readTheme(candidate);drafts?.mark('theme');await aboutPanel.read(candidate);candidate.timeout=12000;link=candidate;for(const key of ['settings','pages','monitor','name'])drafts?.mark(key);status(dated?'已连接':'已连接，日期显示需要更新设备固件');break;
     }catch(error){if(kind!=='usb'||candidate.closed||error.message!=='设备响应超时，请断开重连'||performance.now()>=deadline)throw error;candidate.text='';await delay(350);}}
   }catch(error){await candidate.close();status(error.message,'error');}finally{busy=false;controls();}
+}
+async function readPostcard(connection){
+ cardInfo=null;const info=await readCardText(connection);cardInfo=info;
+ if(!info.supported||info.length){
+  for(const field of ['photo','qr']){content[field]?.close?.();content[field]=null;selectedFiles[field]=null;$(field).value='';}
+  content.crop={x:.5,y:.5,zoom:1};content.qrCrop={x:.5,y:.5,zoom:1};
+  for(const field of ['title','subtitle','name'])content[field]=info.text?.[field]||'';
+ }
+ if(info.supported&&!info.length)Object.assign(content,await loadDefaults());
+ for(const field of ['title','subtitle','name'])$(field).value=content[field];
+ $('cardReadState').textContent=!info.supported?'请升级固件以自动读取明信片。为保护设备内容，当前不能保存明信片。':info.text?'已读取设备文字；未上传新图片时，保存会保留设备头像和二维码。':info.length?'旧明信片只保存了合成图片，无法读回文字；请重新填写完整文字，头像和二维码会保留。':'设备尚未保存明信片';
+ repaint();drafts?.mark('postcard');
 }
 async function stateFor(id,reply){
   for(let i=0;i<240;i++){
@@ -161,9 +174,17 @@ async function stateFor(id,reply){
 }
 async function upload(event){
   event.preventDefault();if(!link||busy||imageLoading||draft)return;
-  if(!content.photo||!content.qr||!content.title.trim()||!content.name.trim()){status('请导入图片、二维码，并填写标题和联系名字。','error');return;}
+  if(!cardInfo?.supported){status('请先连接支持文字读取的新版固件，避免覆盖设备明信片','error');return;}
+  if(((!content.photo||!content.qr)&&!cardInfo.length)||!content.title.trim()||!content.name.trim()){status('请导入图片、二维码，并填写标题和联系名字。','error');return;}
   busy=true;controls();$('progress').hidden=false;$('progress').value=0;
   try{
+    encodeCardText(content);
+    const currentCard=await readCardText(link);if(currentCard.generation!==cardInfo.generation)throw Error('设备明信片已改变，请重新连接后再编辑');
+    if(!content.photo||!content.qr){status('正在读取设备原有图片，读取完成后保存…');
+      if(!content.photo)content.photo=await readCardPicture(link,cardInfo,false);
+      if(!content.qr)content.qr=await readCardPicture(link,cardInfo,true);
+      repaint();
+    }
     const canvas=document.createElement('canvas');canvas.width=WIDTH;canvas.height=HEIGHT;
     const data=new Uint8Array(FACE_BYTES*2);data.set(renderFace(canvas,content,false));data.set(renderFace(canvas,content,true),FACE_BYTES);
     const id=crypto.getRandomValues(new Uint32Array(1))[0]>>>1;
@@ -176,8 +197,9 @@ async function upload(event){
       const left=Math.max(0,Math.ceil((performance.now()-started)/1000*(data.length-sent)/sent));
       status(`正在保存 ${Math.floor(sent/data.length*100)}%${sent>4096?' · 预计剩余 '+left+' 秒':''}`);
     }
+    await writeCardText(link,id,content,stateFor);
     state=await stateFor(id,await link.rpc(`PC_DONE ${id}`));if(state.state!==3)throw new Error('设备尚未确认保存');
-    drafts?.mark('postcard');const dated=await syncClock(link);status('已保存到设备'+(dated?'':'，日期显示需要更新设备固件'));
+    cardInfo=await readCardText(link);drafts?.mark('postcard');const dated=await syncClock(link);status('已保存到设备'+(dated?'':'，日期显示需要更新设备固件'));
   }catch(error){status(error.message,'error');}finally{$('progress').hidden=true;busy=false;controls();}
 }
 function setPage(page){
@@ -414,8 +436,11 @@ async function savePages(event){
 function renderPetKeys(){
  const labels=['上 · 单击','上 · 双击','上 · 三击','下 · 单击','下 · 双击','下 · 三击','OK · 单击','OK · 三击','OK · 长按'];
  const actions=['无','发送消息','撤销输入（Ctrl+Z）','停止／继续思考','自定义快捷键','按住语音输入'];
- $('petKeyRows').replaceChildren(...labels.map((label,i)=>{const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const option=new Option(actions[v],v);select.add(option);}select.value=petKeys[i];select.onchange=()=>{petKeys[i]=Number(select.value);$('petKeysState').textContent='有未保存的宠物按键设置';refreshDraftNotice();};row.append(title,select);return row;}));
+ $('petKeyRows').replaceChildren(...labels.map((label,i)=>{const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const shortcut=$('petCustomHotkey').value.replaceAll('LeftAlt','Alt');const option=new Option(v===4&&shortcut?'自定义快捷键 · '+shortcut:actions[v],v);select.add(option);}select.value=petKeys[i];const commit=value=>{petKeys[i]=value;$('petKeysState').textContent='有未保存的宠物按键设置';renderPetKeys();refreshDraftNotice();};
+ select.onchange=()=>{const value=Number(select.value);if(value===4){select.value=petKeys[i];document.dispatchEvent(new CustomEvent('pickpetshortcut',{detail:{source:select,confirm:()=>commit(4)}}));}else commit(value);};row.append(title,select);
+ if(petKeys[i]===4){const edit=document.createElement('button');edit.type='button';edit.className='secondary shortcut-edit-link';edit.textContent='选择快捷键';edit.onclick=()=>document.dispatchEvent(new CustomEvent('pickpetshortcut',{detail:{source:edit}}));row.append(edit);}return row;}));
 }
+document.addEventListener('petshortcutchange',()=>renderPetKeys());
 async function readPetKeys(connection){
  let parts=[];try{parts=(await connection.rpc('PC_KEYS_GET')).split(' ');}catch{}
  petKeysSupported=parts[0]==='PC_KEYS'&&parts[1]==='1'&&parts.length===11;

@@ -6,6 +6,14 @@
 
 View local Codex token usage, quota, model/activity trends, TrafficMonitor system metrics and a personal postcard on AI Passport. Costs are API-price estimates, not subscription bills; usage covers readable local history.
 
+## v30 · 2026-10-18
+
+- Read postcard text and wallpaper settings when connecting to avoid overwriting them with defaults. Legacy image-only postcards cannot restore text; enter and save it once.
+- Fix the system monitor temperature unit (°C) and adapt typography and spacing for one to six cards.
+- Choose virtual-pet custom shortcuts in a full desktop-keyboard dialog. Select a single key or modifier combination and confirm; the dialog no longer records physical key presses.
+- Refresh the public website and bundled local manager. All custom gestures share one shortcut, executed by the Windows companion in the focused application.
+
+
 ## v29 · 2026-10-18
 
 - This v29 release unifies usage and virtual-pet status labels: idle, running, operating, quota low and dictating.

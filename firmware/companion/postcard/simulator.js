@@ -1,4 +1,4 @@
-import {renderFace} from './codec.js?v=29';
+import {renderFace} from './codec.js?v=30';
 const $=id=>document.getElementById(id),names=['用量首页','统计分析','系统检测','明信片','虚拟宠物','全屏壁纸'],periods=['今日','本周','累计'];
 const petNames=['未连接','待命中','运行中','额度不足','听写中','操作中'];
 const petKeys=['offline','online','thinking','limited','listening','computer'];

@@ -36,6 +36,10 @@ static void check_labels(lv_obj_t *obj) {
             lv_font_glyph_dsc_t d={0};
             assert(lv_font_get_glyph_dsc(font,&d,cp,0)&&!d.is_placeholder);
         }
+        lv_obj_t *parent=lv_obj_get_parent(obj);
+        if(parent && (lv_obj_get_width(parent)==102 || lv_obj_get_width(parent)==212)){
+            assert(lv_obj_get_y(obj)>=0 && lv_obj_get_y(obj)+lv_obj_get_height(obj)<=lv_obj_get_height(parent));
+        }
         lv_point_t size;
         lv_text_get_size(&size,lv_label_get_text(obj),font,lv_obj_get_style_text_letter_space(obj,0),0,10000,LV_TEXT_FLAG_NONE);
         if(size.x>lv_obj_get_width(obj)) { fprintf(stderr,"Clipped label: %s (%d > %d)\n",lv_label_get_text(obj),(int)size.x,(int)lv_obj_get_width(obj));abort(); }
@@ -146,6 +150,13 @@ int main(void) {
     token_ui_postcard_clock(86400,false,false);assert(count_visible_text(lv_screen_active(),"00:00")==1);
     token_ui_postcard_clock(9*3600+41*60,false,false);assert(count_visible_text(lv_screen_active(),"09:41")==1);
     save("system-configurable.ppm");
+    for(unsigned n=1;n<=6;n++){
+        const unsigned metrics_order[]={M_CPU_TEMP,M_PAIR,M_GPU_TEMP,M_CPU_FREQ,M_RAM,M_TODAY};
+        for(unsigned j=0;j<6;j++){monitor.cards[j].enabled=j<n;monitor.cards[j].metric=metrics_order[j];}
+        token_ui_system(&metrics,true,&monitor);char name[48];snprintf(name,sizeof(name),"system-%u-cards.ppm",n);save(name);check_labels(lv_screen_active());
+    }
+    monitor=monitor_default();token_ui_system(&metrics,true,&monitor);
+
     for(unsigned page=0;page<PAGE_COUNT;++page) {
         token_ui_pages(&pages,page);token_ui_update(&s,0,false,true,0,86,page);
         lv_refr_now(NULL);assert(lv_anim_count_running()==0);unsigned char underlay[sizeof(framebuffer)];memcpy(underlay,framebuffer,sizeof(underlay));

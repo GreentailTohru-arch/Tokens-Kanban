@@ -411,8 +411,8 @@ void token_ui_pages(const page_config_t *config,unsigned current) {
     unsigned n=page_count(config),pos=page_position(config,current);
     if(n!=marks_count||pos!=marks_position){marks_count=n;marks_position=pos;lv_obj_invalidate(lv_screen_active());}
 }
-static bool text_fits(lv_obj_t *obj,const char *text,const lv_font_t *font,int spacing) {
-    lv_point_t size;lv_text_get_size(&size,text,font,spacing,0,10000,LV_TEXT_FLAG_NONE);return size.x<=lv_obj_get_width(obj);
+static bool text_fits(int width,const char *text,const lv_font_t *font,int spacing) {
+    lv_point_t size;lv_text_get_size(&size,text,font,spacing,0,10000,LV_TEXT_FLAG_NONE);return size.x<=width;
 }
 void token_ui_system(const system_snapshot_t *s,bool live,const monitor_config_t *config) {
     bool any=false;for(unsigned i=SYS_CPU;i<SYS_FIELDS;++i)if(s->v[i]>=0)any=true;
@@ -423,19 +423,33 @@ void token_ui_system(const system_snapshot_t *s,bool live,const monitor_config_t
         if(!config->cards[i].enabled)continue;
         int x,y,w,h;monitor_layout(n,slot,&x,&y,&w,&h);
         lv_obj_set_pos(system_panels[slot],x,y);lv_obj_set_size(system_panels[slot],w,h);
-        lv_obj_set_width(system_titles[slot],w-18);lv_obj_set_width(system_values[slot],w-18);lv_obj_set_width(system_second[slot],w-18);
-        lv_label_set_text(system_titles[slot],monitor_title(&config->cards[i]));
         char first[64],second[64];unsigned metric=config->cards[i].metric;
+        bool pair=metric==M_PAIR;monitor_content_t body=monitor_content_layout(w,h,pair);
+        int width=w-body.x*2;
+        lv_obj_set_pos(system_titles[slot],body.x,body.title_y);lv_obj_set_width(system_titles[slot],width);
+        lv_obj_set_x(system_values[slot],body.x);lv_obj_set_x(system_second[slot],body.x);
+        lv_obj_set_width(system_values[slot],width);lv_obj_set_width(system_second[slot],width);
+        lv_obj_set_style_text_align(system_values[slot],LV_TEXT_ALIGN_CENTER,0);
+        lv_obj_set_style_text_align(system_second[slot],LV_TEXT_ALIGN_CENTER,0);
+        lv_label_set_text(system_titles[slot],monitor_title(&config->cards[i]));
         monitor_format(config,metric,s,live,first,second,sizeof(first));
-        bool pair=metric==M_PAIR;const lv_font_t *font=pair?&token_font_14:&lv_font_montserrat_20;int spacing=0;
-        if(!text_fits(system_values[slot],first,font,0))font=&token_font_14;
-        if(!text_fits(system_values[slot],first,font,0)||!text_fits(system_second[slot],second,&token_font_14,0)) {
-            monitor_config_t compact=*config;compact.decimals=0;compact.compact=1;monitor_format(&compact,metric,s,live,first,second,sizeof(first));font=&token_font_14;spacing=-1;
-            while(spacing>-3 && (!text_fits(system_values[slot],first,font,spacing)||!text_fits(system_second[slot],second,&token_font_14,spacing)))--spacing;
+        static lv_font_t large,medium;large=lv_font_montserrat_32;medium=lv_font_montserrat_20;
+        large.fallback=medium.fallback=&token_font_14;
+        const lv_font_t *choices[]={&large,&medium,&token_font_14},*font=&token_font_14;
+        for(unsigned f=body.font_size==32?0:body.font_size==20?1:2;f<3;f++){
+            const lv_font_t *candidate=choices[f];
+            if((int)candidate->line_height*(pair?2:1)+(pair?body.gap:0)<=body.height &&
+               text_fits(width,first,candidate,0)&&text_fits(width,second,candidate,0)){font=candidate;break;}
         }
-        lv_obj_set_style_text_font(system_values[slot],font,0);lv_obj_set_style_text_letter_space(system_values[slot],spacing,0);lv_obj_set_style_text_letter_space(system_second[slot],spacing,0);
-        lv_obj_set_y(system_values[slot],pair?(h>70?(h-40)/2:24):(h>70?(h-24)/2:27));
-        lv_obj_set_y(system_second[slot],pair?(h>70?(h-40)/2+22:41):41);
+        int spacing=0;
+        if(!text_fits(width,first,font,0)||!text_fits(width,second,font,0)) {
+            monitor_config_t compact=*config;compact.decimals=0;compact.compact=1;monitor_format(&compact,metric,s,live,first,second,sizeof(first));font=&token_font_14;
+            while(spacing>-3 && (!text_fits(width,first,font,spacing)||!text_fits(width,second,font,spacing)))--spacing;
+        }
+        lv_obj_set_style_text_font(system_values[slot],font,0);lv_obj_set_style_text_font(system_second[slot],font,0);
+        lv_obj_set_style_text_letter_space(system_values[slot],spacing,0);lv_obj_set_style_text_letter_space(system_second[slot],spacing,0);
+        int block=(int)font->line_height*(pair?2:1)+(pair?body.gap:0),top=body.top+(body.height-block)/2;
+        lv_obj_set_y(system_values[slot],top);lv_obj_set_y(system_second[slot],top+font->line_height+body.gap);
         lv_label_set_text(system_values[slot],first);lv_label_set_text(system_second[slot],second);visible(system_second[slot],pair);
         ++slot;
     }

@@ -73,7 +73,7 @@ void monitor_format(const monitor_config_t *c,unsigned metric,const system_snaps
     if(metric==M_SPEED || metric==M_TODAY){unsigned a=metric==M_SPEED?SYS_DOWN:SYS_TODAY_DOWN,b=metric==M_SPEED?SYS_UP:SYS_TODAY_UP;value=live&&s->v[a]>=0&&s->v[b]>=0?s->v[a]+s->v[b]:-1;quantity(c,value,metric==M_SPEED,first,size);return;}
     if(metric==M_UP || metric==M_DOWN){quantity(c,value,true,first,size);return;}
     if(value<0){snprintf(first,size,"--");return;}
-    if(metric==M_CPU_TEMP || metric==M_GPU_TEMP)snprintf(first,size,"%.*f%sC",(int)c->decimals,(double)value/10,c->space?" ":"");
+    if(metric==M_CPU_TEMP || metric==M_GPU_TEMP)snprintf(first,size,"%.*f%s°C",(int)c->decimals,(double)value/10,c->space?" ":"");
     else if(metric==M_CPU_FREQ)snprintf(first,size,"%.*f%sGHz",(int)c->decimals,(double)value/1000,c->space?" ":"");
     else snprintf(first,size,"%lld%s%s",(long long)value,c->space&&c->show_percent?" ":"",c->show_percent?"%":"");
 }
@@ -82,4 +82,12 @@ void monitor_layout(unsigned n,unsigned i,int *x,int *y,int *w,int *h) {
     unsigned row=n<=2?i:i/2,col=n<=2?0:i%2;
     *x=14+(full?0:(int)col*110);*w=full?212:102;*h=rows?(196-(int)(rows-1)*8)/(int)rows:196;
     *y=90+(int)row*(*h+8);
+}
+
+monitor_content_t monitor_content_layout(int w,int h,bool pair) {
+    int pad=h>=150?12:h>=90?8:2;
+    monitor_content_t out={.x=w>=200?14:9,.title_y=pad,.top=pad+18+(h>=90?8:2),.gap=h>=150?8:h>=90?4:0};
+    out.height=h-pad-out.top;
+    out.font_size=h>=150?32:h>=90?(pair?20:32):(pair?14:20);
+    return out;
 }

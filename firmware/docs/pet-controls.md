@@ -71,6 +71,9 @@ Set `dictation_hotkey` in `%LOCALAPPDATA%/TokensKanban/pet-controls.json` (for e
 
 ## Custom keyboard shortcut
 
-The unreliable Appshot action is replaced by Custom shortcut. Open the management page from the Windows sync program, enter a key (F8, Space) or a combination (Ctrl+Shift+A), and save the local shortcut. Assign Custom shortcut to a single/double/triple device press and save the device bindings. These bindings share one shortcut. Blank disables it; the foreground application receives it. The setting survives package upgrades and preserves the dictation binding. This does not guarantee that applications accept synthetic input.
+The unreliable Appshot action is replaced by Custom shortcut. Open the management page from the Windows sync program, select a key (F8, Space) or a combination (Ctrl+Shift+A) in the keyboard dialog, and save the local shortcut. Assign Custom shortcut to a single/double/triple device press and save the device bindings. These bindings share one shortcut. Blank disables it; the foreground application receives it. The setting survives package upgrades and preserves the dictation binding. This does not guarantee that applications accept synthetic input.
 
-Click the shortcut field and press the actual key or chord to record it; use Clear to disable, then save. Letters, digits, F1-F24, navigation, punctuation and numpad keys are supported. OS/browser-reserved combinations may not reach the recorder.
+
+## Visual shortcut picker
+
+Select Custom shortcut to open a full desktop-keyboard dialog. Click a key or modifier combination, click again to deselect, and confirm to display the chosen shortcut. The dialog has no physical-key capture field. On narrow screens, scroll the full keyboard horizontally. Save the binding on this PC and save the device gesture mapping separately. All custom gestures share one binding (up to four keys, with at most one ordinary key); clear and save to disable it.

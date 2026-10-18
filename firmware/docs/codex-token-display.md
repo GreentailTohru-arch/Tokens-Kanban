@@ -937,3 +937,9 @@ during retry (only the volatile clock is synchronized). Bluetooth timing is unch
 
 
 USB/BLE shared computer management: see [v20 connection steps](tokens-connections.md).
+
+### Read settings when connecting
+
+The manager reads postcard text and wallpaper time/date/navigation options from the connected device. Postcard text is stored with its image transaction; failed uploads preserve the previous card. Existing image-only cards have no recoverable editable text: the manager clears the text fields and asks for them to be entered once, while retaining the stored portrait and QR image. Firmware without the text protocol cannot save postcards through this manager. Text reads are automatic; retained images are fetched only when needed for a subsequent save.
+
+System-monitor cards adapt their font size and vertical spacing to the enabled card count (one to six). Temperature values use °C. Both network lines share a fitted font and stay below the title. The manager preview, simulator and device use matching layout rules.

@@ -17,18 +17,29 @@ export function decodeMonitor(hex){
   const c={bits:b[1],unit:b[2],show_unit:b[3],show_percent:b[4],space:b[5],decimals:b[6],compact:b[7],up_label:text(8,7),down_label:text(15,7),cards:[]};
   for(let i=0;i<6;i++){const off=22+i*21,metric=b[off],enabled=b[off+1];if((metric>11&&metric!==255)||enabled>1||(metric===255&&enabled))throw Error('设备卡片配置无效');c.cards.push({metric,enabled,title:text(off+2,19)});}return c;
 }
-function layout(n,i){const rows=n<=2?n:Math.ceil(n/2),full=n<=2||(n%2&&i===n-1),row=n<=2?i:Math.floor(i/2),h=rows?Math.floor((196-(rows-1)*8)/rows):196;return {x:14+(full?0:i%2*110),y:90+row*(h+8),w:full?212:102,h};}
+export function layout(n,i){const rows=n<=2?n:Math.ceil(n/2),full=n<=2||(n%2&&i===n-1),row=n<=2?i:Math.floor(i/2),h=rows?Math.floor((196-(rows-1)*8)/rows):196;return {x:14+(full?0:i%2*110),y:90+row*(h+8),w:full?212:102,h};}
+export function contentLayout(w,h,pair){const pad=h>=150?12:h>=90?8:2,top=pad+18+(h>=90?8:2);return {x:w>=200?14:9,titleY:pad,top,height:h-pad-top,gap:h>=150?8:h>=90?4:0,fontSize:h>=150?32:h>=90?(pair?20:32):(pair?14:20)};}
+export function fitMonitorText(ctx,cfg,metric,w,h){
+ const pair=metric===11,b=contentLayout(w,h,pair),lineHeights={14:18,20:22,32:35};let lines=values(cfg,metric),size=14,spacing=0;
+ ctx.letterSpacing='0px';
+ const fits=()=>lines.every(t=>ctx.measureText(t).width<=w-b.x*2);
+ for(const candidate of [32,20,14].filter(v=>v<=b.fontSize)){ctx.font=`${candidate}px "Microsoft YaHei UI",sans-serif`;if(lineHeights[candidate]*(pair?2:1)+(pair?b.gap:0)<=b.height&&fits()){size=candidate;break;}}
+ ctx.font=`${size}px "Microsoft YaHei UI",sans-serif`;
+ if(!fits()){lines=values({...cfg,compact:1,decimals:0},metric);while(spacing>-3&&!fits()){ctx.letterSpacing=(--spacing)+'px';}}
+ const lineHeight=lineHeights[size],block=lineHeight*(pair?2:1)+(pair?b.gap:0);
+ return {...b,lines,size,spacing,lineHeight,y:b.top+(b.height-block)/2};
+}
 function quantity(c,bytes,rate=true){
   if(bytes<0)return '--';let v=bytes*(rate&&c.bits?8:1),u=rate?c.unit:0;
   if(!u){u=1;while(v>=1024&&u<4){v/=1024;u++;}}else for(let i=1;i<u;i++)v/=1024;
   const d=c.compact&&v>=100?0:c.decimals,n=v>=100000?v.toExponential(0):v.toFixed(u===1?0:d);
   const unit=(rate&&c.bits?['','b','Kb','Mb','Gb']:['','B','KB','MB','GB'])[u];return n+((!rate||c.show_unit)?(c.space?' ':'')+unit+(rate?'/s':''):'');
 }
-function values(c,metric){
+export function values(c,metric){
   if(metric===11)return [c.down_label+(c.down_label?' ':'')+quantity(c,sample[5]),c.up_label+(c.up_label?' ':'')+quantity(c,sample[6])];
   if(metric===7||metric===8)return [quantity(c,sample[metric===7?6:5])];
   if(metric===9)return [quantity(c,sample[5]+sample[6])];if(metric===10)return [quantity(c,sample[9]+sample[10],false)];
-  const field=[0,1,2,3,4,7,8][metric],v=sample[field];if(metric===3||metric===4)return [(v/10).toFixed(c.decimals)+(c.space?' ':'')+'C'];
+  const field=[0,1,2,3,4,7,8][metric],v=sample[field];if(metric===3||metric===4)return [(v/10).toFixed(c.decimals)+(c.space?' ':'')+'°C'];
   if(metric===5)return [(v/1000).toFixed(c.decimals)+(c.space?' ':'')+'GHz'];return [String(v)+(c.show_percent?(c.space?' ':'')+'%':'')];
 }
 export class MonitorEditor {
@@ -65,7 +76,15 @@ export class MonitorEditor {
     const c=$('monitorPreview'),x=c.getContext('2d'),cfg=this.config;x.fillStyle=window.DeviceTheme?.map('#2f3a49')||'#2f3a49';x.fillRect(0,0,240,320);
     const font=(size=14)=>`${size}px "Microsoft YaHei UI",sans-serif`;x.font=font();x.textBaseline='top';x.fillStyle=window.DeviceTheme?.map('#f1f7f4')||'#f1f7f4';x.fillText('00:00',18,14);x.fillStyle=window.DeviceTheme?.map('#adb8c3')||'#adb8c3';x.fillText('86%',195,14);x.fillStyle=window.DeviceTheme?.map('#f1f7f4')||'#f1f7f4';x.fillText('系统检测',18,43);x.fillStyle=window.DeviceTheme?.map('#adb8c3')||'#adb8c3';x.fillText('TrafficMonitor / 示例数据',18,64);
     const cards=cfg.cards.filter(c=>c.enabled);if(!cards.length){x.textAlign='center';x.fillText('暂无检测卡片',120,156);x.textAlign='left';}
-    cards.forEach((card,i)=>{const p=layout(cards.length,i);x.fillStyle=window.DeviceTheme?.map('#374453')||'#374453';x.beginPath();x.roundRect(p.x,p.y,p.w,p.h,9);x.fill();x.font=font();x.fillStyle=window.DeviceTheme?.map('#adb8c3')||'#adb8c3';x.fillText(card.title||names[card.metric],p.x+9,p.y+5);let lines=values(cfg,card.metric),size=card.metric===11?14:20;x.font=font(size);if(lines.some(t=>x.measureText(t).width>p.w-18)){size=14;x.font=font();}if(lines.some(t=>x.measureText(t).width>p.w-18)){lines=values({...cfg,compact:1,decimals:0},card.metric);size=14;x.font=font();}let spacing=0;while(spacing>-3&&lines.some(t=>x.measureText(t).width>p.w-18)){spacing--;x.letterSpacing=spacing+'px';}x.fillStyle=window.DeviceTheme?.map('#f1f7f4')||'#f1f7f4';const y=card.metric===11?(p.h>70?(p.h-40)/2:24):(p.h>70?(p.h-24)/2:27);x.fillText(lines[0],p.x+9,p.y+y);if(lines[1]){x.fillStyle=window.DeviceTheme?.map('#adb8c3')||'#adb8c3';x.fillText(lines[1],p.x+9,p.y+(p.h>70?(p.h-40)/2+22:41));}x.letterSpacing='0px';});
+    cards.forEach((card,i)=>{
+      const p=layout(cards.length,i),b=contentLayout(p.w,p.h,card.metric===11);
+      x.fillStyle=window.DeviceTheme?.map('#374453')||'#374453';x.beginPath();x.roundRect(p.x,p.y,p.w,p.h,9);x.fill();
+      x.save();x.beginPath();x.rect(p.x+b.x,p.y,p.w-b.x*2,p.h);x.clip();
+      x.font=font();x.textAlign='left';x.fillStyle=window.DeviceTheme?.map('#adb8c3')||'#adb8c3';x.fillText(card.title||names[card.metric],p.x+b.x,p.y+b.titleY);
+      const f=fitMonitorText(x,cfg,card.metric,p.w,p.h);x.textAlign='center';
+      x.fillStyle=window.DeviceTheme?.map('#f1f7f4')||'#f1f7f4';x.fillText(f.lines[0],p.x+p.w/2,p.y+f.y);
+      if(f.lines[1]){x.fillStyle=window.DeviceTheme?.map('#adb8c3')||'#adb8c3';x.fillText(f.lines[1],p.x+p.w/2,p.y+f.y+f.lineHeight+f.gap);}x.restore();
+    });
     x.fillStyle=window.DeviceTheme?.map('#52616e')||'#52616e';for(let i=0;i<4;i++){x.beginPath();x.roundRect(67+i*28,309,22,3,2);x.fill();}x.fillStyle=window.DeviceTheme?.map('#68c4cb')||'#68c4cb';x.fillRect(123,309,22,3);this.onRender?.(this.previewURL());
   }
   previewURL(){return $('monitorPreview').toDataURL();}
