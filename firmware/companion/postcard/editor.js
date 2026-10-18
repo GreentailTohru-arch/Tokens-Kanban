@@ -1,14 +1,15 @@
-import {WallpaperEditor} from './wallpaper.js?v=wall-nav-28';
-import {NoticeCenter} from './notices.js?v=atelier-20';
-import {LocalConnection} from './local-connection.js?v=atelier-20';
-import {DraftState} from './draft-state.js?v=atelier-20';
-import {LogoEditor} from './logo-editor.js?v=top-progress-28';
-import {AboutPanel} from './about.js?v=rtos-badge-28';
-import {DeviceInfoPanel} from './device-info.js?v=screen-test-22';
-import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=virtual-pet-28';
-import {MonitorEditor} from './monitor.js?v=device-themes-21';
+import {completeSave,cancelSaveCompletion} from './save-progress.js';
+import {WallpaperEditor} from './wallpaper.js?v=29';
+import {NoticeCenter} from './notices.js?v=29';
+import {LocalConnection} from './local-connection.js?v=29';
+import {DraftState} from './draft-state.js?v=29';
+import {LogoEditor} from './logo-editor.js?v=29';
+import {AboutPanel} from './about.js?v=29';
+import {DeviceInfoPanel} from './device-info.js?v=29';
+import {ExperienceSimulator,renderThemePreviews} from './simulator.js?v=29';
+import {MonitorEditor} from './monitor.js?v=29';
 import {loadDefaults} from './defaults.js';
-import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=preview-22';
+import {WIDTH,HEIGHT,FACE_BYTES,hash,pack,renderFace,cropRect} from './codec.js?v=29';
 const $=id=>document.getElementById(id);
 const drawerMedia=matchMedia('(max-width:760px)');
 function setSidebar(open,restoreFocus=false){
@@ -35,7 +36,7 @@ const pageDescriptions=['Token 数量与额度','模型、活动与趋势','按�
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 let wallEditor=null,simulator=null,devicePanel=null,logoEditor=null,aboutPanel=null,drafts=null,savingAll=false;
 const notices=new NoticeCenter($('status'));
-function status(text,kind='success'){notices.show(text,kind);}
+function status(text,kind='success'){if(kind==='error')cancelSaveCompletion();else if(text.includes('已保存'))completeSave();notices.show(text,kind);}
 
 function repaint(){renderFace($('preview'),content,back,true);refreshPreviewColors();refreshThumbnails();$('frontTab').classList.toggle('selected',!back);$('backTab').classList.toggle('selected',back);}
 function controls(){const progress=$('progress');if(!busy)progress.hidden=true;else if(progress.hidden){progress.removeAttribute('value');progress.hidden=false;}wallEditor?.controls();const locked=busy||imageLoading;$("petKeysSave").disabled=locked||!link||!petKeysSupported;$("petKeysReset").disabled=locked;$("petKeyRows").inert=locked;document.querySelector('.theme-controls').inert=locked;for(const id of ['ble','usb'])$(id).disabled=locked||!!link;$('disconnect').disabled=locked||!link;$('upload').disabled=(activePage==='experience'||activePage==='device'||activePage==='about')||locked||!link||(activePage==='pet'&&!petKeysSupported)||(activePage==='wallpaper'&&!wallEditor?.supported)||(activePage==='theme'&&!themeSupported)||(activePage==='settings'&&!settingsSupported)||(activePage==='pages'&&!pagesSupported)||(activePage==='monitor'&&!monitorEditor.canSave());monitorEditor.setLocked(locked);devicePanel?.controls();logoEditor?.controls();aboutPanel?.controls();$('pagesFields').disabled=locked||!link||!pagesSupported;$('fields').disabled=locked;$('settingsFields').disabled=locked||!link||!settingsSupported;$('previewDone').disabled=locked||!link||!settingsSupported||!Number($('doneTone').value)||!Number($('soundVolume').value);$('previewQuota').disabled=locked||!link||!settingsSupported||!Number($('quotaTone').value)||!Number($('soundVolume').value);$('connection').textContent=link?link.kind+'已连接':'未连接';$('connection').classList.toggle('connected',!!link);$('connection').title=$('connection').textContent;}
@@ -412,7 +413,7 @@ async function savePages(event){
 
 function renderPetKeys(){
  const labels=['上 · 单击','上 · 双击','上 · 三击','下 · 单击','下 · 双击','下 · 三击','OK · 单击','OK · 三击','OK · 长按'];
- const actions=['无','发送消息','撤销输入（Ctrl+Z）','停止／继续思考','窗口截图（双 Alt）','按住语音输入'];
+ const actions=['无','发送消息','撤销输入（Ctrl+Z）','停止／继续思考','自定义快捷键','按住语音输入'];
  $('petKeyRows').replaceChildren(...labels.map((label,i)=>{const row=document.createElement('label');row.className='field';const title=document.createElement('span');title.textContent=label;const select=document.createElement('select');select.id='petKey'+i;select.setAttribute('aria-label',label);for(const v of i===8?[0,5]:[0,1,2,3,4]){const option=new Option(actions[v],v);select.add(option);}select.value=petKeys[i];select.onchange=()=>{petKeys[i]=Number(select.value);$('petKeysState').textContent='有未保存的宠物按键设置';refreshDraftNotice();};row.append(title,select);return row;}));
 }
 async function readPetKeys(connection){

@@ -12,6 +12,9 @@ ASSETS = {'/vendor/day-night-toggle.css':('vendor/day-night-toggle.css','text/cs
           '/default-avatar.png': ('default-avatar.png','image/png'),
           '/default-qr.png': ('default-qr.png','image/png')}
 
+ASSETS['/shortcut-recorder.js']=('shortcut-recorder.js','text/javascript; charset=utf-8')
+ASSETS['/save-progress.js']=('save-progress.js','text/javascript; charset=utf-8')
+ASSETS['/pet-shortcut.js']=('pet-shortcut.js','text/javascript; charset=utf-8')
 ASSETS['/wallpaper.js']=('wallpaper.js','text/javascript; charset=utf-8')
 ASSETS['/pet/manifest.json']=('pet/manifest.json','application/json; charset=utf-8')
 for _pet in ('offline','online','thinking','limited','listening','computer'):

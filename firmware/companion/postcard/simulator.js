@@ -1,6 +1,6 @@
-import {renderFace} from './codec.js?v=preview-22';
+import {renderFace} from './codec.js?v=29';
 const $=id=>document.getElementById(id),names=['用量首页','统计分析','系统检测','明信片','虚拟宠物','全屏壁纸'],periods=['今日','本周','累计'];
-const petNames=['未连接','在线','思考','额度不够','正在听你说话／看你打字','正在使用电脑'];
+const petNames=['未连接','待命中','运行中','额度不足','听写中','操作中'];
 const petKeys=['offline','online','thinking','limited','listening','computer'];
 const bg='#2f3a49',ink='#f1f7f4',muted='#adb8c3',teal='#68c4cb';
 const usage=[[18800000,15000000,15200,27.47],[215584794,209747072,506820,150.22],[640773677,623715584,1746255,351.87]];
@@ -40,7 +40,7 @@ export class ExperienceModel {
     if(p.key==='ok'&&p.count===2){const pages=this.enabled();this.page=pages[(pages.indexOf(this.page)+1)%pages.length];this.petAction='';return;}
     const slot=p.key==='up'?p.count-1:p.key==='down'?p.count+2:p.count===1?6:7;
     const action=(this.config.petBindings||[1,2,3,0,4,0,0,0,5])[slot];
-    this.petAction=['无操作','发送消息（模拟）','撤销输入（模拟）','停止／继续（模拟）','窗口截图（模拟）'][action]||'';
+    this.petAction=['无操作','发送消息（模拟）','撤销输入（模拟）','停止／继续（模拟）','自定义快捷键（模拟）'][action]||'';
     if(action===3){this.running=!this.running;this.petState=this.running?2:1;this.petStarted=now;}
   }
   tick(now){
@@ -108,7 +108,7 @@ export class ExperienceSimulator {
   color(value){return window.DeviceTheme?.map(value,this.previewPalette)||value;}
   text(text,x,y,size=14,color=ink,align='left'){const c=this.ctx;c.font=`${size}px "Microsoft YaHei UI",sans-serif`;c.fillStyle=this.color(color);c.textAlign=align;c.textBaseline='top';c.fillText(text,x,y);c.textAlign='left';}
   box(x,y,w,h,color='#374453',r=9){const c=this.ctx;c.fillStyle=this.color(color);c.beginPath();c.roundRect(x,y,w,h,r);c.fill();}
-  header(clock=false){const now=new Date();if(clock)this.text([now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':'),18,14);else{this.ctx.fillStyle=this.model.exhausted?'#ff626c':this.model.running?'#4cdd91':'#5ba7ff';this.ctx.beginPath();this.ctx.arc(26,23,6,0,7);this.ctx.fill();this.text('Codex / '+(this.model.exhausted?'额度不足':this.model.running?'正在运行':'待命'),39,14);}this.text('86%',222,14,14,muted,'right');}
+  header(clock=false){const now=new Date();if(clock)this.text([now.getHours(),now.getMinutes()].map(n=>String(n).padStart(2,'0')).join(':'),18,14);else{this.ctx.fillStyle=this.model.exhausted?'#ff626c':this.model.running?'#4cdd91':'#5ba7ff';this.ctx.beginPath();this.ctx.arc(26,23,6,0,7);this.ctx.fill();this.text('Codex / '+(this.model.exhausted?'额度不足':this.model.running?'运行中':'待命中'),39,14);}this.text('86%',222,14,14,muted,'right');}
   marks(){const enabled=this.model.enabled(),start=(240-(enabled.length*22+(enabled.length-1)*6))/2;this.ctx.fillStyle=this.color(bg);this.ctx.fillRect(0,303,240,17);enabled.forEach((id,i)=>this.box(start+i*28,309,22,3,id===this.model.page?teal:'#52616e',2));}
   home(){
     const m=this.model,p=m.period,[input,cached,output,cost]=usage[p],total=input+output;this.header();periods.forEach((v,i)=>{this.box(16+i*70,43,66,27,p===i?'#516471':'#374453',7);this.text(v,49+i*70,48,14,p===i?'#bdecd8':muted,'center');});
@@ -143,7 +143,7 @@ export class ExperienceSimulator {
   pet(){
     const state=this.model.petState??1,a=this.petAssets?.[state];
     this.ctx.fillStyle=state===0?'#788391':state===3?'#ff626c':state===2||state===5?'#4cdd91':'#5ba7ff';this.ctx.beginPath();this.ctx.arc(26,23,6,0,7);this.ctx.fill();
-    const short=['未连接','在线','思考','额度不够','聆听输入','使用电脑'];
+    const short=['未连接','待命中','运行中','额度不足','听写中','操作中'];
     this.text('Codex / '+short[state],39,14);this.text('86%',222,14,14,muted,'right');
     if(a?.image.complete&&a.image.naturalWidth){let t=(performance.now()-(this.model.petStarted||0))%a.durations.reduce((x,y)=>x+y,0),frame=0;while(frame<a.durations.length-1&&t>=a.durations[frame])t-=a.durations[frame++];this.ctx.imageSmoothingEnabled=false;this.ctx.drawImage(a.image,frame*192,0,192,208,24,65,192,208);}
   }

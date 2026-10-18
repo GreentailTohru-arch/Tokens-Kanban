@@ -1,4 +1,4 @@
-import {rgb565,hash,pack} from './codec.js?v=preview-22';
+import {rgb565,hash,pack} from './codec.js?v=29';
 const $=id=>document.getElementById(id),wait=ms=>new Promise(r=>setTimeout(r,ms));
 export function normalizeWallFlags(flags){return (flags&12)|((flags&3)?3:0);}
 export function wallpaperCrop(width,height,{x=.5,y=.5,zoom=1}={}){

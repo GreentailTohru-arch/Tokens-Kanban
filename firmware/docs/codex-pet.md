@@ -31,3 +31,5 @@ RGB565 conversion and row RLE use about 850 KiB of flash and a single decoder
 row, not a full-frame GIF buffer. The pet widget exists only on its page; animation
 updates stop off-page or with the screen off. Existing boot logo and volume slide
 behavior are unchanged. Physical acceptance remains a separate authorized test.
+
+Status labels are unified across the usage and pet headers: idle, running, operating, quota low and dictating. Offline behavior is unchanged.

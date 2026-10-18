@@ -2,7 +2,7 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'companion'))
-from pet_remote import PetRemote,DesktopKeys,open_accessible_codex
+from pet_remote import PetRemote,DesktopKeys,open_accessible_codex,dictation_keys,screenshot_keys,parse_custom_shortcut,custom_shortcut
 import time
 from unittest.mock import patch
 from types import SimpleNamespace
@@ -28,6 +28,8 @@ class TestRemote(unittest.TestCase):
             events=[]
             def foreground(self):return self.focus
             def key(self,code,down):self.events.append((code,down))
+        shortcut=patch('pet_remote.dictation_keys',return_value=(0xA2,0xA4,0x78));shortcut.start()
+        self.addCleanup(shortcut.stop)
         b=Keys()
         try:
             b.hold();self.assertEqual(len(b.held),3)
@@ -35,8 +37,9 @@ class TestRemote(unittest.TestCase):
             deadline=time.monotonic()+1
             while b.held and time.monotonic()<deadline:time.sleep(.02)
             self.assertFalse(b.held)
-            self.assertEqual(b.events[-3:],[(0x78,False),(0x12,False),(0x11,False)])
-            b.last_poll=time.monotonic();b.hold();b.focus=2;b.tick();self.assertFalse(b.held)
+            self.assertEqual(b.events[-3:],[(0x78,False),(0xA4,False),(0xA2,False)])
+            b.last_poll=time.monotonic();b.hold();b.focus=2;b.tick();self.assertTrue(b.held)
+            b.focus=0;b.tick();self.assertFalse(b.held)
         finally:b.close()
     def test_retry_dedup_and_release(self):
         b=Backend();r=PetRemote(b)
@@ -53,6 +56,61 @@ class TestRemote(unittest.TestCase):
     def test_no_send_while_recording(self):
         b=Backend();r=PetRemote(b);r.poll(None,lambda c,q:'PC_CTRL 1 1 1 1')
         self.assertEqual(b.calls,['hold']);r.reset();self.assertEqual(b.calls[-1],'release')
+    def test_native_shortcuts_have_physical_scan_codes(self):
+        import ctypes
+        from ctypes import wintypes
+        class Keyboard(ctypes.Structure):
+            _fields_=[('vk',wintypes.WORD),('scan',wintypes.WORD),('flags',wintypes.DWORD),('time',wintypes.DWORD),('extra',ctypes.c_size_t)]
+        class Data(ctypes.Union):
+            _fields_=[('keyboard',Keyboard),('padding',ctypes.c_byte*32)]
+        class Input(ctypes.Structure):
+            _fields_=[('type',wintypes.DWORD),('data',Data)]
+        events=[]
+        def send(n,item,size):
+            self.assertEqual(size,ctypes.sizeof(Input))
+            k=ctypes.cast(item,ctypes.POINTER(Input)).contents.data.keyboard
+            events.append((k.vk,k.scan,k.flags));return 1
+        b=DesktopKeys.__new__(DesktopKeys)
+        b.user=SimpleNamespace(MapVirtualKeyW=lambda vk,mode:{0xA4:0x38,0xA5:0x38,0xA2:0x1d,0x78:0x43}[vk],SendInput=send)
+        for vk in [0xA4,0xA5,0xA2,0x78]:b.key(vk,True);b.key(vk,False)
+        self.assertEqual(events,[(0,0x38,8),(0,0x38,10),(0,0x38,9),(0,0x38,11),(0,0x1d,8),(0,0x1d,10),(0,0x43,8),(0,0x43,10)])
+    def test_screenshot_releases_both_alt_keys(self):
+        b=DesktopKeys.__new__(DesktopKeys);b.supported=True;events=[]
+        b.key=lambda k,down:events.append((k,down))
+        with patch('pet_remote.screenshot_keys',return_value=(0xA4,0xA5)):b.action(4)
+        self.assertEqual(events,[(0xA4,True),(0xA5,True),(0xA5,False),(0xA4,False)])
+
+    def test_configurable_dictation_binding(self):
+        import tempfile,json
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'pet-controls.json'
+            self.assertEqual(dictation_keys(p),(0xA2,0xA4,0x78))
+            p.write_text(json.dumps({'dictation_hotkey':'Alt+H'}),encoding='utf-8')
+            self.assertEqual(dictation_keys(p),(0xA4,0x48))
+            for invalid in ['H','Ctrl+Alt+Delete','Ctrl+Ctrl+H','Alt+F25',None]:
+                p.write_text(json.dumps({'dictation_hotkey':invalid}),encoding='utf-8')
+                with self.assertRaises(OSError):dictation_keys(p)
+
+    def test_custom_shortcut_and_preserved_dictation(self):
+        import tempfile,json
+        self.assertEqual(parse_custom_shortcut('Space'),(0x20,))
+        self.assertEqual(parse_custom_shortcut('Ctrl+NumpadAdd'),(0xA2,0x6B))
+        self.assertEqual(parse_custom_shortcut('Shift+Slash'),(0xA0,0xBF))
+        self.assertEqual(parse_custom_shortcut('LeftAlt+RightAlt'),(0xA4,0xA5))
+        self.assertEqual(parse_custom_shortcut('F8'),(0x77,))
+        self.assertEqual(parse_custom_shortcut('Ctrl+Shift+A'),(0xA2,0xA0,0x41))
+        self.assertEqual(parse_custom_shortcut(''),())
+        for value in ['A+B','Ctrl+Ctrl+A','F25','Ctrl+','unknown',None]:
+            with self.assertRaises(ValueError):parse_custom_shortcut(value)
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'controls.json';p.write_text(json.dumps({'dictation_hotkey':'Alt+H'}))
+            with patch('pet_remote.custom_shortcut_path',return_value=p):
+                self.assertEqual(screenshot_keys(),())
+                custom_shortcut('Ctrl+Shift+A')
+                self.assertEqual(screenshot_keys(),(0xA2,0xA0,0x41))
+                self.assertEqual(dictation_keys(p),(0xA4,0x48))
+                custom_shortcut('');self.assertEqual(screenshot_keys(),())
+
     def test_invalid(self):
         for reply in ['PC_CTRL 2 0 0 0','PC_CTRL 1 0 9 0','PC_CTRL 1 0 0 2']:
             with self.assertRaises(OSError):PetRemote(Backend()).poll(None,lambda c,q:reply)

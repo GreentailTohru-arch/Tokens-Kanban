@@ -49,7 +49,7 @@ firmware animation buffers are introduced.
 
 `PC_KEYS_GET` returns `PC_KEYS 1` followed by nine action IDs. `PC_KEYS_SET id ...`
 uses the existing `PC_CFG_STATUS` worker/persistence protocol. Actions 0–4 are
-none/send/undo/stop-continue/Appshot; the hold slot accepts 0 or 5 (dictation).
+none/send/undo/stop-continue/custom shortcut; the hold slot accepts 0 or 5 (dictation).
 
 `PC_CTRL_HELLO` negotiates support. `PC_CTRL_POLL session ack` returns
 `PC_CTRL 1 sequence action held`. The companion polls at 100 ms between ordinary
@@ -62,3 +62,15 @@ sessions, deduplication, voice release, and browser preview. Physical button
 timing, the actual Codex composer, Appshot capture, microphone permission and
 transcription remain device/desktop acceptance items. No device flash or public
 release is implied by a successful build.
+
+## Windows remote compatibility fix
+
+Continue locates the current visible Codex composer after Stop, preserves existing drafts, and waits for Send to update after inserting the continuation text. Custom shortcuts and dictation use physical scan-code events with left/right key identity. Moving into a Codex dictation popup no longer immediately releases the held keys; switching to another app, disconnecting or timing out still releases them. If Ctrl+Alt+F9 also fails manually, first configure and verify hold-to-dictate and microphone permission in Codex. This companion-only fix does not require reflashing; actual capture and transcription still require user acceptance.
+
+Set `dictation_hotkey` in `%LOCALAPPDATA%/TokensKanban/pet-controls.json` (for example `Alt+H`) to match Codex hold-to-dictate. Without a local preference it defaults to Ctrl+Alt+F9; package upgrades retain this preference.
+
+## Custom keyboard shortcut
+
+The unreliable Appshot action is replaced by Custom shortcut. Open the management page from the Windows sync program, enter a key (F8, Space) or a combination (Ctrl+Shift+A), and save the local shortcut. Assign Custom shortcut to a single/double/triple device press and save the device bindings. These bindings share one shortcut. Blank disables it; the foreground application receives it. The setting survives package upgrades and preserves the dictation binding. This does not guarantee that applications accept synthetic input.
+
+Click the shortcut field and press the actual key or chord to record it; use Clear to disable, then save. Letters, digits, F1-F24, navigation, punctuation and numpad keys are supported. OS/browser-reserved combinations may not reach the recorder.

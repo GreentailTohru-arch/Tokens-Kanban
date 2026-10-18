@@ -380,3 +380,6 @@ html[data-web-mode=light] .rtos-badge{box-shadow:0 0 4px color-mix(in srgb,var(-
 
 /* Center the wallpaper preview in its single-column mobile grid. */
 @container(max-width:740px){#pageContent #wallpaperPage .wall-preview-panel{justify-self:center;margin:0 auto 24px}}
+
+/* Always-visible success feedback, independent of transfer duration and device theme. */
+.topbar .save-complete{position:absolute;left:0;bottom:-1px;width:100%;height:3px;background:#58b5ff;transform-origin:left center;z-index:2;pointer-events:none;box-shadow:0 0 5px #58b5ff55}

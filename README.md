@@ -6,6 +6,17 @@
 
 View local Codex token usage, quota, model/activity trends, TrafficMonitor system metrics and a personal postcard on AI Passport. Costs are API-price estimates, not subscription bills; usage covers readable local history.
 
+## v29 · 2026-10-18
+
+- This v29 release unifies usage and virtual-pet status labels: idle, running, operating, quota low and dictating.
+- Fix Windows undo, continue after stopping, and hold-to-dictate; these three actions were user-tested. Match the dictation binding to Codex; the tested local binding is Alt+H.
+- Replace fixed Appshot with a custom shortcut. Click the local manager field and press keys to record single keys or modifier combinations, including function, navigation and numpad keys. Clear disables it. All custom-shortcut gestures share one binding.
+- The Windows companion sends the configured shortcut to the foreground app. System-reserved keys and application support for synthetic input remain limitations. Browser recording, saving and program tests passed; arbitrary physical-device combinations require acceptance testing.
+- Retain pet, wallpaper, themes, postcards, monitoring and USB/Bluetooth handoff; refresh the bundled manager.
+- Include app/full firmware, Windows/MacOS companions, the separate TrafficMonitor bridge, manager web, source, update manifest and unified checksums.
+- Every confirmed save plays a visible blue completion sweep, including fast saves; failures do not show success.
+
+
 ## Start and update
 
 1. Extract the v23 Windows package and run `start.cmd` for USB or Bluetooth sync. No Wi-Fi setup is needed; Wi-Fi was removed in v20.

@@ -44,6 +44,10 @@ class ManagementServer:
             def do_GET(self):
                 if not self.valid_host():return self.answer(403,'Host not allowed')
                 route=urllib.parse.urlsplit(self.path).path
+                if route=='/api/pet-shortcut':
+                    if not self.auth():return self.answer(401,'Access token required')
+                    from pet_remote import custom_shortcut
+                    return self.answer(200,json.dumps({'shortcut':custom_shortcut()}),'application/json')
                 if route=='/api/info':
                     if not self.auth():return self.answer(401,'Access token required')
                     info=manager.info()
@@ -56,6 +60,17 @@ class ManagementServer:
                 if not self.valid_host():return self.answer(403,'Host not allowed')
                 if not self.auth():return self.answer(401,'Access token required')
                 if self.headers.get('Origin') and self.headers['Origin'] not in ('http://127.0.0.1:'+str(owner.server.server_port),'http://localhost:'+str(owner.server.server_port)):return self.answer(403,'Origin not allowed')
+                if self.path=='/api/pet-shortcut':
+                    try:
+                        self.connection.settimeout(5)
+                        size=int(self.headers.get('Content-Length','0'))
+                        if not 0<size<=1024:raise ValueError('Invalid size')
+                        value=json.loads(self.rfile.read(size).decode('utf-8'))['shortcut']
+                        from pet_remote import custom_shortcut
+                        if not isinstance(value,str):raise ValueError('Invalid shortcut')
+                        custom_shortcut(value)
+                    except (ValueError,KeyError,TypeError,UnicodeError):return self.answer(400,'请输入有效的单键或组合键')
+                    return self.answer(200,'快捷键已保存到本机')
                 if self.path=='/api/stop':
                     self.answer(200,'Stopping synchronization')
                     manager.stop_event.set()
