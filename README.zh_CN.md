@@ -16,8 +16,6 @@
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/downloads.svg" alt="v33 asset downloads at the time of this README update: 13"></a>
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/windows.svg" alt="Windows sync"></a>
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/macos.svg" alt="macOS sync"></a>
-  <a href="firmware/"><img src="docs/assets/badges/hardware.svg" alt="ESP32-C3 firmware"></a>
-  <a href="firmware/docs/tokens-connections.md"><img src="docs/assets/badges/connection.svg" alt="USB and Bluetooth LE"></a>
   <a href="LICENSE"><img src="docs/assets/badges/license.svg" alt="MIT license"></a>
 </p>
 
