@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="276" height="54" alt="Open Device Manager"></a>
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="250" height="55" alt="Open Device Manager"></a>
 </p>
 
 ## Showcase

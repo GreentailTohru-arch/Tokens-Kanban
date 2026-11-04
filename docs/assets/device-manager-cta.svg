@@ -1,14 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="276" height="54" viewBox="0 0 276 54" role="img" aria-labelledby="title">
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="55" viewBox="0 0 250 55" role="img" aria-labelledby="title">
   <title id="title">Open Device Manager</title>
-  <rect x=".5" y=".5" width="275" height="53" rx="10" fill="#f8fbff" stroke="#8caeff"/>
-  <rect x="11" y="9" width="36" height="36" rx="9" fill="#e5efff"/>
-  <g fill="none" stroke="#2359b8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x=".5" y=".5" width="249" height="54" rx="10" fill="#f8fbff" stroke="#8caeff"/>
+  <rect x="11" y="9.5" width="36" height="36" rx="9" fill="#e5efff"/>
+  <g transform="translate(0 1)" fill="none" stroke="#2359b8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
     <path d="M27 17h4l.6 3 1.8 1 2.9-1 2 3.5-2.3 2v2l2.3 2-2 3.5-2.9-1-1.8 1-.6 3h-4l-.6-3-1.8-1-2.9 1-2-3.5 2.3-2v-2l-2.3-2 2-3.5 2.9 1 1.8-1z"/>
     <circle cx="29" cy="26.5" r="3.1"/>
-    <path d="M244 27h12m-4.5-4.5 4.5 4.5-4.5 4.5"/>
   </g>
-  <g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
-    <text x="57" y="21" fill="#365b99" font-size="9" font-weight="700" letter-spacing="1.1">TOKENS KANBAN</text>
-    <text x="57" y="38" fill="#152a50" font-size="15" font-weight="700">Open Device Manager</text>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <text x="55" y="20" fill="#365b99" font-size="9" font-weight="700" letter-spacing="1.1">TOKENS KANBAN</text>
+    <text x="55" y="39" fill="#152a50" font-size="15" font-weight="700">Open Device Manager</text>
   </g>
+  <path d="M217 34l11-11m-8 0h8v8" fill="none" stroke="#2359b8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
