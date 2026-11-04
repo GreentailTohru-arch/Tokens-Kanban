@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager.svg" width="276" height="54" alt="打开设备管理网页"></a>
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="276" height="54" alt="打开设备管理网页"></a>
 </p>
 
 <p align="center">
