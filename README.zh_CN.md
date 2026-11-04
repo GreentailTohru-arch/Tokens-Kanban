@@ -32,7 +32,7 @@
   <tr>
     <td align="center" width="33%"><img src="docs/assets/device-screens/system-monitor.png" width="224" alt="系统检测与示例数据"><br><strong>系统检测</strong></td>
     <td align="center" width="33%"><img src="docs/assets/device-screens/postcard.png" width="224" alt="使用默认头像的明信片"><br><strong>明信片</strong></td>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/wallpaper.png" width="224" alt="使用默认主题背景的全屏壁纸"><br><strong>全屏壁纸</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/wallpaper-clock.png" width="224" alt="显示时间和日期的全屏壁纸"><br><strong>全屏壁纸</strong></td>
   </tr>
 </table>
 

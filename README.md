@@ -32,7 +32,7 @@
   <tr>
     <td align="center" width="33%"><img src="docs/assets/device-screens/system-monitor.png" width="224" alt="System monitor with sample data"><br><strong>System Monitor</strong></td>
     <td align="center" width="33%"><img src="docs/assets/device-screens/postcard.png" width="224" alt="Postcard with the default avatar"><br><strong>Postcard</strong></td>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/wallpaper.png" width="224" alt="Wallpaper with the default theme background"><br><strong>Fullscreen Wallpaper</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/wallpaper-clock.png" width="224" alt="Fullscreen wallpaper showing the time and date"><br><strong>Fullscreen Wallpaper</strong></td>
   </tr>
 </table>
 
