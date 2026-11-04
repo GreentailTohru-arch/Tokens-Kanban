@@ -23,6 +23,8 @@
   <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="276" height="54" alt="打开设备管理网页"></a>
 </p>
 
+<h2 align="center">Showcase</h2>
+
 <table align="center">
   <tr>
     <td align="center" width="33%"><img src="docs/assets/device-screens/usage.png" width="224" alt="用量首页与额度"><br><strong>用量首页</strong></td>
