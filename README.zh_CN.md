@@ -62,4 +62,4 @@
 
 已发布固件通过构建和主机测试。v33 已刷入 AI Passport，并通过 USB 读回版本确认。Windows 同步包的内置网页已验证，macOS 运行仍待实测。
 
-项目基于 [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport)，采用 [MIT 许可证](LICENSE)。
+项目基于 [FoloToy AI Passport](https://github.com/FoloToy/ai-passport)，采用 [MIT 许可证](LICENSE)。

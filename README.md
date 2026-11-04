@@ -62,4 +62,4 @@ The browser manager also runs locally from the desktop companion. Its source is 
 
 Released firmware has passed build and host checks. v33 was flashed to an AI Passport and reported the expected version over USB. The Windows bundle's local manager was verified. macOS runtime testing is pending.
 
-This project builds on [FoloToy AI Passport](https://gitee.com/FoloToy/ai-passport). See the [MIT license](LICENSE).
+This project builds on [FoloToy AI Passport](https://github.com/FoloToy/ai-passport). See the [MIT license](LICENSE).
