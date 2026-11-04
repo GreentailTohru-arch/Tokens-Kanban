@@ -1,39 +1,39 @@
-<p align="right"><strong>EN</strong> | <a href="README.zh_CN.md">CN</a></p>
+<p align="right"><strong>EN</strong> | <a href="docs/README.zh-CN.md">CN</a></p>
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand-dark.svg">
-    <img src="docs/brand-light.svg" alt="Tokens Kanban logo" width="112" height="112">
+    <source media="(prefers-color-scheme: dark)" srcset="website/brand-dark.svg">
+    <img src="website/brand-light.svg" alt="Tokens Kanban logo" width="112" height="112">
   </picture>
 </p>
 
-<h1 align="center">Tokens Kanban&nbsp;<img src="docs/assets/badges/rtos.svg" alt="RTOS" width="49" height="22"></h1>
+<h1 align="center">Tokens Kanban&nbsp;<img src=".github/assets/rtos.svg" alt="RTOS" width="49" height="22"></h1>
 
 <p align="center"><em>A live Codex usage, quota, and activity display for FoloToy AI Passport.</em></p>
 
 <p align="center">
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/release.svg" height="20" alt="Latest release v33"></a>
-  <a href="https://raw.githubusercontent.com/GreentailTohru-arch/Tokens-Kanban/main/docs/assets/badges/windows.svg"><img src="docs/assets/badges/windows.svg" height="20" alt="Windows sync"></a>
-  <a href="https://raw.githubusercontent.com/GreentailTohru-arch/Tokens-Kanban/main/docs/assets/badges/macos.svg"><img src="docs/assets/badges/macos.svg" height="20" alt="macOS sync"></a>
-  <a href="LICENSE"><img src="docs/assets/badges/license.svg" height="20" alt="MIT license"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src=".github/assets/release.svg" height="20" alt="Latest release v33"></a>
+  <a href="https://raw.githubusercontent.com/GreentailTohru-arch/Tokens-Kanban/main/.github/assets/windows.svg"><img src=".github/assets/windows.svg" height="20" alt="Windows sync"></a>
+  <a href="https://raw.githubusercontent.com/GreentailTohru-arch/Tokens-Kanban/main/.github/assets/macos.svg"><img src=".github/assets/macos.svg" height="20" alt="macOS sync"></a>
+  <a href="LICENSE"><img src=".github/assets/license.svg" height="20" alt="MIT license"></a>
 </p>
 
 <p align="center">
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/open-device-manager.svg" width="250" height="55" alt="Open Device Manager"></a>
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src=".github/assets/open-device-manager.svg" width="250" height="55" alt="Open Device Manager"></a>
 </p>
 
 ## Showcase
 
 <table align="center">
   <tr>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/usage.png" width="224" alt="Usage and quota"><br><strong>Usage Overview</strong></td>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/analytics.png" width="224" alt="Model usage and activity trends"><br><strong>Analytics</strong></td>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/pet.png" width="224" alt="Virtual pet"><br><strong>Virtual Pet</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/usage.png" width="224" alt="Usage and quota"><br><strong>Usage Overview</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/analytics.png" width="224" alt="Model usage and activity trends"><br><strong>Analytics</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/pet.png" width="224" alt="Virtual pet"><br><strong>Virtual Pet</strong></td>
   </tr>
   <tr>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/system-monitor.png" width="224" alt="System monitor with sample data"><br><strong>System Monitor</strong></td>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/postcard.png" width="224" alt="Postcard with the default avatar"><br><strong>Postcard</strong></td>
-    <td align="center" width="33%"><img src="docs/assets/device-screens/wallpaper-clock.png" width="224" alt="Fullscreen wallpaper showing the time and date"><br><strong>Fullscreen Wallpaper</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/system-monitor.png" width="224" alt="System monitor with sample data"><br><strong>System Monitor</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/postcard.png" width="224" alt="Postcard with the default avatar"><br><strong>Postcard</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/wallpaper-clock.png" width="224" alt="Fullscreen wallpaper showing the time and date"><br><strong>Fullscreen Wallpaper</strong></td>
   </tr>
 </table>
 
@@ -58,7 +58,7 @@ Double-press **OK** for the next page and triple-press it for the previous page.
 
 ## Development
 
-Firmware and the desktop companion live in [firmware/](firmware/). The Device Manager has a [GitHub Pages copy](docs/) and a [bundled copy](firmware/companion/postcard/). Keep both in sync when changing the web UI.
+Firmware and the desktop companion live in [firmware/](firmware/). The Device Manager has a [GitHub Pages copy](website/) and a [bundled copy](firmware/companion/postcard/). Keep both in sync when changing the web UI.
 
 Set up [ESP-IDF 5.5.3](firmware/docs/development/engineering/environment-setup.md), then run `./tools/validate.sh` from `firmware/` to build and validate the firmware. See the [build and test guide](firmware/docs/development/engineering/build-and-test.md) and [changelog](docs/changelog/CHANGELOG.md).
 
