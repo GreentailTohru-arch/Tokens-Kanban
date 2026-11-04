@@ -8,8 +8,9 @@ bool pet_parse(const char *text,unsigned *sequence,unsigned *state){
         values[i]=(unsigned)value;
         if(i==0 && *text++!=' ')return false;
     }
-    if(*text || !values[0] || values[1]>=PET_COUNT)return false;
-    *sequence=values[0];*state=values[1];return true;
+    if(*text || !values[0] || values[1]>5)return false;
+    *sequence=values[0];/* v32 used wire IDs 4 and 5 for dictation and computer activity. */
+    *state=values[1]==4?PET_COUNT:values[1]==5?PET_THINKING:values[1];return true;
 }
 unsigned pet_resolve(bool live,int signal,unsigned state,uint64_t age){
     if(!live)return PET_OFFLINE;
@@ -18,8 +19,8 @@ unsigned pet_resolve(bool live,int signal,unsigned state,uint64_t age){
     return signal==TOKEN_BUSY?PET_THINKING:PET_ONLINE;
 }
 unsigned pet_frame_at(unsigned state,uint64_t elapsed){
-    if(state>=PET_COUNT)state=PET_OFFLINE;
-    const pet_animation_t *a=&pet_animations[state];
+    if(state==PET_OFFLINE || state>=PET_COUNT)state=PET_LIMITED;
+    const pet_animation_t *a=&pet_animations[state-PET_ONLINE];
     unsigned time=(unsigned)(elapsed%a->duration);
     for(unsigned i=0;i<a->count;++i){unsigned f=a->first+i;if(time<pet_frames[f].duration)return f;time-=pet_frames[f].duration;}
     return a->first;

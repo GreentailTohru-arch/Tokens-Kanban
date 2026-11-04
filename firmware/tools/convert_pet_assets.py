@@ -4,8 +4,8 @@ import json, shutil, hashlib
 from PIL import Image
 
 ROOT=Path(__file__).resolve().parents[1]
-NAMES=['未连接','在线','思考','额度不够','正在听你说话或者正在看你打字','正在使用电脑']
-KEYS=['offline','online','thinking','limited','listening','computer']
+NAMES=['在线','思考','额度不够']
+KEYS=['online','thinking','limited']
 
 def main():
     target=ROOT/'assets/images/codex-pet';target.mkdir(exist_ok=True)
@@ -38,7 +38,7 @@ def main():
     text='#include "pet_assets.h"\nconst uint8_t pet_bytes[]={\n'+''.join(','.join(str(x) for x in blob[i:i+32])+',\n' for i in range(0,len(blob),32))+'};\n'
     text+='const uint32_t pet_rows[]={'+','.join(map(str,rows))+'};\n'
     text+='const pet_frame_t pet_frames[]={'+','.join('{%d,%d}'%v for v in frames)+'};\n'
-    text+='const pet_animation_t pet_animations[6]={'+','.join('{%d,%d,%d}'%v for v in animations)+'};\n'
+    text+='const pet_animation_t pet_animations[3]={'+','.join('{%d,%d,%d}'%v for v in animations)+'};\n'
     (target/'pet_assets.c').write_text(text,encoding='utf-8')
     (target/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
     (web/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False),encoding='utf-8')

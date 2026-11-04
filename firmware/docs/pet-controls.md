@@ -1,5 +1,7 @@
 <p align="right"><a href="pet-controls.zh_CN.md">简体中文</a> · <strong>English</strong></p>
 
+> Starting with v33, pet button remapping and PC remote control have been removed. The controls below describe v32. Device navigation and volume remain available.
+
 # Virtual pet controls
 
 Open Device management → Virtual pet from the Windows companion, edit bindings, then use Save pet buttons or the top save action. Controls travel over the existing USB/BLE sync connection and require the companion to run; the device is not a Bluetooth keyboard.

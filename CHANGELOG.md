@@ -2,6 +2,12 @@
 
 # Changelog
 
+## v33 · 2026-11-04
+
+- Three pet animations: online, thinking, and quota exhausted. Disconnected shares the quota-exhausted animation and keeps its own label.
+- Computer activity uses the running state. Remove dictation, pet button mapping, and PC remote control. Page navigation and volume controls remain available.
+
+
 ## v32 · 2026-10-18
 
 - Triple-press OK on any page to return to the previous enabled page; double press advances. Triple presses no longer first trigger double navigation.

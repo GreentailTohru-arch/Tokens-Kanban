@@ -403,9 +403,9 @@ void token_ui_pet(unsigned state,uint64_t now,bool animate){
     if(!animate)return;
     unsigned frame=pet_frame_at(state,now-pet_started);
     if(frame!=pet_frame){pet_frame=frame;lv_image_cache_drop(&pet_descriptor);lv_obj_invalidate(pet_image);}
-    const char *names[]={"未连接","待命中","运行中","额度不足","听写中","操作中"};
+    const char *names[]={"未连接","待命中","运行中","额度不足"};
     char text[48];snprintf(text,sizeof(text),"Codex / %s",names[state]);lv_label_set_text(signal_label,text);
-    style_color(signal_light,state==PET_OFFLINE?0x788391:state==PET_LIMITED?0xFF626C:state==PET_THINKING||state==PET_COMPUTER?0x4CDD91:0x5BA7FF,0,bg_ROLE);
+    style_color(signal_light,state==PET_OFFLINE?0x788391:state==PET_LIMITED?0xFF626C:state==PET_THINKING?0x4CDD91:0x5BA7FF,0,bg_ROLE);
 }
 void token_ui_pages(const page_config_t *config,unsigned current) {
     unsigned n=page_count(config),pos=page_position(config,current);

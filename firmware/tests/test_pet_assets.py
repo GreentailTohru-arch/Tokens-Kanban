@@ -9,7 +9,7 @@ class AssetTest(unittest.TestCase):
         sys.path.insert(0,str(R/'companion'))
         from postcard_server import ASSETS
         meta=json.loads((R/'assets/images/codex-pet/manifest.json').read_text(encoding='utf-8'))
-        self.assertEqual(len(meta),6)
+        self.assertEqual([a['key'] for a in meta],['online','thinking','limited'])
         for a in meta:
             original=R/'assets/images/codex-pet'/(a['key']+'.gif')
             self.assertEqual(hashlib.sha256(original.read_bytes()).hexdigest(),a['sha256'])
