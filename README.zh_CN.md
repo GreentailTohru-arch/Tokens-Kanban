@@ -14,8 +14,8 @@
 <p align="center">
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/release.svg" height="20" alt="Latest release v33"></a>
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/downloads.svg" height="20" alt="v33 asset downloads at the time of this README update: 13"></a>
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/assets/badges/windows.svg"><img src="docs/assets/badges/windows.svg" height="20" alt="Windows sync"></a>
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/assets/badges/macos.svg"><img src="docs/assets/badges/macos.svg" height="20" alt="macOS sync"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v33/Tokens-Kanban-v33-Windows-sync.zip"><img src="docs/assets/badges/windows.svg" height="20" alt="Windows sync"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/download/v33/Tokens-Kanban-v33-macOS.zip"><img src="docs/assets/badges/macos.svg" height="20" alt="macOS sync"></a>
   <a href="LICENSE"><img src="docs/assets/badges/license.svg" height="20" alt="MIT license"></a>
 </p>
 
