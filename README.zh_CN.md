@@ -23,7 +23,7 @@
   <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="276" height="54" alt="打开设备管理网页"></a>
 </p>
 
-## Showcase
+## 界面展示
 
 <table align="center">
   <tr>
