@@ -1,10 +1,33 @@
-[English](README.md)
+<p align="right"><a href="README.md">EN</a> · <strong>简体中文</strong></p>
 
-# Tokens Kanban
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand-dark.svg">
+    <img src="docs/brand-light.svg" alt="Tokens Kanban logo" width="112" height="112">
+  </picture>
+</p>
 
-Tokens Kanban 让 FoloToy AI Passport 显示本机 Codex 的用量、额度和运行状态。项目包含设备固件、电脑同步程序和网页管理器。
+<h1 align="center">Tokens Kanban</h1>
 
-[打开管理网页](https://greentailtohru-arch.github.io/Tokens-Kanban/) · [下载最新版本](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest) · [更新记录](docs/changelog/CHANGELOG.zh_CN.md)
+<p align="center"><em>在 FoloToy AI Passport 上实时查看 Codex 用量、额度和运行状态。</em></p>
+
+<p align="center">
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/github/v/release/GreentailTohru-arch/Tokens-Kanban?style=flat-square" alt="Latest release"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/sync-Windows-0078D4?style=flat-square" alt="Windows sync"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/sync-macOS-555555?style=flat-square" alt="macOS sync"></a>
+  <a href="firmware/"><img src="https://img.shields.io/hardware-ESP32--C3-8A4B2B?style=flat-square" alt="ESP32-C3 firmware"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/license-MIT-7B4ED9?style=flat-square" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><strong>打开管理网页</strong></a> ·
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest">下载最新版本</a> ·
+  <a href="docs/changelog/CHANGELOG.zh_CN.md">更新记录</a>
+</p>
+
+<p align="center">
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/readme-preview.png" width="100%" alt="Tokens Kanban 网页体验模拟，展示 Codex 用量和额度示例"></a>
+</p>
 
 ## 主要功能
 

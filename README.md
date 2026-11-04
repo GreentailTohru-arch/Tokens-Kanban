@@ -1,10 +1,33 @@
-[简体中文](README.zh_CN.md)
+<p align="right"><strong>EN</strong> · <a href="README.zh_CN.md">简体中文</a></p>
 
-# Tokens Kanban
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand-dark.svg">
+    <img src="docs/brand-light.svg" alt="Tokens Kanban logo" width="112" height="112">
+  </picture>
+</p>
 
-Tokens Kanban turns a FoloToy AI Passport into a small display for local Codex usage, quota, and activity. It includes device firmware, a desktop sync program, and a browser-based device manager.
+<h1 align="center">Tokens Kanban</h1>
 
-[Open device manager](https://greentailtohru-arch.github.io/Tokens-Kanban/) · [Download latest release](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest) · [Changelog](docs/changelog/CHANGELOG.md)
+<p align="center"><em>A live Codex usage, quota, and activity display for FoloToy AI Passport.</em></p>
+
+<p align="center">
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/github/v/release/GreentailTohru-arch/Tokens-Kanban?style=flat-square" alt="Latest release"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/sync-Windows-0078D4?style=flat-square" alt="Windows sync"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/sync-macOS-555555?style=flat-square" alt="macOS sync"></a>
+  <a href="firmware/"><img src="https://img.shields.io/hardware-ESP32--C3-8A4B2B?style=flat-square" alt="ESP32-C3 firmware"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/license-MIT-7B4ED9?style=flat-square" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><strong>Open device manager</strong></a> ·
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest">Download latest release</a> ·
+  <a href="docs/changelog/CHANGELOG.md">Changelog</a>
+</p>
+
+<p align="center">
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/readme-preview.png" width="100%" alt="Tokens Kanban device simulator showing sample Codex usage and quota"></a>
+</p>
 
 ## What you can see
 
