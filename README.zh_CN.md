@@ -1,8 +1,19 @@
-<p align="right"><a href="README.md">EN</a> · <strong>CN</strong></p>
+<p align="right"><a href="README.md">EN</a> | <strong>CN</strong></p>
 
-<h1 align="center">
-  <img src="docs/assets/readme-brand.svg" width="273" height="81" alt="Tokens Kanban - AI Passport, RTOS">
-</h1>
+<table align="center" role="presentation">
+  <tr>
+    <td align="center" valign="middle">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/brand-dark.svg">
+        <img src="docs/brand-light.svg" width="96" height="96" alt="TK">
+      </picture>
+    </td>
+    <td align="left" valign="middle">
+      <h1>Tokens Kanban</h1>
+      <p>AI PASSPORT&nbsp; <code>RTOS</code></p>
+    </td>
+  </tr>
+</table>
 
 <p align="center"><em>在 FoloToy AI Passport 上实时查看 Codex 用量、额度和运行状态。</em></p>
 
