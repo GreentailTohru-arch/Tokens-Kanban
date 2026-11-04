@@ -12,17 +12,11 @@
 <p align="center"><em>在 FoloToy AI Passport 上实时查看 Codex 用量、额度和运行状态。</em></p>
 
 <p align="center">
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/release.svg" alt="Latest release v33"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/downloads.svg" alt="v33 asset downloads at the time of this README update: 13"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/windows.svg" alt="Windows sync"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/macos.svg" alt="macOS sync"></a>
-  <a href="LICENSE"><img src="docs/assets/badges/license.svg" alt="MIT license"></a>
-</p>
-
-<p align="center">
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><strong>打开管理网页</strong></a> ·
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest">下载最新版本</a> ·
-  <a href="docs/changelog/CHANGELOG.zh_CN.md">更新记录</a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/release.svg" height="24" alt="Latest release v33"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/downloads.svg" height="24" alt="v33 asset downloads at the time of this README update: 13"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/windows.svg" height="24" alt="Windows sync"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/macos.svg" height="24" alt="macOS sync"></a>
+  <a href="LICENSE"><img src="docs/assets/badges/license.svg" height="24" alt="MIT license"></a>
 </p>
 
 <p align="center">
