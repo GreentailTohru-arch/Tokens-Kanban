@@ -1,9 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="92" height="20" viewBox="0 0 92 20" role="img" aria-label="license: MIT">
-  <title>license: MIT</title>
-  <rect width="59" height="20" fill="#555"/>
-  <rect x="59" width="33" height="20" fill="#7B4ED9"/>
-  <g fill="#fff" text-anchor="middle" font-family="Verdana, Geneva, sans-serif" font-size="11">
-    <text x="29.5" y="14">license</text>
-    <text x="75.5" y="14">MIT</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="99" height="20" viewBox="0 0 99 20" role="img" aria-label="License: MIT">
+  <title>License: MIT</title>
+  <rect width="68" height="20" fill="#555"/>
+  <rect x="68" width="31" height="20" fill="#68479a"/>
+  <g fill="#fff" aria-hidden="true"><path d="M7.5 4.5H14l2.5 2.5v8.5h-9zM10 9h4m-4 3h4" fill="none" stroke="#fff" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana, Geneva, DejaVu Sans, sans-serif" font-size="11" text-rendering="geometricPrecision">
+    <text x="43.5" y="14">License</text>
+    <text x="83.5" y="14">MIT</text>
   </g>
 </svg>

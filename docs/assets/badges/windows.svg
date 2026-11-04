@@ -1,12 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="116" height="20" viewBox="0 0 116 20" role="img" aria-label="Windows: sync">
-  <title>Windows: sync</title>
-  <rect width="76" height="20" fill="#555"/>
-  <rect x="76" width="40" height="20" fill="#0078D4"/>
-  <g fill="#fff" aria-hidden="true">
-    <path d="M0 0h5v5H0zm6 0h5v5H6zM0 6h5v5H0zm6 0h5v5H6z" transform="translate(6 4.5)"/>
-  </g>
-  <g fill="#fff" text-anchor="middle" font-family="Verdana, Geneva, sans-serif" font-size="11">
-    <text x="46.5" y="14">Windows</text>
-    <text x="96" y="14">sync</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="114" height="20" viewBox="0 0 114 20" role="img" aria-label="Windows: Sync">
+  <title>Windows: Sync</title>
+  <rect width="77" height="20" fill="#555"/>
+  <rect x="77" width="37" height="20" fill="#1463a0"/>
+  <g fill="#fff" aria-hidden="true"><path d="M0 0h5v5H0zm7 0h5v5H7zM0 7h5v5H0zm7 0h5v5H7z" transform="translate(6 4)"/></g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana, Geneva, DejaVu Sans, sans-serif" font-size="11" text-rendering="geometricPrecision">
+    <text x="48" y="14">Windows</text>
+    <text x="95.5" y="14">Sync</text>
   </g>
 </svg>
