@@ -28,7 +28,7 @@
 @media(max-width:760px){
  .topbar{flex-wrap:nowrap;gap:8px;padding:12px}
  .topbar .toolbar{flex:0 0 auto;flex-wrap:nowrap;gap:5px}
- .draft-notice{flex:0 0 auto;font-size:11px;margin-left:auto}
+ .draft-notice{flex:0 0 auto;font-size:11px}
  #draftSummary{display:none}
  .draft-notice button{font-size:11px;padding:6px 9px}
  #status{position:fixed;inset:calc(env(safe-area-inset-top,0px) + 10px) 12px auto;z-index:20;flex:none;width:auto;max-height:calc(100dvh - 32px);padding:12px 16px;font-size:12px;white-space:normal;overflow:auto;box-shadow:0 8px 28px #0005;pointer-events:none;}
