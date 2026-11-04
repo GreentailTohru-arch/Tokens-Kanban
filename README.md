@@ -38,37 +38,29 @@
   </tr>
 </table>
 
-## What you can see
+## Features
 
-- **Codex usage** — token counts, model and activity trends, quota, and API-price estimates based on readable local history. Estimates are separate from subscription charges.
-- **Virtual pet** — idle, thinking, and quota animations. The disconnected state shares the quota animation and has its own label.
-- **Personal display** — configurable page order, themes, wallpaper, postcard, and startup logo.
-- **System metrics** — supported Windows metrics through the separate TrafficMonitor 1.86 x64 bridge.
+- View Codex token usage, model breakdowns, activity trends, and account limits. Cost estimates use API pricing and are separate from subscription charges.
+- Customize page order, themes, wallpaper, postcards, and the startup logo. The virtual pet reflects Codex activity.
+- Display Windows system metrics with the optional TrafficMonitor 1.86 x64 bridge.
 
 ## Get started
 
-| Task | What to use |
-| --- | --- |
-| Sync on Windows | Extract the Windows sync ZIP, run `start.cmd`, and select **1**. Use **2** for login startup and **4** to stop synchronization. |
-| Sync on macOS | Extract the macOS ZIP and run `start.command` with Python 3.10 or later. The first launch installs dependencies. |
-| Manage or preview the device | Open the device manager. **Page Management** controls which device pages appear and in what order. |
-| Update an existing installation | Stop the sync program, connect via USB, and open **About & Updates → Install update** in desktop Chrome or Edge. |
-| Install from scratch | Use the full firmware image with a compatible ESP32-C3 flashing tool. The image starts at `0x0` and can reset saved settings. |
+1. Download and extract the sync package for your operating system from the [latest release](https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest).
+2. Run the launcher and select **1** to start syncing. On Windows, use `start.cmd`. On macOS, use `start.command` with Python 3.10 or later. The first macOS launch needs internet access to install dependencies. See the [macOS setup guide](firmware/docs/macos-companion.md).
+3. Connect the AI Passport by USB or Bluetooth Low Energy. Use the [Device Manager](https://greentailtohru-arch.github.io/Tokens-Kanban/) to preview and configure the display.
 
-The sync program supports USB and Bluetooth Low Energy. The browser updater uses the application image (`app.bin`) at `0x10000` and validates the target partition and image checksum. Find both firmware images, sync packages, and SHA-256 checksums in the latest release.
+Double-press **OK** for the next page and triple-press it for the previous page. On the usage and analytics pages, press **Up** or **Down** to change the time range. Hold either button to adjust volume.
 
-On the device, double-press OK to advance and triple-press it to go back. On the usage and analytics pages, press Up or Down to change the time range. Hold Up or Down to adjust volume.
+## Firmware
 
-## Repository layout
+- **Update an existing installation.** Stop desktop sync, connect by USB, and open **About & Updates → Check for updates → Install update** in the Device Manager using desktop Chrome or Edge. If prompted for a file, select the application image ending in `-app.bin`.
+- **Install from scratch.** Flash the image ending in `-full.bin` at `0x0` with an ESP32-C3 flashing tool. A full flash can reset saved settings.
 
-| Path | Contents |
-| --- | --- |
-| [`firmware/`](firmware/) | ESP-IDF 5.5.3 firmware, desktop companion, build tools, and host tests |
-| [`docs/`](docs/) | GitHub Pages site and [version history](docs/changelog/CHANGELOG.md) |
-| [`update.json`](update.json) | Firmware update manifest read by the manager from the release tag |
+## Development
 
-The browser manager also runs locally from the desktop companion. Its source is under [`firmware/companion/postcard/`](firmware/companion/postcard/). Keep the published Pages copy and the companion copy in sync when changing the manager. To build the firmware, follow the [ESP-IDF setup guide](firmware/docs/development/engineering/environment-setup.md), then run `./tools/validate.sh` from `firmware/`. See the [build and test guide](firmware/docs/development/engineering/build-and-test.md) for details.
+Firmware and the desktop companion live in [firmware/](firmware/). The Device Manager has a [GitHub Pages copy](docs/) and a [bundled copy](firmware/companion/postcard/). Keep both in sync when changing the web UI.
 
-Released firmware has passed build and host checks. v33 was flashed to an AI Passport and reported the expected version over USB. The Windows bundle's local manager was verified. macOS runtime testing is pending.
+Set up [ESP-IDF 5.5.3](firmware/docs/development/engineering/environment-setup.md), then run `./tools/validate.sh` from `firmware/` to build and validate the firmware. See the [build and test guide](firmware/docs/development/engineering/build-and-test.md) and [changelog](docs/changelog/CHANGELOG.md).
 
-This project builds on [FoloToy AI Passport](https://github.com/FoloToy/ai-passport). See the [MIT license](LICENSE).
+Based on [FoloToy AI Passport](https://github.com/FoloToy/ai-passport). Licensed under [MIT](LICENSE).
