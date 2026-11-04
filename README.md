@@ -14,9 +14,13 @@
 <p align="center">
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/release.svg" height="24" alt="Latest release v33"></a>
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/downloads.svg" height="24" alt="v33 asset downloads at the time of this README update: 13"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/windows.svg" height="24" alt="Windows sync"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/macos.svg" height="24" alt="macOS sync"></a>
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/assets/badges/windows.svg"><img src="docs/assets/badges/windows.svg" height="24" alt="Windows sync"></a>
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/assets/badges/macos.svg"><img src="docs/assets/badges/macos.svg" height="24" alt="macOS sync"></a>
   <a href="LICENSE"><img src="docs/assets/badges/license.svg" height="24" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager.svg" width="250" height="54" alt="Open Device Manager"></a>
 </p>
 
 <p align="center">

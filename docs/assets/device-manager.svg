@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="54" viewBox="0 0 250 54" role="img" aria-labelledby="title">
+  <title id="title">Open Device Manager</title>
+  <rect x=".5" y=".5" width="249" height="53" rx="10" fill="#f8fbff" stroke="#8caeff"/>
+  <rect x="11" y="9" width="36" height="36" rx="9" fill="#e5efff"/>
+  <g fill="none" stroke="#2359b8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="20.5" y="17.5" width="17" height="19" rx="3"/>
+    <path d="M21 22h16m-12 5h8m-8 4h5"/>
+    <path d="M222 27h12m-5-5 5 5-5 5"/>
+  </g>
+  <g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+    <text x="57" y="21" fill="#365b99" font-size="9" font-weight="700" letter-spacing="1.1">TOKENS KANBAN</text>
+    <text x="57" y="38" fill="#152a50" font-size="15" font-weight="700">Open Device Manager</text>
+  </g>
+</svg>
