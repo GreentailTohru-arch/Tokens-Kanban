@@ -12,11 +12,13 @@
 <p align="center"><em>在 FoloToy AI Passport 上实时查看 Codex 用量、额度和运行状态。</em></p>
 
 <p align="center">
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/github/v/release/GreentailTohru-arch/Tokens-Kanban?style=flat-square" alt="Latest release"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/sync-Windows-0078D4?style=flat-square" alt="Windows sync"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="https://img.shields.io/sync-macOS-555555?style=flat-square" alt="macOS sync"></a>
-  <a href="firmware/"><img src="https://img.shields.io/hardware-ESP32--C3-8A4B2B?style=flat-square" alt="ESP32-C3 firmware"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/license-MIT-7B4ED9?style=flat-square" alt="MIT license"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/release.svg" alt="Latest release v33"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/downloads.svg" alt="v33 asset downloads at the time of this README update: 13"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/windows.svg" alt="Windows sync"></a>
+  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/macos.svg" alt="macOS sync"></a>
+  <a href="firmware/"><img src="docs/assets/badges/hardware.svg" alt="ESP32-C3 firmware"></a>
+  <a href="firmware/docs/tokens-connections.md"><img src="docs/assets/badges/connection.svg" alt="USB and Bluetooth LE"></a>
+  <a href="LICENSE"><img src="docs/assets/badges/license.svg" alt="MIT license"></a>
 </p>
 
 <p align="center">
