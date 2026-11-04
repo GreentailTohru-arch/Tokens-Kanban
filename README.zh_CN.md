@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="250" height="55" alt="打开设备管理网页"></a>
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/open-device-manager.svg" width="250" height="55" alt="打开设备管理网页"></a>
 </p>
 
 ## 界面展示
