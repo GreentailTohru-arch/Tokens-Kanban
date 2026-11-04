@@ -24,7 +24,15 @@
 </p>
 
 <p align="center">
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/readme-preview.png" width="100%" alt="Tokens Kanban device simulator showing sample Codex usage and quota"></a>
+  <img src="docs/assets/device-screens/usage.png" width="30%" alt="Usage and quota">
+  <img src="docs/assets/device-screens/analytics.png" width="30%" alt="Model usage and activity trends">
+  <img src="docs/assets/device-screens/pet.png" width="30%" alt="Virtual pet">
+</p>
+
+<p align="center">
+  <img src="docs/assets/device-screens/system-monitor.png" width="30%" alt="System monitor with sample data">
+  <img src="docs/assets/device-screens/postcard.png" width="30%" alt="Postcard with the default avatar">
+  <img src="docs/assets/device-screens/wallpaper.png" width="30%" alt="Wallpaper with the default theme background">
 </p>
 
 ## What you can see
