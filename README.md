@@ -13,8 +13,8 @@
 
 <p align="center">
   <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/latest"><img src="docs/assets/badges/release.svg" height="20" alt="Latest release v33"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v33"><img src="docs/assets/badges/windows.svg" height="20" alt="Windows sync"></a>
-  <a href="https://github.com/GreentailTohru-arch/Tokens-Kanban/releases/tag/v33"><img src="docs/assets/badges/macos.svg" height="20" alt="macOS sync"></a>
+  <a href="https://raw.githubusercontent.com/GreentailTohru-arch/Tokens-Kanban/main/docs/assets/badges/windows.svg"><img src="docs/assets/badges/windows.svg" height="20" alt="Windows sync"></a>
+  <a href="https://raw.githubusercontent.com/GreentailTohru-arch/Tokens-Kanban/main/docs/assets/badges/macos.svg"><img src="docs/assets/badges/macos.svg" height="20" alt="macOS sync"></a>
   <a href="LICENSE"><img src="docs/assets/badges/license.svg" height="20" alt="MIT license"></a>
 </p>
 
