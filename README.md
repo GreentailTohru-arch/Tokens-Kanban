@@ -7,7 +7,7 @@
   </picture>
 </p>
 
-<h1 align="center">Tokens Kanban&nbsp;<img src="docs/assets/badges/rtos.svg" alt="RTOS" width="58" height="20"></h1>
+<h1 align="center">Tokens Kanban&nbsp;<img src="docs/assets/badges/rtos.svg" alt="RTOS" width="49" height="22"></h1>
 
 <p align="center"><em>A live Codex usage, quota, and activity display for FoloToy AI Passport.</em></p>
 
