@@ -23,17 +23,18 @@
   <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="276" height="54" alt="Open Device Manager"></a>
 </p>
 
-<p align="center">
-  <img src="docs/assets/device-screens/usage.png" width="30%" alt="Usage and quota">
-  <img src="docs/assets/device-screens/analytics.png" width="30%" alt="Model usage and activity trends">
-  <img src="docs/assets/device-screens/pet.png" width="30%" alt="Virtual pet">
-</p>
-
-<p align="center">
-  <img src="docs/assets/device-screens/system-monitor.png" width="30%" alt="System monitor with sample data">
-  <img src="docs/assets/device-screens/postcard.png" width="30%" alt="Postcard with the default avatar">
-  <img src="docs/assets/device-screens/wallpaper.png" width="30%" alt="Wallpaper with the default theme background">
-</p>
+<table align="center">
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/usage.png" width="224" alt="Usage and quota"><br><strong>Usage Overview</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/analytics.png" width="224" alt="Model usage and activity trends"><br><strong>Analytics</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/pet.png" width="224" alt="Virtual pet"><br><strong>Virtual Pet</strong></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/system-monitor.png" width="224" alt="System monitor with sample data"><br><strong>System Monitor</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/postcard.png" width="224" alt="Postcard with the default avatar"><br><strong>Postcard</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/wallpaper.png" width="224" alt="Wallpaper with the default theme background"><br><strong>Fullscreen Wallpaper</strong></td>
+  </tr>
+</table>
 
 ## What you can see
 

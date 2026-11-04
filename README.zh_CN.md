@@ -23,17 +23,18 @@
   <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager-cta.svg" width="276" height="54" alt="打开设备管理网页"></a>
 </p>
 
-<p align="center">
-  <img src="docs/assets/device-screens/usage.png" width="30%" alt="用量首页与额度">
-  <img src="docs/assets/device-screens/analytics.png" width="30%" alt="统计分析与活动趋势">
-  <img src="docs/assets/device-screens/pet.png" width="30%" alt="虚拟宠物">
-</p>
-
-<p align="center">
-  <img src="docs/assets/device-screens/system-monitor.png" width="30%" alt="系统检测与示例数据">
-  <img src="docs/assets/device-screens/postcard.png" width="30%" alt="使用默认头像的明信片">
-  <img src="docs/assets/device-screens/wallpaper.png" width="30%" alt="使用默认主题背景的全屏壁纸">
-</p>
+<table align="center">
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/usage.png" width="224" alt="用量首页与额度"><br><strong>用量首页</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/analytics.png" width="224" alt="统计分析与活动趋势"><br><strong>统计分析</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/pet.png" width="224" alt="虚拟宠物"><br><strong>虚拟宠物</strong></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/system-monitor.png" width="224" alt="系统检测与示例数据"><br><strong>系统检测</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/postcard.png" width="224" alt="使用默认头像的明信片"><br><strong>明信片</strong></td>
+    <td align="center" width="33%"><img src="docs/assets/device-screens/wallpaper.png" width="224" alt="使用默认主题背景的全屏壁纸"><br><strong>全屏壁纸</strong></td>
+  </tr>
+</table>
 
 ## 主要功能
 
