@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="273" height="81" viewBox="0 0 273 81" role="img" aria-labelledby="title">
+  <title id="title">Tokens Kanban - AI Passport, RTOS</title>
+  <rect width="273" height="81" rx="10" fill="#252525"/>
+  <path d="M27 28h24m-12 0v23m15-23v23m0-11 15-12m-15 12 15 11"
+        fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+    <text x="94" y="35" fill="#fff" font-size="22" font-weight="700">Tokens Kanban</text>
+    <text x="94" y="62" fill="#c1d1e2" font-size="12" letter-spacing=".4">AI PASSPORT</text>
+    <rect x="182.5" y="49.5" width="34" height="16" rx="4" fill="#213441" stroke="#5dc3ff"/>
+    <text x="199.5" y="61" fill="#8ad4ff" font-size="9" text-anchor="middle">RTOS</text>
+  </g>
+</svg>

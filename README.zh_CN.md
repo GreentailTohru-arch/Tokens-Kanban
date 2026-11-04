@@ -1,13 +1,8 @@
-<p align="right"><a href="README.md">EN</a> · <strong>简体中文</strong></p>
+<p align="right"><a href="README.md">EN</a> · <strong>CN</strong></p>
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/brand-dark.svg">
-    <img src="docs/brand-light.svg" alt="Tokens Kanban logo" width="112" height="112">
-  </picture>
-</p>
-
-<h1 align="center">Tokens Kanban</h1>
+<h1 align="center">
+  <img src="docs/assets/readme-brand.svg" width="273" height="81" alt="Tokens Kanban - AI Passport, RTOS">
+</h1>
 
 <p align="center"><em>在 FoloToy AI Passport 上实时查看 Codex 用量、额度和运行状态。</em></p>
 
@@ -20,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager.svg" width="250" height="54" alt="打开设备管理网页"></a>
+  <a href="https://greentailtohru-arch.github.io/Tokens-Kanban/"><img src="docs/assets/device-manager.svg" width="276" height="54" alt="打开设备管理网页"></a>
 </p>
 
 <p align="center">
